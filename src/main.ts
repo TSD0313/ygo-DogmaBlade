@@ -96,11 +96,13 @@ class MonsterCard extends Card {
     atkPoint : Number;
     defPoint : Number;
     position : "ATK"|"DEF";
+    canNS : Boolean
     NSed : Boolean;
     actionPossible : {key: boolean[]}; 
     constructor(){
         super();
-        this.cardType = "Monster"
+        this.cardType = "Monster";
+        this.canNS = true;
     }
 }
 
@@ -128,9 +130,7 @@ const generateMonsterCard = (json:Object) => {
     return newCard;
 }
 
-
 window.onload = function() {
-
 
     /**
      * 指定のstageに指定のcardを指定座標で描画する
@@ -193,7 +193,9 @@ window.onload = function() {
             drawzone(target[0],target[1],i);
         }
     }
-
+    /**
+     * カードを場から墓地に送る
+     */
     function BoardToGY(card: Card){
         if(card.cardType=="Spell"||"Trap"){
             game.spellOrTrapZone.splice( game.spellOrTrapZone.indexOf(card), 1, undefined);
@@ -206,6 +208,9 @@ window.onload = function() {
         animationBoardToGY(card);
     }
 
+    /**
+     * カードを場から墓地に送るアニメーション
+     */
     function animationBoardToGY(card: Card){
         const toX = game.displayOrder.GY[0][0]+(game.graveYard.length-1)*2
         const toY = game.displayOrder.GY[0][1]-(game.graveYard.length-1)*2
@@ -222,7 +227,9 @@ window.onload = function() {
                 .to({rotation:0},500,createjs.Ease.cubicOut);
     }
 
-
+    /**
+     * 通常召喚する
+     */
     const normalSummon = (card: MonsterCard, position: "ATK"|"SET") => {
         handtoMonsterzone(card,position);
         animationHandToboard(card,position);
@@ -236,12 +243,23 @@ window.onload = function() {
             card.face="DOWN";
         };
     }
-
+    /**
+     * 通常召喚可能か判定する
+     */
+    const JudgeNS = (card : MonsterCard) => {
+        return(game.normalSummon && card.canNS && card.level<=4)
+    }
+    /**
+     * カードデータを手札からモンスターゾーンに移動
+     */
     function handtoMonsterzone(card: MonsterCard, position: "ATK"|"DEF"|"SET"){
             game.monsterZone.splice( game.monsterZone.indexOf(undefined), 1, card);
             game.hand = game.hand.filter(n => n !== card);
     }
 
+    /**
+     * カードを手札から場に移動するアニメーション
+     */
     function animationHandToboard(card: Card, position: "ATK"|"DEF"|"SET"){
         const toX = game.displayOrder.mon[game.monsterZone.indexOf(card)][0]
         const toY = game.displayOrder.mon[game.monsterZone.indexOf(card)][1]
@@ -287,18 +305,28 @@ window.onload = function() {
                 .call(()=>{stage.setChildIndex(card.imgContainer,stage.numChildren - array.length + index)})
         });
     }
+
+    /**
+     * 配列をランダム化
+     */
+    const shuffle = (target : Card[]) => {
+        for (let i = target.length - 1; i >= 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [target[i], target[j]] = [target[j], target[i]];
+        }
+        return target;
+    }
         
 
     /**
      * デッキを場に置く
      */
     function deckset(stage: Stage, deck:Card[]){
-
         game.deck = deck;
-
-        for (var i = 0, len = deck.length; i < len; ++i){
-            puton(stage, deck[i],game.displayOrder.deck[0][0]+i*2,game.displayOrder.deck[0][1]-i*2)
-         }
+        deck.map((card, index, array) => {
+            puton(stage, card, game.displayOrder.deck[0][0]+index*2,game.displayOrder.deck[0][1]-index*2);
+            addHandButton(card);
+        })
     }
 
     /**
@@ -340,19 +368,47 @@ window.onload = function() {
         if(game.deck.length < count) {
             return false;
         }
-        // ハンドボタン設定
+
         const targetCards = game.deck.slice(-count);
         targetCards.map((card, index, array) => {
             card.location = "HAND";
-            
-            card.imgContainer.addEventListener("mouseover", handleHandMover);
-            function handleHandMover(event) {
-                const disprayButton : Container[] = [];
-                if(card.cardType=="Monster"){
-                    if(game.normalSummon){
-                        disprayButton.push(NSButton);
-                        disprayButton.push(SETButton);
-                    }
+            HandButtonSetting(card);
+        });
+
+        animationToHand(count);
+
+        game.hand = game.hand.concat(targetCards);
+        game.deck = game.deck.slice(0, game.deck.length - count);
+
+        game.hand.map((h,i,a) =>{ console.log("hand: " + h.cardName)})
+        game.deck.map((h,i,a) =>{ console.log("deck: " + h.cardName)})
+    }
+
+    /**
+     * カードイメージコンテナにボタン追加、非表示にする
+     */
+    function addHandButton(card:Card){
+        handButton[card.cardType].map((button, index, array) => {
+            card.imgContainer.addChild(button);
+            button.visible = false;
+        })
+    }   
+    
+    /**
+     * 手札ボタン設定
+     */
+    function HandButtonSetting(card:Card){
+        //Hand MouseOver
+        card.imgContainer.addEventListener("mouseover", handleHandMover);
+        /**
+         * 条件を満たすボタンを表示
+         */
+        function handleHandMover(event) {
+            const disprayButton : Container[] = [];
+            if(card.cardType=="Monster"){
+                if(JudgeNS(card)){
+                    disprayButton.push(NSButton);
+                    disprayButton.push(SETButton);
                 }
                 disprayButton.map((button, index, array) => {
                     button.x = -cardImgSize.x/2;
@@ -360,78 +416,57 @@ window.onload = function() {
                     button.visible = true 
                 });
             }
-
-            card.imgContainer.addEventListener("mouseout", handleHandMout);
-            function handleHandMout(event) {
-                if(card.cardType=="Monster"){
-                    NSButton.visible = false;
-                    SETButton.visible = false ;
-                }
-            };
-
-            const NSButton = createButton("NS", cardImgSize.x, 40, "#0275d8");
-            const ActivateButton = createButton("ACTIVEATE", cardImgSize.x, 40, "#0275d8");
-            const SETButton = createButton("SET", cardImgSize.x, 40, "#0275d8");
-
-            const handButtonObj = {"Monster":[NSButton,SETButton],"Spell":[ActivateButton,SETButton],"Trap":[SETButton]}
-            handButtonObj[card.cardType].map((button, index, array) => {
-                card.imgContainer.addChild(button);
-                button.visible = false;
-            })
-
-            NSButton.addEventListener("click",handleNSbuttonClick);
-            function handleNSbuttonClick(event) {
-                normalSummon(card,"ATK");
-                handButtonObj[card.cardType].map((button, index, array) => {
-                    card.imgContainer.removeChild(button);
-                })
-                card.imgContainer.removeEventListener("mouseover", handleHandMover);
-                card.imgContainer.removeEventListener("mouseout", handleHandMout)
-            };
-
-            SETButton.addEventListener("click",handleSETbuttonClick);
-            function handleSETbuttonClick(event) {
-                if(card.cardType=="Monster"){
-                    normalSummon(card,"SET");
-                }
-                handButtonObj[card.cardType].map((button, index, array) => {
-                    card.imgContainer.removeChild(button);
-                })
-                card.imgContainer.removeEventListener("mouseover", handleHandMover);
-                card.imgContainer.removeEventListener("mouseout", handleHandMout)
-            };
-
-            ActivateButton.addEventListener("click",handleACTbuttonClick);
-            function handleACTbuttonClick(event) {
-                normalSummon(card,"SET");
-                card.imgContainer.removeChild(NSButton);
-                card.imgContainer.removeChild(SETButton);
-                card.imgContainer.removeEventListener("mouseover", handleHandMover);
-                card.imgContainer.removeEventListener("mouseout", handleHandMout)
-            };
-        });
-
-
-        game.hand = game.hand.concat(targetCards);
-        game.deck = game.deck.slice(0, game.deck.length - count);
-
-        game.hand.map((h,i,a) =>{ console.log("hand: " + h.cardName)})
-        game.deck.map((h,i,a) =>{ console.log("deck: " + h.cardName)})
-
-        animationToHand(count);
-    }
-
-    const shuffle = (target : Card[]) => {
-        for (let i = target.length - 1; i >= 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [target[i], target[j]] = [target[j], target[i]];
         }
-        return target;
-      }
-    
+
+        //Hand MouseOut
+        card.imgContainer.addEventListener("mouseout", handleHandMout);
+        /**
+         * 全てのボタンを非表示
+         */
+        function handleHandMout(event) {
+            if(card.cardType=="Monster"){
+                NSButton.visible = false;
+                SETButton.visible = false ;
+            }
+        };
+
+        //Handボタンクリック 
+        //mouseover,outイベント消去
+        NSButton.addEventListener("click",handleNSbuttonClick);
+        function handleNSbuttonClick(event) {
+            normalSummon(card,"ATK");
+            card.imgContainer.removeEventListener("mouseover", handleHandMover);
+            card.imgContainer.removeEventListener("mouseout", handleHandMout)
+        };
+
+        SETButton.addEventListener("click",handleSETbuttonClick);
+        function handleSETbuttonClick(event) {
+            if(card.cardType=="Monster"){
+                normalSummon(card,"SET");
+            }
+            card.imgContainer.removeEventListener("mouseover", handleHandMover);
+            card.imgContainer.removeEventListener("mouseout", handleHandMout)
+        };
+
+        ActivateButton.addEventListener("click",handleACTbuttonClick);
+        function handleACTbuttonClick(event) {
+            // SpellCardインスタンスの効果関数
+            card.imgContainer.removeEventListener("mouseover", handleHandMover);
+            card.imgContainer.removeEventListener("mouseout", handleHandMout)
+        };
+    };
+
     const game = new Game;
     const stage = new createjs.Stage("canv");
     stage.enableMouseOver();
+
+    
+    // ボタン生成
+    const NSButton = createButton("NS", cardImgSize.x, 40, "#0275d8");
+    const ActivateButton = createButton("ACTIVEATE", cardImgSize.x, 40, "#0275d8");
+    const SETButton = createButton("SET", cardImgSize.x, 40, "#0275d8");
+    // カードタイプ毎のボタンリスト
+    const handButton = {"Monster":[NSButton,SETButton],"Spell":[ActivateButton,SETButton],"Trap":[SETButton]}
 
     setBoard();
 
@@ -450,7 +485,7 @@ window.onload = function() {
     //     "target":undefined}
     // }
     // potOfGreed.effect(() => {
-    //     draw(2)    
+    //     draw(2);    
     // })
 
     const drawButton = createButton("draw", 150, 40, "#0275d8");
