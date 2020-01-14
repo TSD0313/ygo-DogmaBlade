@@ -1,0 +1,33 @@
+{
+  "name": "yugioh",
+  "version": "1.0.0",
+  "description": "test",
+  "main": "index.js",
+  "scripts": {
+    "tsc": "tsc",
+    "build": "webpack",
+    "start": "webpack --watch"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/createjs": "0.0.29",
+    "createjs": "^1.0.1",
+    "ts-loader": "^6.2.1",
+    "typescript": "^3.7.4",
+    "webpack": "^4.41.4",
+    "webpack-cli": "^3.3.10"
+  },
+  "dependencies": {
+    "@createjs/easeljs": "^2.0.0-beta.4",
+    "@createjs/tweenjs": "^2.0.0-beta.4",
+    "@types/createjs": "0.0.29",
+    "createjs": "^1.0.1",
+    "createjs-module": "^0.8.3",
+    "ts-loader": "^6.2.1",
+    "typescript": "^3.7.2",
+    "webpack": "^4.41.2",
+    "webpack-cli": "^3.3.10",
+    "webpack-dev-server": "^3.9.0"
+  }
+}
