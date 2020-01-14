@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "sourceMap": true,
+    // TSはECMAScript 5に変換
+    "target": "es5",
+    // TSのモジュールはES Modulesとして出力
+    "module": "es6",
+    // JSXの書式を有効に設定
+
+    "moduleResolution": "node",
+    "resolveJsonModule": true ,
+    "allowSyntheticDefaultImports" : true ,
+    "lib": [
+      "es2019",
+      "dom"
+    ]
+  }
+}
