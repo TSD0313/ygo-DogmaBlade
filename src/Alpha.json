@@ -1,0 +1,13 @@
+{
+    "imageFileName": "Alpha.jpg",
+    "bar": 123,
+    "ID": 111,
+    "cardName": "Alpha",
+    "cardType": "monster",
+    "monsterType": "Normal",
+    "level": 4,
+    "race": "ROCK",
+    "attribute": "EARTH",
+    "atkPoint" : 1400,
+    "defPoint" : 1700
+  }
