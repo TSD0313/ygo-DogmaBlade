@@ -354,7 +354,7 @@ window.onload = function() {
     }
 
     /**
-     * 手札を現在のデータに合わせた位置に移動する
+     * 手札を現在のデータに合わせた位置に移動するアニメーション
      */
     function animationToHand(count: number){
         const CardSizeX = cardImgSize.x+cardImgSize.margin;
