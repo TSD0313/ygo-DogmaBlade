@@ -3,9 +3,10 @@ import { Shape, Stage, Bitmap, Container} from 'createjs-module';
 import { createButton }  from './createButton';
 import Alpha from './Alpha.json';
 import Beta from './Beta.json';
-import Gumma from './Gumma.json';
+import Gamma from './Gamma.json';
 const DEFAULT_LIFE = 8000;
-const cardImgSize = {x:122,y:178,margin:10}
+const cardImgSize = {x:123,y:180,margin:10} 
+// {x:122,y:178,margin:10} 
 
 class Grid {
     front: number[][];
@@ -16,7 +17,6 @@ class Grid {
         this.back = back;
     }
 }
-
 class Game{
     field : Card[];
     monsterZone : Card[];
@@ -85,6 +85,7 @@ class Card {
     constructor(){
         this.cardBackImageFileName = "cardback.jpeg";
         this.location = "DECK"
+        this.face = "DOWN"
     }
 }
 
@@ -212,14 +213,12 @@ window.onload = function() {
      * カードを場から墓地に送るアニメーション
      */
     function animationBoardToGY(card: Card){
-        const toX = game.displayOrder.GY[0][0]+(game.graveYard.length-1)*2
-        const toY = game.displayOrder.GY[0][1]-(game.graveYard.length-1)*2
+        const toX : number = game.displayOrder.GY[0][0]+(game.graveYard.length-1)*2
+        const toY : number = game.displayOrder.GY[0][1]-(game.graveYard.length-1)*2
 
         if (card.face=="DOWN"){
             createjs.Tween.get(card.frontImg)
-            .to({scaleX:0.0},150)
-            .call(()=>{createjs.Tween.get(card.cardBackImg)
-                        .to({scaleX:1.0},300);})
+            cardFlip(card);
         }
         createjs.Tween.get(card.imgContainer)
                 .to({x:toX,y:toY},500,createjs.Ease.cubicOut);
@@ -231,8 +230,8 @@ window.onload = function() {
      * 通常召喚する
      */
     const normalSummon = (card: MonsterCard, position: "ATK"|"SET") => {
-        handtoMonsterzone(card,position);
-        animationHandToboard(card,position);
+        handtoMonsterzone(card);
+        animationHandToBoard(card,position);
         game.normalSummon = false;
         card.NSed=true;
         if(position="ATK"){
@@ -243,16 +242,23 @@ window.onload = function() {
             card.face="DOWN";
         };
     }
+    
     /**
      * 通常召喚可能か判定する
      */
     const JudgeNS = (card : MonsterCard) => {
-        return(game.normalSummon && card.canNS && card.level<=4)
+        if(card.level<=4){
+            return(game.normalSummon && card.canNS);
+        }else{
+            let countMonster:number = game.monsterZone.filter(i => i === undefined).length
+            return(game.normalSummon && card.canNS && 0<=countMonster);
+        }
     }
+
     /**
      * カードデータを手札からモンスターゾーンに移動
      */
-    function handtoMonsterzone(card: MonsterCard, position: "ATK"|"DEF"|"SET"){
+    function handtoMonsterzone(card: MonsterCard){
             game.monsterZone.splice( game.monsterZone.indexOf(undefined), 1, card);
             game.hand = game.hand.filter(n => n !== card);
     }
@@ -260,9 +266,9 @@ window.onload = function() {
     /**
      * カードを手札から場に移動するアニメーション
      */
-    function animationHandToboard(card: Card, position: "ATK"|"DEF"|"SET"){
-        const toX = game.displayOrder.mon[game.monsterZone.indexOf(card)][0]
-        const toY = game.displayOrder.mon[game.monsterZone.indexOf(card)][1]
+    function animationHandToBoard(card: Card, position: "ATK"|"DEF"|"SET"){
+        const toX : Number = game.displayOrder.mon[game.monsterZone.indexOf(card)][0]
+        const toY : Number = game.displayOrder.mon[game.monsterZone.indexOf(card)][1]
 
         if(position=="ATK"){
             createjs.Tween.get(card.imgContainer)
@@ -316,40 +322,53 @@ window.onload = function() {
         }
         return target;
     }
+
+    /**
+     * 表裏反転
+     */
+    const cardFlip = (card : Card) => {
         
+        if(card.face=="UP"){
+            createjs.Tween.get(card.frontImg)
+                .to({scaleX:0.0},170,createjs.Ease.cubicOut);
+            createjs.Tween.get(card.cardBackImg)
+                .to({scaleX:1.0},340,createjs.Ease.cubicIn);
+            card.face = "DOWN"
+        }else{
+            createjs.Tween.get(card.cardBackImg)
+                .to({scaleX:0.0},170,createjs.Ease.cubicOut);
+            createjs.Tween.get(card.frontImg)
+                .to({scaleX:1.0},340,createjs.Ease.cubicIn);
+            card.face = "UP"
+        }
+    }
 
     /**
      * デッキを場に置く
      */
     function deckset(stage: Stage, deck:Card[]){
         game.deck = deck;
-        deck.map((card, index, array) => {
+        game.deck.map((card, index, array) => {
             puton(stage, card, game.displayOrder.deck[0][0]+index*2,game.displayOrder.deck[0][1]-index*2);
-            addHandButton(card);
         })
     }
 
     /**
      * 手札を現在のデータに合わせた位置に移動する
-     * 
      */
     function animationToHand(count: number){
         const CardSizeX = cardImgSize.x+cardImgSize.margin;
         const leftEndPosition = game.displayOrder.hand[0] - (game.hand.length - 1) / 2 * CardSizeX
-        const cardFlip=()=>{
-            game.hand.slice(-count).map((card, index, array) => {
-                createjs.Tween.get(card.cardBackImg)
-                .to({scaleX:0.0},170,createjs.Ease.cubicOut);
-                createjs.Tween.get(card.frontImg)
-                .to({scaleX:1.0},340,createjs.Ease.cubicIn);
-            })
 
-        }
         game.hand.map((card, index, array) => {
             createjs.Tween.get(card.imgContainer)
                 .to({x:leftEndPosition+((CardSizeX)*index),y:game.displayOrder.hand[1]},500,createjs.Ease.cubicInOut)
         });
-        cardFlip();
+        game.hand.slice(-count).map((card, index, array) => {
+            if(card.face=="DOWN"){
+                cardFlip(card);
+            }
+        })
     }
     
 
@@ -366,46 +385,57 @@ window.onload = function() {
     function draw(count: number){
         // デッキ残り枚数が０だったら引けない
         if(game.deck.length < count) {
+            console.log("deck0");
             return false;
         }
-
         const targetCards = game.deck.slice(-count);
         targetCards.map((card, index, array) => {
             card.location = "HAND";
             HandButtonSetting(card);
         });
-
-        animationToHand(count);
-
         game.hand = game.hand.concat(targetCards);
         game.deck = game.deck.slice(0, game.deck.length - count);
 
+        animationToHand(count);
+
         game.hand.map((h,i,a) =>{ console.log("hand: " + h.cardName)})
         game.deck.map((h,i,a) =>{ console.log("deck: " + h.cardName)})
-    }
-
-    /**
-     * カードイメージコンテナにボタン追加、非表示にする
-     */
-    function addHandButton(card:Card){
-        handButton[card.cardType].map((button, index, array) => {
-            card.imgContainer.addChild(button);
-            button.visible = false;
-        })
-    }   
+    } 
     
     /**
      * 手札ボタン設定
      */
     function HandButtonSetting(card:Card){
+        // ボタン生成
+        const NSButton = createButton("NS", cardImgSize.x, 40, "#0275d8");
+        const ActivateButton = createButton("ACTIVEATE", cardImgSize.x, 40, "#0275d8");
+        const SETButton = createButton("SET", cardImgSize.x, 40, "#0275d8");
+        // カードタイプ毎のボタンリスト
+        const handButton = {"Monster":[NSButton,SETButton],"Spell":[ActivateButton,SETButton],"Trap":[SETButton]}
+
+        // カードイメージコンテナにボタン追加、非表示にする
+        if(card instanceof MonsterCard){
+            handButton.Monster.map((button, index, array) => {
+                card.imgContainer.addChild(button);
+                button.visible = false;
+            })
+        }else{
+            if(card instanceof SpellCard){
+                handButton.Spell.map((button, index, array) => {
+                    card.imgContainer.addChild(button);
+                    button.visible = false;
+                })
+            }
+        }
+
         //Hand MouseOver
         card.imgContainer.addEventListener("mouseover", handleHandMover);
         /**
          * 条件を満たすボタンを表示
          */
         function handleHandMover(event) {
-            const disprayButton : Container[] = [];
-            if(card.cardType=="Monster"){
+            let disprayButton : Container[] = [];
+            if(card instanceof MonsterCard){
                 if(JudgeNS(card)){
                     disprayButton.push(NSButton);
                     disprayButton.push(SETButton);
@@ -424,9 +454,10 @@ window.onload = function() {
          * 全てのボタンを非表示
          */
         function handleHandMout(event) {
-            if(card.cardType=="Monster"){
-                NSButton.visible = false;
-                SETButton.visible = false ;
+            if(card instanceof MonsterCard){
+                handButton.Monster.map((button, index, array) => {
+                    button.visible = false;
+                })
             }
         };
 
@@ -434,25 +465,35 @@ window.onload = function() {
         //mouseover,outイベント消去
         NSButton.addEventListener("click",handleNSbuttonClick);
         function handleNSbuttonClick(event) {
+            if(card instanceof MonsterCard){
             normalSummon(card,"ATK");
             card.imgContainer.removeEventListener("mouseover", handleHandMover);
-            card.imgContainer.removeEventListener("mouseout", handleHandMout)
+            card.imgContainer.removeEventListener("mouseout", handleHandMout);
+            card.imgContainer.removeChild(NSButton);
+            card.imgContainer.removeChild(SETButton);
+            }
         };
 
         SETButton.addEventListener("click",handleSETbuttonClick);
         function handleSETbuttonClick(event) {
-            if(card.cardType=="Monster"){
+            if(card instanceof MonsterCard){
                 normalSummon(card,"SET");
+                card.imgContainer.removeEventListener("mouseover", handleHandMover);
+                card.imgContainer.removeEventListener("mouseout", handleHandMout)
+                card.imgContainer.removeChild(NSButton);
+                card.imgContainer.removeChild(SETButton);
             }
-            card.imgContainer.removeEventListener("mouseover", handleHandMover);
-            card.imgContainer.removeEventListener("mouseout", handleHandMout)
         };
 
         ActivateButton.addEventListener("click",handleACTbuttonClick);
         function handleACTbuttonClick(event) {
-            // SpellCardインスタンスの効果関数
+            if(card instanceof SpellCard){
+            card.effect()
             card.imgContainer.removeEventListener("mouseover", handleHandMover);
-            card.imgContainer.removeEventListener("mouseout", handleHandMout)
+            card.imgContainer.removeEventListener("mouseout", handleHandMout);
+            card.imgContainer.removeChild(ActivateButton);
+            card.imgContainer.removeChild(SETButton);
+            };
         };
     };
 
@@ -460,22 +501,14 @@ window.onload = function() {
     const stage = new createjs.Stage("canv");
     stage.enableMouseOver();
 
-    
-    // ボタン生成
-    const NSButton = createButton("NS", cardImgSize.x, 40, "#0275d8");
-    const ActivateButton = createButton("ACTIVEATE", cardImgSize.x, 40, "#0275d8");
-    const SETButton = createButton("SET", cardImgSize.x, 40, "#0275d8");
-    // カードタイプ毎のボタンリスト
-    const handButton = {"Monster":[NSButton,SETButton],"Spell":[ActivateButton,SETButton],"Trap":[SETButton]}
-
     setBoard();
 
     const ALPHA = generateMonsterCard(Alpha);
     const BETA = generateMonsterCard(Beta);
-    const GUMMA = generateMonsterCard(Gumma);
-    const myDeck : Card[]= [ALPHA,BETA,GUMMA];
+    const GAMMA = generateMonsterCard(Gamma);
+    const myDeck : Card[]= [ALPHA,BETA,GAMMA];
     deckset(stage, myDeck);
-    console.log(game.displayOrder.deck); 
+    console.log(game.deck); 
 
     // const potOfGreed = new SpellCard
     // potOfGreed.effectArray = {
