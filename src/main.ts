@@ -1,5 +1,5 @@
 // EaselJS系の読み込み
-import { Shape, Stage, Bitmap, Container} from 'createjs-module';
+import { Shape, Stage, Bitmap, Container, Tween, Timeline} from 'createjs-module';
 import { createButton }  from './createButton';
 import Alpha from './Alpha.json';
 import Beta from './Beta.json';
@@ -31,7 +31,7 @@ class Game{
     grid : Grid;
     displayOrder : any;
     constructor(){
-        this.field = [];
+        this.field = [undefined];
         this.monsterZone = [undefined,undefined,undefined,undefined,undefined];
         this.spellOrTrapZone = [undefined,undefined,undefined,undefined,undefined];
         this.graveYard = [];
@@ -46,7 +46,7 @@ class Game{
         const front_position: number[][] = (() => {
             const array: number[][] = [];
             for(let i = 0; i < 7 ; i++){
-                array.push([cardImgSize.x/2+(cardImgSize.y+cardImgSize.margin)*i,cardImgSize.y/2+20]);
+                array.push([cardImgSize.x/2+20+(cardImgSize.y+cardImgSize.margin)*i,cardImgSize.y/2+20]);
             }
             return array
         })();
@@ -54,20 +54,21 @@ class Game{
         const back_position = (() => {
             const array: number[][] = [];
             for(let i = 7; i < 14 ; i++){
-                array.push([cardImgSize.x/2+(cardImgSize.y+cardImgSize.margin)*(i-7),cardImgSize.y*1.5+40]);
+                array.push([cardImgSize.x/2+20+(cardImgSize.y+cardImgSize.margin)*(i-7),cardImgSize.y*1.5+40]);
             }
             return array
         })();
 
         this.grid = new Grid(front_position, back_position);
 
-        this.displayOrder  = {field:[this.grid.front[0]],
-                    mon:[this.grid.front[3],this.grid.front[2],this.grid.front[4],this.grid.front[1],this.grid.front[5]],
-                    gy:[this.grid.front[6]],
-                    ex:[this.grid.back[0]],
-                    st:[this.grid.back[3],this.grid.back[2],this.grid.back[4],this.grid.back[1],this.grid.back[5]],
-                    deck:[this.grid.back[6]],
-                    hand:[this.grid.front[3][0],this.grid.front[3][1]*5]
+        this.displayOrder  = {
+                field:[this.grid.front[0]],
+                mon:[this.grid.front[3],this.grid.front[2],this.grid.front[4],this.grid.front[1],this.grid.front[5]],
+                gy:[this.grid.front[6]],
+                ex:[this.grid.back[0]],
+                st:[this.grid.back[3],this.grid.back[2],this.grid.back[4],this.grid.back[1],this.grid.back[5]],
+                deck:[this.grid.back[6]],
+                hand:[this.grid.front[3][0],this.grid.front[3][1]*5]
                     };
     }
 }
@@ -77,7 +78,7 @@ class Card {
     imageFileName : String;  cardBackImageFileName : String;
     ID : Number;
     cardName : String;
-    location : String;
+    location : "MO"|"ST"|"FIELD"|"DECK"|"HAND"|"GY"|"DD";
     fromLocation : String;
     imgContainer : Container;
     cardType : "Monster"|"Spell"|"Trap";
@@ -157,7 +158,7 @@ window.onload = function() {
         card.cardBackImg.regX = cardImgSize.x/2;
         card.cardBackImg.regY = cardImgSize.y/2;
 
-        card.imgContainer.regX = -30;
+        card.imgContainer.regX = 0;
         card.imgContainer.regY = 0;
 
         [card.imgContainer.x,card.imgContainer.y] = [x,y];
@@ -166,74 +167,115 @@ window.onload = function() {
     /**
      * ボードのカード置き場の枠を描画する
      */
-    const setBoard = () => {
+    const setBoard = (stage:Stage) => {
         const drawzone = (x,y,i) => {
-            var zone = new createjs.Shape();
- 
+            let zone = new createjs.Shape();
             // 線の色
             zone.graphics.beginStroke("#0055bb");
-
             // 枠を描く
             zone.graphics.drawRect((cardImgSize.y-cardImgSize.x)/2, 0, cardImgSize.x, cardImgSize.y);
             if((1<=i && i<=5)){
                 zone.graphics.drawRect(0, (cardImgSize.y-cardImgSize.x)/2, cardImgSize.y, cardImgSize.x);
             };
             stage.addChild(zone);
-            zone.regX = cardImgSize.x/2;
+            zone.regX = cardImgSize.y/2;
             zone.regY = cardImgSize.y/2;
             zone.x = x;
             zone.y = y;
-        }
+        };
 
         for(let i = 0; i < 14 ; i++){
-            if(i < 7){
-                var target = game.grid.front[i];
-            }else{
-                var target = game.grid.back[i-7];
-            };
+            const target = (() => {
+                if(i < 7){
+                    return game.grid.front[i];
+                }else{
+                    return game.grid.back[i-7];
+                };
+            })();
             drawzone(target[0],target[1],i);
         }
     }
     /**
-     * カードを場から墓地に送る
+     * カードオブジェクトを場から墓地に移動
      */
-    function BoardToGY(card: Card){
-        if(card.cardType=="Spell"||"Trap"){
-            game.spellOrTrapZone.splice( game.spellOrTrapZone.indexOf(card), 1, undefined);
-        }else{
-            if(card.cardType=="Monster"){
-                game.monsterZone.splice( game.monsterZone.indexOf(card), 1, undefined)
+    const BoardToGY = async(card: Card) => {
+        return new Promise((resolve, reject) => {
+            const fromZone = (() => {
+            if(card instanceof MonsterCard){
+                return game.monsterZone;
+            };
+            if(card instanceof SpellCard){
+                if(card.spellType=="Field"){
+                    return game.field;
+                }else{
+                    return game.spellOrTrapZone;
+                };
             }
-        };
+            // TODO: Trapのことあとでかく
+            return game.spellOrTrapZone;
+        })();
+
+        fromZone[fromZone.indexOf(card)]=void 0;
         game.graveYard.push(card);
-        animationBoardToGY(card);
+        card.location = "GY";
+        resolve();
+        });
+        
     }
 
     /**
      * カードを場から墓地に送るアニメーション
      */
-    function animationBoardToGY(card: Card){
-        const toX : number = game.displayOrder.GY[0][0]+(game.graveYard.length-1)*2
-        const toY : number = game.displayOrder.GY[0][1]-(game.graveYard.length-1)*2
+    const animationBoardToGY = async(card: Card) => {
+        return new Promise((resolve, reject) => {
+            const toX : number = game.displayOrder.gy[0][0]+(game.graveYard.length-1)*2
+            const toY : number = game.displayOrder.gy[0][1]-(game.graveYard.length-1)*2
 
-        if (card.face=="DOWN"){
-            createjs.Tween.get(card.frontImg)
-            cardFlip(card);
-        }
-        createjs.Tween.get(card.imgContainer)
-                .to({x:toX,y:toY},500,createjs.Ease.cubicOut);
-        createjs.Tween.get(card.imgContainer)   
-                .to({rotation:0},500,createjs.Ease.cubicOut);
+            if (card.face=="DOWN"){
+                cardFlip(card);
+            };
+            createjs.Tween.get(card.imgContainer)
+                .to({x:toX,y:toY,rotation:0},500,createjs.Ease.cubicOut)
+                .call(()=>{resolve()});
+        }) 
+    }
+
+    /**
+     * チェーンに乗る効果発動アニメーション
+     */
+    const animationChainEffectActivate = async(card: Card) => {
+        return new Promise((resolve, reject) => {
+            const effImg = new createjs.Bitmap(card.imageFileName);
+            effImg.regX = cardImgSize.x/2;
+            effImg.regY = cardImgSize.y/2;
+            card.imgContainer.addChild(effImg);
+            createjs.Tween.get(effImg)
+                    .to({scaleX:3,scaleY:3,alpha:0},500,createjs.Ease.cubicOut)
+                    .call(()=>{card.imgContainer.removeChild(effImg)})
+                    .call(()=>{resolve()});
+        });
+    }
+
+    /**
+     * 手札の魔法発動
+     */
+    const handSpellActivate = async(card: SpellCard) => {
+        handToBoard(card);
+        await animationHandToBoard(card,"ATK");
+        await animationChainEffectActivate(card);
+        await draw(2);
+        await BoardToGY(card);
+        await animationBoardToGY(card);
     }
 
     /**
      * 通常召喚する
      */
-    const normalSummon = (card: MonsterCard, position: "ATK"|"SET") => {
-        handtoMonsterzone(card);
-        animationHandToBoard(card,position);
-        game.normalSummon = false;
+    const normalSummon = async(card: MonsterCard, position: "ATK"|"SET") => {
+        // game.normalSummon = false;
         card.NSed=true;
+
+        handToBoard(card);
         if(position="ATK"){
             card.position=position;
             card.face="UP";
@@ -241,6 +283,8 @@ window.onload = function() {
             card.position="DEF";
             card.face="DOWN";
         };
+        await animationHandToBoard(card,position);
+        await animationChainEffectActivate(card);
     }
     
     /**
@@ -256,41 +300,77 @@ window.onload = function() {
     }
 
     /**
-     * カードデータを手札からモンスターゾーンに移動
+     * カードオブジェクトを手札から場に移動
      */
-    function handtoMonsterzone(card: MonsterCard){
-            game.monsterZone.splice( game.monsterZone.indexOf(undefined), 1, card);
+    const handToBoard = (card: Card) => {
+        return new Promise((resolve, reject) => {
+            const targetZone = (() => {
+                if(card instanceof MonsterCard){
+                    card.location = "MO";
+                    return game.monsterZone;
+                };
+                if (card instanceof SpellCard){
+                    if(card.spellType=="Field"){
+                        card.location = "FIELD";
+                        return game.field;
+                    }else{
+                        card.location = "ST";
+                        return game.spellOrTrapZone;
+                    }
+                };
+                // トラップあとでかく
+                return game.spellOrTrapZone;
+            })();
+            targetZone.splice( targetZone.indexOf(undefined), 1, card);
             game.hand = game.hand.filter(n => n !== card);
-    }
+            resolve(card);
+        });
+    };
 
     /**
      * カードを手札から場に移動するアニメーション
      */
-    function animationHandToBoard(card: Card, position: "ATK"|"DEF"|"SET"){
-        const toX : Number = game.displayOrder.mon[game.monsterZone.indexOf(card)][0]
-        const toY : Number = game.displayOrder.mon[game.monsterZone.indexOf(card)][1]
+    const animationHandToBoard = async(card: Card, position: "ATK"|"DEF"|"SET") => {
+        return new Promise((resolve, reject) => {
+            const toGrid = () => {
+                if(card instanceof MonsterCard){
+                    let toX : Number = game.displayOrder.mon[game.monsterZone.indexOf(card)][0];
+                    let toY : Number = game.displayOrder.mon[game.monsterZone.indexOf(card)][1];
+                    return{toX,toY};
+                }
+                else{
+                    let toX : Number = game.displayOrder.st[game.spellOrTrapZone.indexOf(card)][0];
+                    let toY : Number = game.displayOrder.st[game.spellOrTrapZone.indexOf(card)][1];
+                    return{toX,toY};
+                };
+            };
+            const {toX,toY} = toGrid();
+            const TWEEN = (() => {
+                if(position=="ATK"){
+                    return createjs.Tween.get(card.imgContainer)
+                        .call(()=>{animationHandAdjust().gotoAndPlay(0)})
+                        .to({x:toX,y:toY},500,createjs.Ease.cubicOut);
+                };
+                if(position=="SET"){
+                    if(card instanceof MonsterCard){
+                        return createjs.Tween.get(card.imgContainer)
+                                .call(()=>{animationHandAdjust().gotoAndPlay(0)})
+                                .call(()=>{cardFlip(card)})
+                                .to({x:toX,y:toY,rotation:-90},500,createjs.Ease.cubicOut);
+                    };
+                    if(card instanceof SpellCard){
+                        return createjs.Tween.get(card.imgContainer)
+                                .call(()=>{animationHandAdjust().gotoAndPlay(0)})
+                                .call(()=>{cardFlip(card)})
+                                .to({x:toX,y:toY},500,createjs.Ease.cubicOut);
+                    };
+                }
+            })();
 
-        if(position=="ATK"){
-            createjs.Tween.get(card.imgContainer)
-                .to({x:toX,y:toY},500,createjs.Ease.cubicOut)
-        };
-        if(position=="SET"){
-            createjs.Tween.get(card.imgContainer)
-                .to({x:toX,y:toY},500,createjs.Ease.cubicOut);
-            createjs.Tween.get(card.imgContainer)   
-                .to({rotation:-90},500,createjs.Ease.cubicOut);
-            createjs.Tween.get(card.frontImg)
-                .to({scaleX:0.0},150)
-                .call(()=>{createjs.Tween.get(card.cardBackImg)
-                            .to({scaleX:1.0},300);})
-        };
-
-        const leftEndPosition = game.displayOrder.hand[0] - (game.hand.length - 1) / 2 * (cardImgSize.x+10)
-        game.hand.map((card, index, array) => {
-            createjs.Tween.get(card.imgContainer)
-                    .to({x:leftEndPosition+((cardImgSize.x+10)*index),y:game.displayOrder.hand[1]},500,createjs.Ease.cubicInOut)
+            stage.setChildIndex(card.imgContainer,stage.numChildren-1);
+            TWEEN.call(()=>{resolve()});
         });
-        }
+    }
 
     /**
      * デッキをシャッフルする
@@ -300,7 +380,6 @@ window.onload = function() {
             return false;
         }
         game.deck = shuffle(game.deck)
-
         game.deck.map((card, index, array) => {
             const orgX = card.imgContainer.x
             createjs.Tween.get(card.imgContainer)
@@ -327,7 +406,6 @@ window.onload = function() {
      * 表裏反転
      */
     const cardFlip = (card : Card) => {
-        
         if(card.face=="UP"){
             createjs.Tween.get(card.frontImg)
                 .to({scaleX:0.0},170,createjs.Ease.cubicOut);
@@ -355,51 +433,53 @@ window.onload = function() {
 
     /**
      * 手札を現在のデータに合わせた位置に移動するアニメーション
+     * 手札出し入れの際に呼ぶやつ
      */
-    function animationToHand(count: number){
-        const CardSizeX = cardImgSize.x+cardImgSize.margin;
-        const leftEndPosition = game.displayOrder.hand[0] - (game.hand.length - 1) / 2 * CardSizeX
+    function animationHandAdjust(){
+        const leftEndPosition = game.displayOrder.hand[0] - (game.hand.length - 1) / 2 * (cardImgSize.x+cardImgSize.margin)
+        const TL = new Timeline([], { start: 0 }, {entry:0});
 
         game.hand.map((card, index, array) => {
-            createjs.Tween.get(card.imgContainer)
-                .to({x:leftEndPosition+((CardSizeX)*index),y:game.displayOrder.hand[1]},500,createjs.Ease.cubicInOut)
-        });
-        game.hand.slice(-count).map((card, index, array) => {
             if(card.face=="DOWN"){
                 cardFlip(card);
-            }
-        })
-    }
-    
-
-    /**
-     * カードを、デッキから手札に入れる
-     */
-    function toHandFromDeck(){        
+            };
+            const TW = createjs.Tween.get(card.imgContainer)
+                .to({x:leftEndPosition+((cardImgSize.x+cardImgSize.margin)*index),y:game.displayOrder.hand[1]},500,createjs.Ease.cubicInOut);
+            TL.addTween(TW);
+        });
+        return TL;
     }
 
     /**
      * デッキから任意の枚数をドローする
      * @param count
      */
-    function draw(count: number){
-        // デッキ残り枚数が０だったら引けない
-        if(game.deck.length < count) {
-            console.log("deck0");
-            return false;
+    const draw = async (count: number) => {
+        
+        for(let i = 0; i < count ; i++){
+            await new Promise((resolve, reject) => {
+                // デッキ残り枚数が０だったら引けない
+                if(game.deck.length < 1) {
+                    console.log("deck0");
+                    resolve();
+                    return false;
+                };
+
+                const targetCard = game.deck.pop();
+                targetCard.location = "HAND";
+                game.hand.push(targetCard);
+
+                game.hand.map((h,i,a) =>{ console.log("hand: " + h.cardName)})
+                game.deck.map((h,i,a) =>{ console.log("deck: " + h.cardName)})
+
+                animationHandAdjust().gotoAndPlay(0);
+                setTimeout(() => {
+                    HandButtonSetting(targetCard);
+                    resolve();
+                }, 500);
+            });
         }
-        const targetCards = game.deck.slice(-count);
-        targetCards.map((card, index, array) => {
-            card.location = "HAND";
-            HandButtonSetting(card);
-        });
-        game.hand = game.hand.concat(targetCards);
-        game.deck = game.deck.slice(0, game.deck.length - count);
 
-        animationToHand(count);
-
-        game.hand.map((h,i,a) =>{ console.log("hand: " + h.cardName)})
-        game.deck.map((h,i,a) =>{ console.log("deck: " + h.cardName)})
     } 
     
     /**
@@ -434,18 +514,31 @@ window.onload = function() {
          * 条件を満たすボタンを表示
          */
         function handleHandMover(event) {
-            let disprayButton : Container[] = [];
-            if(card instanceof MonsterCard){
-                if(JudgeNS(card)){
-                    disprayButton.push(NSButton);
-                    disprayButton.push(SETButton);
-                }
-                disprayButton.map((button, index, array) => {
-                    button.x = -cardImgSize.x/2;
-                    button.y = 40*(array.length-2) + 40*(index) + 10;
-                    button.visible = true 
-                });
-            }
+            const disprayButton = (() => {
+                if(card instanceof MonsterCard){
+                    if(JudgeNS(card)){
+                        return [NSButton,SETButton];
+                    };
+                };
+                if (card instanceof SpellCard){
+                    return [ActivateButton,SETButton];
+                };
+            });
+
+            // const disprayButton : Container[] = [];
+            // if(card instanceof MonsterCard){
+            //     if(JudgeNS(card)){
+            //         disprayButton.push(NSButton);
+            //         disprayButton.push(SETButton);
+            //     };
+            // };
+
+            disprayButton().map((button, index, array) => {
+                button.x = -cardImgSize.x/2;
+                button.y = 40*(array.length-2) + 40*(index) + 10;
+                button.visible = true 
+            });
+            
         }
 
         //Hand MouseOut
@@ -459,6 +552,11 @@ window.onload = function() {
                     button.visible = false;
                 })
             }
+            if(card instanceof SpellCard){
+                handButton.Spell.map((button, index, array) => {
+                    button.visible = false;
+                })
+            }
         };
 
         //Handボタンクリック 
@@ -466,34 +564,37 @@ window.onload = function() {
         NSButton.addEventListener("click",handleNSbuttonClick);
         function handleNSbuttonClick(event) {
             if(card instanceof MonsterCard){
-            normalSummon(card,"ATK");
-            card.imgContainer.removeEventListener("mouseover", handleHandMover);
-            card.imgContainer.removeEventListener("mouseout", handleHandMout);
-            card.imgContainer.removeChild(NSButton);
-            card.imgContainer.removeChild(SETButton);
-            }
+                normalSummon(card,"ATK");
+                card.imgContainer.removeChild(NSButton);
+                card.imgContainer.removeChild(SETButton);
+            };
+            card.imgContainer.removeAllEventListeners();
         };
 
         SETButton.addEventListener("click",handleSETbuttonClick);
         function handleSETbuttonClick(event) {
             if(card instanceof MonsterCard){
                 normalSummon(card,"SET");
-                card.imgContainer.removeEventListener("mouseover", handleHandMover);
-                card.imgContainer.removeEventListener("mouseout", handleHandMout)
                 card.imgContainer.removeChild(NSButton);
                 card.imgContainer.removeChild(SETButton);
-            }
+            };
+            if(card instanceof SpellCard){
+                handToBoard(card)
+                animationHandToBoard(card,"SET");
+                card.imgContainer.removeChild(ActivateButton);
+                card.imgContainer.removeChild(SETButton);
+            };
+            card.imgContainer.removeAllEventListeners();
         };
 
         ActivateButton.addEventListener("click",handleACTbuttonClick);
         function handleACTbuttonClick(event) {
             if(card instanceof SpellCard){
-            card.effect()
-            card.imgContainer.removeEventListener("mouseover", handleHandMover);
-            card.imgContainer.removeEventListener("mouseout", handleHandMout);
-            card.imgContainer.removeChild(ActivateButton);
-            card.imgContainer.removeChild(SETButton);
+                handSpellActivate(card);
+                card.imgContainer.removeChild(ActivateButton);
+                card.imgContainer.removeChild(SETButton);
             };
+            card.imgContainer.removeAllEventListeners();
         };
     };
 
@@ -501,25 +602,29 @@ window.onload = function() {
     const stage = new createjs.Stage("canv");
     stage.enableMouseOver();
 
-    setBoard();
+    setBoard(stage);
 
     const ALPHA = generateMonsterCard(Alpha);
     const BETA = generateMonsterCard(Beta);
     const GAMMA = generateMonsterCard(Gamma);
-    const myDeck : Card[]= [ALPHA,BETA,GAMMA];
-    deckset(stage, myDeck);
-    console.log(game.deck); 
-
-    // const potOfGreed = new SpellCard
-    // potOfGreed.effectArray = {
-    // 1:{"EffctType":"Ignnition",
-    //     "spellSpeed":1,
-    //     "range":["field"],
-    //     "target":undefined}
-    // }
+    
+    const potOfGreed = new SpellCard
+    potOfGreed.effectArray = {
+    1:{"EffctType":"Ignnition",
+        "spellSpeed":1,
+        "range":["field"],
+        "target":undefined}
+    }
+    potOfGreed.imageFileName = "PotOfGreed.png"
     // potOfGreed.effect(() => {
     //     draw(2);    
     // })
+
+    const myDeck : Card[]= [ALPHA,BETA,GAMMA,potOfGreed];
+    deckset(stage, myDeck);
+    console.log(game.deck); 
+
+
 
     const drawButton = createButton("draw", 150, 40, "#0275d8");
     drawButton.x = 1200;
