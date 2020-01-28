@@ -261,6 +261,7 @@ window.onload = function() {
         await card.effect;
         await BoardToGY(card);
         await animationBoardToGY(card);
+        return
     }
 
     /**
@@ -279,6 +280,7 @@ window.onload = function() {
         };
         await animationHandToBoard(card,position);
         await animationChainEffectActivate(card);
+        return;
     }
     
     /**
