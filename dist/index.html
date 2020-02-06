@@ -4,12 +4,36 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <title>Hello typescript</title>
+    <link rel="stylesheet" href="style.css" type="text/css">
     <script src="main.js"></script>
     <script src="https://code.createjs.com/1.0.0/createjs.min.js"></script>
   </head>
   <body>
+
     <canvas id="canv" 
-    style="background-color:rgb(44, 114, 146);"
-    width="1500px" height="750px"></canvas>
+    style="background-color:white;
+            position: absolute;"
+    width="1400px" height="800px">
+    </canvas>
+
+    <div id="selectMenuContainer">
+      
+      <canvas id="windowAndClosebutton" 
+        style="position: absolute; 
+                z-index: 0;"
+        width="1400px" height="800px" >
+      </canvas>
+
+      <div id="scrollArea">
+
+        <canvas id="displayCanv"
+          style="
+          position: absolute;
+          height: 100%;">
+        </canvas>
+
+      </div>
+
+    </div>
   </body>
 </html>
