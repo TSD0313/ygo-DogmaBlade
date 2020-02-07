@@ -652,6 +652,7 @@ window.onload = function() {
 
     const disprayCanv =<HTMLCanvasElement>document.getElementById("displayCanv") ;
     const disprayStage = new createjs.Stage(disprayCanv);
+    disprayStage.enableMouseOver();
 
     setBoard(stage);
 
@@ -703,7 +704,7 @@ window.onload = function() {
 
     WindowButton.on("click", function(e){
         divSelectMenuContainer.style.visibility = "visible";
-        cardSelectMenu(game.deck);
+        openCardViewWindow(game.deck);
     }, null, false);
 
     createjs.Ticker.addEventListener("tick", handleTick);
@@ -725,22 +726,74 @@ window.onload = function() {
     }, null, false);
 
     scrollArea.style.width = String(windowSize.w)+"px";
-    scrollArea.style.height = String(windowSize.h+50)+"px";
+    scrollArea.style.height = String(windowSize.h+80)+"px";
     scrollArea.style.top = String((windowCanv.height-windowSize.h)/2)+"px";
     scrollArea.style.left = String((windowCanv.width-windowSize.w)/2)+"px";
 
-    const cardSelectMenu = (cards :Card[]) => {
+    const openCardViewWindow = (cards :Card[]) => {
+
         disprayCanv.style.width = String((10+cardImgSize.x)*cards.length+10)+"px";
         disprayCanv.width = (10+cardImgSize.x)*cards.length+10;
-        disprayCanv.style.height = String(20+cardImgSize.y)+"px";
-        disprayCanv.height = 20+cardImgSize.y;
+        disprayCanv.style.height = String(50+cardImgSize.y)+"px";
+        disprayCanv.height = 50+cardImgSize.y;
+
+        const createMessageLabelBox = (message :string) => {
+            const labelBox = new createjs.Container();
+            const labelBG = new createjs.Shape();
+            labelBG.graphics
+                .beginFill("white")
+                .drawRect(0, 0, windowSize.w, 40);
+            labelBox.addChild(labelBG);
+            const label = new createjs.Text(message, "18px sans-serif");
+            label.x = windowSize.w / 2;
+            label.y =20;
+            label.textAlign = "center";
+            label.textBaseline = "middle";
+            labelBox.addChild(label);
+            labelBox.x = (windowCanv.width-windowSize.w)/2 -8;
+            labelBox.y = (windowCanv.height-windowSize.h)/2 -50;
+            return labelBox;
+        }
+
+        const createLocLabelBox = (card :Card) => {
+            const labelBox = new createjs.Container();
+            const labelBG = new createjs.Shape();
+            labelBG.graphics
+                .setStrokeStyle(1)
+                .beginStroke("black")
+                .beginFill("white")
+                .drawRoundRect(0.5, 0.5, cardImgSize.x-1, 25-1, 0);
+            labelBox.addChild(labelBG);
+            const label = new createjs.Text(card.location, "18px sans-serif");
+            label.x = cardImgSize.x / 2;
+            label.y =12.5;
+            label.textAlign = "center";
+            label.textBaseline = "middle";
+            labelBox.addChild(label);
+            return labelBox
+        };
+
+        const messageBox = createMessageLabelBox("CARDS IN DECK");
+        windowStage.addChild(messageBox)
+
+            
         cards.map((card, index, array) => {
+            const cardImgContainer = new createjs.Container();
+            disprayStage.addChild(cardImgContainer);
+
+            const newlabelBox = createLocLabelBox(card) 
             const cardImg = new createjs.Bitmap(card.imageFileName);
-            disprayStage.addChild(cardImg);
-            cardImg.x = 10+((10+cardImgSize.x)*index);
-            cardImg.y = 10;
-            cardImg.alpha = 0
-            createjs.Tween.get(cardImg)
+            cardImg.cursor = "pointer";
+
+            cardImg.y = 0;
+            newlabelBox.y = cardImgSize.y+10;
+            cardImgContainer.addChild(cardImg);
+            cardImgContainer.addChild(newlabelBox);
+
+            cardImgContainer.x = 10+((10+cardImgSize.x)*index);
+            cardImgContainer.y = 10;
+            cardImgContainer.alpha = 0
+            createjs.Tween.get(cardImgContainer)
                 .wait(50*(index+1))
                 .to({alpha:1},100);
         });
