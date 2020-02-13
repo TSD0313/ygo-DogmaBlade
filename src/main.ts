@@ -31,6 +31,7 @@ class Game{
     normalSummon : boolean;
     grid : Grid;
     displayOrder : any;
+    selectedCards : Card[];
     constructor(){
         this.field = [undefined];
         this.monsterZone = [undefined,undefined,undefined,undefined,undefined];
@@ -374,17 +375,26 @@ window.onload = function() {
         if(game.deck.length <= 1) {
             return false;
         }
-        game.deck = shuffle(game.deck)
+        game.deck = shuffle(game.deck);
+        const PromiseArray :Promise<unknown>[] = [];
         game.deck.map((card, index, array) => {
-            const orgX = card.imgContainer.x
-            createjs.Tween.get(card.imgContainer)
-                .wait(index*(100/array.length))
-                .to({x:orgX+100-(200*(index%2))},100)
-                .to({x:orgX-100+(200*(index%2))},200)
-                .to({x:game.displayOrder.deck[0][0]+index*2,y:game.displayOrder.deck[0][1]-index*2},100)
-                .call(()=>{stage.setChildIndex(card.imgContainer,stage.numChildren - array.length + index)})
+            const twPromise = () => {
+                return new Promise((resolve, reject) => {
+                const orgX = card.imgContainer.x;
+                createjs.Tween.get(card.imgContainer)
+                    .wait(index*(100/array.length))
+                    .to({x:orgX+100-(200*(index%2))},100)
+                    .to({x:orgX-100+(200*(index%2))},200)
+                    .to({x:game.displayOrder.deck[0][0]+index*2,y:game.displayOrder.deck[0][1]-index*2},100)
+                    .call(()=>{stage.setChildIndex(card.imgContainer,stage.numChildren - array.length + index)})
+                    .call(()=>{resolve()});                
+                });
+            };
+            PromiseArray.push(twPromise());
         });
-    }
+        return Promise.all(PromiseArray); 
+    };
+    
 
     /**
      * 配列をランダム化
@@ -416,29 +426,6 @@ window.onload = function() {
                     .call(()=>{resolve()});
             });
         };
-
-        // const promise = () => {
-        //     if(card.face=="UP"){
-        //         card.face = "DOWN";
-        //         return new Promise(async(resolve, reject) => {
-        //             await close(front);
-        //             open(back);
-        //             resolve();
-        //         });
-        //     };
-        //     if(card.face=="DOWN"){
-        //         card.face = "UP";
-        //         return new Promise(async(resolve, reject) => {
-        //             await close(back)
-        //             open(front);
-        //             resolve();
-        //         });
-        //     };
-        // };
-        // return new Promise(async(resolve, reject) => {
-        //     await promise();
-        //     resolve();
-        // });
 
         const PromiseArray = () => {
             if(card.face=="UP"){
@@ -473,13 +460,6 @@ window.onload = function() {
         game.hand.map((card, index, array) => {
             const twPromise = () => {
                 if(card.face=="DOWN"){
-
-                    // const tp = new Promise((resolve, reject) => {
-                    //     createjs.Tween.get(card.imgContainer)
-                    //         .to({x:leftEndPosition+((cardImgSize.x+cardImgSize.margin)*index),y:game.displayOrder.hand[1]},500,createjs.Ease.cubicInOut)
-                    //         .call(()=>{resolve()});
-                    // });
-                    // return Promise.all([cardFlip(card),tp]);
 
                     return new Promise((resolve, reject) => {
                         createjs.Tween.get(card.imgContainer) 
@@ -524,6 +504,26 @@ window.onload = function() {
                 console.log("draw");
                 HandButtonSetting(targetCard);
             };
+            resolve();
+        });
+    } ;
+
+        /**
+     * デッキからサーチする
+     * @param count
+     */
+    const search = () => {
+        return new Promise<void>(async(resolve, reject) => {
+            game.selectedCards.map((card, index, array) => {
+                game.deck = game.deck.filter(i => i !== card);
+                game.hand.push(card);
+                card.location = "HAND";
+
+                console.log("search"+card.cardName);
+                HandButtonSetting(card);
+            });
+            await animationHandAdjust();
+            await deckShuffle();
             resolve();
         });
     } 
@@ -636,6 +636,17 @@ window.onload = function() {
         };
     };
 
+    const awaitForClick = (target:Container) => {
+        return new Promise((resolve, reject) => {
+            target.addEventListener('click', (e) => resolve());
+        });
+    };
+
+
+
+
+
+    
     const game = new Game;
 
     const mainCanv =<HTMLCanvasElement>document.getElementById("canv") ;
@@ -644,11 +655,10 @@ window.onload = function() {
 
     const divSelectMenuContainer =<HTMLElement>document.getElementById("selectMenuContainer") ;
 
-    const windowCanv =<HTMLCanvasElement>document.getElementById("windowAndClosebutton") ;
-    const windowStage = new createjs.Stage(windowCanv);
-    windowStage.enableMouseOver();
-
-    const scrollArea =<HTMLElement>document.getElementById("scrollArea") ;
+    const windowBackCanv =<HTMLCanvasElement>document.getElementById("selectMenuBack") ;
+    const windowBackStage = new createjs.Stage(windowBackCanv);
+    windowBackStage.enableMouseOver();
+    const scrollAreaContainer =<HTMLElement>document.getElementById("scrollAreaContainer") ;
 
     const disprayCanv =<HTMLCanvasElement>document.getElementById("displayCanv") ;
     const disprayStage = new createjs.Stage(disprayCanv);
@@ -666,7 +676,7 @@ window.onload = function() {
         "spellSpeed":1,
         "range":["field"],
         "target":undefined}
-    }
+    };
     potOfGreed.imageFileName = "PotOfGreed.png"
     potOfGreed.effect = () => {
         return new Promise<void>(async(resolve, reject) => {
@@ -675,7 +685,25 @@ window.onload = function() {
         });
     };
     
-    const myDeck : Card[]= [ALPHA,BETA,GAMMA,potOfGreed,ALPHA,BETA,GAMMA,potOfGreed,ALPHA,BETA,GAMMA,potOfGreed];
+    const Reinforcement = new SpellCard
+    Reinforcement.effectArray = {
+    1:{"EffctType":"Ignnition",
+        "spellSpeed":1,
+        "range":["field"],
+        "target":undefined}
+    };
+    Reinforcement.imageFileName = "Reinforcement.jpg"
+    Reinforcement.effect = () => {
+        return new Promise<void>(async(resolve, reject) => {
+            const cardlist = game.deck.filter(i => i.cardType !== "Monster");
+            openCardSelectWindow(cardlist);
+            await selectOkButtonClick(null);
+            await search();
+            resolve();
+        });
+    };
+
+    const myDeck : Card[]= [ALPHA,BETA,GAMMA,potOfGreed,Reinforcement];
     deckset(stage, myDeck);
     console.log(game.deck); 
 
@@ -704,56 +732,51 @@ window.onload = function() {
 
     WindowButton.on("click", function(e){
         divSelectMenuContainer.style.visibility = "visible";
-        openCardViewWindow(game.deck);
+        openCardSelectWindow(game.deck);
     }, null, false);
 
     createjs.Ticker.addEventListener("tick", handleTick);
     function handleTick() {
         stage.update();
-        windowStage.update();
+        windowBackStage.update();
         disprayStage.update();
     };
 
     const selectMenuBack = new createjs.Shape();
     selectMenuBack.graphics.beginFill("Gray"); 
-    selectMenuBack.graphics.drawRect(0, 0, windowCanv.width, windowCanv.height);
+    selectMenuBack.graphics.drawRect(0, 0, windowBackCanv.width, windowBackCanv.height);
     selectMenuBack.alpha = 0.5;
-    windowStage.addChild(selectMenuBack);
+    windowBackStage.addChild(selectMenuBack);
 
     selectMenuBack.on("click", function(e){
         divSelectMenuContainer.style.visibility = "hidden";
         disprayStage.removeAllChildren();
     }, null, false);
 
-    scrollArea.style.width = String(windowSize.w)+"px";
-    scrollArea.style.height = String(windowSize.h+80)+"px";
-    scrollArea.style.top = String((windowCanv.height-windowSize.h)/2)+"px";
-    scrollArea.style.left = String((windowCanv.width-windowSize.w)/2)+"px";
+    const OkButton = createButton("OK", 150, 40, "#0275d8");
+    OkButton.x = windowBackCanv.width/2 - 75;
+    OkButton.y = 650;
+    windowBackStage.addChild(OkButton);
 
-    const openCardViewWindow = (cards :Card[]) => {
+    OkButton.addEventListener("click",selectOkButtonClick);
+    function selectOkButtonClick(event) {
+        divSelectMenuContainer.style.visibility = "hidden";
+        disprayStage.removeAllChildren();
+        return new Promise((resolve, reject) => {
+            resolve()
+        });
+    };
+
+    scrollAreaContainer.style.width = String(windowSize.w)+"px";
+    scrollAreaContainer.style.height = String(windowSize.h)+"px";
+
+    const openCardSelectWindow = (cards :Card[]) => {
+        game.selectedCards = [];
 
         disprayCanv.style.width = String((10+cardImgSize.x)*cards.length+10)+"px";
         disprayCanv.width = (10+cardImgSize.x)*cards.length+10;
-        disprayCanv.style.height = String(50+cardImgSize.y)+"px";
-        disprayCanv.height = 50+cardImgSize.y;
-
-        const createMessageLabelBox = (message :string) => {
-            const labelBox = new createjs.Container();
-            const labelBG = new createjs.Shape();
-            labelBG.graphics
-                .beginFill("white")
-                .drawRect(0, 0, windowSize.w, 40);
-            labelBox.addChild(labelBG);
-            const label = new createjs.Text(message, "18px sans-serif");
-            label.x = windowSize.w / 2;
-            label.y =20;
-            label.textAlign = "center";
-            label.textBaseline = "middle";
-            labelBox.addChild(label);
-            labelBox.x = (windowCanv.width-windowSize.w)/2 -8;
-            labelBox.y = (windowCanv.height-windowSize.h)/2 -50;
-            return labelBox;
-        }
+        disprayCanv.style.height = String(100+cardImgSize.y)+"px";
+        disprayCanv.height = 100+cardImgSize.y;
 
         const createLocLabelBox = (card :Card) => {
             const labelBox = new createjs.Container();
@@ -772,30 +795,71 @@ window.onload = function() {
             labelBox.addChild(label);
             return labelBox
         };
-
-        const messageBox = createMessageLabelBox("CARDS IN DECK");
-        windowStage.addChild(messageBox)
-
             
+        const PromiseArray :Promise<unknown>[] = [];
+
         cards.map((card, index, array) => {
+            const ImgLabelContainer = new createjs.Container();
+            disprayStage.addChild(ImgLabelContainer);
+
             const cardImgContainer = new createjs.Container();
-            disprayStage.addChild(cardImgContainer);
-
-            const newlabelBox = createLocLabelBox(card) 
             const cardImg = new createjs.Bitmap(card.imageFileName);
-            cardImg.cursor = "pointer";
-
-            cardImg.y = 0;
-            newlabelBox.y = cardImgSize.y+10;
             cardImgContainer.addChild(cardImg);
-            cardImgContainer.addChild(newlabelBox);
+            cardImgContainer.cursor = "pointer";
+            cardImgContainer.y = 0;
 
-            cardImgContainer.x = 10+((10+cardImgSize.x)*index);
-            cardImgContainer.y = 10;
-            cardImgContainer.alpha = 0
-            createjs.Tween.get(cardImgContainer)
-                .wait(50*(index+1))
-                .to({alpha:1},100);
+            const selected = new createjs.Bitmap("selected.png");
+            selected.setTransform (cardImgSize.x/4,cardImgSize.y/4,0.5,0.5); 
+            selected.visible = false;
+            cardImgContainer.addChild(selected);            
+
+            const selectedMouseOver = new createjs.Bitmap("selectedMouseOver.png");
+            selectedMouseOver.setTransform (cardImgSize.x/4,cardImgSize.y/4,0.5,0.5);      
+            selectedMouseOver.alpha = 0.5;
+            selectedMouseOver.visible = false;
+            cardImgContainer.addChild(selectedMouseOver);
+
+            cardImgContainer.addEventListener("mouseover", handleSelectMover);
+            function handleSelectMover(event) {
+                selectedMouseOver.visible = true;
+            };
+            cardImgContainer.addEventListener("mouseout", handleSelectMout);
+            function handleSelectMout(event) {
+                selectedMouseOver.visible = false;
+            };
+            cardImgContainer.addEventListener("click", handleSelectClick);
+            function handleSelectClick(event) {
+                if(selected.visible==false){
+                    selected.visible = true;
+                    game.selectedCards.push(card);
+                }else{
+                    selected.visible = false; 
+                    game.selectedCards.splice(game.selectedCards.indexOf(card), 1);
+                };
+                selectedMouseOver.visible = false;
+            };
+
+            const newlabelBox = createLocLabelBox(card);
+            newlabelBox.y = cardImgSize.y+10;
+
+            ImgLabelContainer.addChild(cardImgContainer);
+            ImgLabelContainer.addChild(newlabelBox);
+
+            ImgLabelContainer.x = 10+((10+cardImgSize.x)*index);
+            ImgLabelContainer.y = 10;
+            ImgLabelContainer.alpha = 0
+
+            const twPromise = () => {
+                return new Promise((resolve, reject) => {
+                    createjs.Tween.get(ImgLabelContainer)
+                        .wait(50*(index+1))
+                        .to({alpha:1},100)
+                        .call(()=>{resolve()});
+                        
+                });
+            };
+            PromiseArray.push(twPromise());
         });
+        return Promise.all(PromiseArray);
     };
 }
