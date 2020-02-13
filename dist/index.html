@@ -11,29 +11,34 @@
   <body>
 
     <canvas id="canv" 
-    style="background-color:white;
+    style="background-color:rgb(221, 250, 226);
             position: absolute;"
     width="1400px" height="800px">
     </canvas>
 
     <div id="selectMenuContainer">
       
-      <canvas id="windowAndClosebutton" 
+      <canvas id="selectMenuBack" 
         style="position: absolute; 
                 z-index: 0;"
         width="1400px" height="800px" >
       </canvas>
 
-      <div id="scrollArea">
+      <div id="scrollAreaContainer">
+        <div id="content">
 
-        <canvas id="displayCanv"
-          style="
-          position: absolute;
-          height: 100%;">
-        </canvas>
+          <div class="box1">
+            <p>ここに文章</p>
+          </div>
 
+          <div id="scrollArea">
+            <canvas id="displayCanv"
+              style="height: 100%;">
+            </canvas>
+          </div>
+          
+        </div>
       </div>
-
     </div>
   </body>
 </html>
