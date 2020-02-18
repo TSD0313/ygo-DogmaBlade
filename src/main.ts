@@ -32,6 +32,7 @@ class Game{
     grid : Grid;
     displayOrder : any;
     selectedCards : Card[];
+    chainArray : effect[];
     constructor(){
         this.field = [undefined];
         this.monsterZone = [undefined,undefined,undefined,undefined,undefined];
@@ -43,6 +44,7 @@ class Game{
         this.myLifePoint = DEFAULT_LIFE;
         this.enemyLifePoint= DEFAULT_LIFE;
         this.normalSummon = true;
+        this.chainArray = [];
 
 
         const front_position: number[][] = (() => {
@@ -85,6 +87,7 @@ class Card {
     imgContainer : Container;
     cardType : "Monster"|"Spell"|"Trap";
     face : "UP"|"DOWN" ;
+    effect : effect
     constructor(){
         this.cardBackImageFileName = "cardback.jpeg";
         this.location = "DECK"
@@ -114,11 +117,25 @@ class SpellCard extends Card {
     spellType : "Normal"|"Quick"|"Equip"|"Field"|"Continuous";
     actionPossible : {key: boolean[]};
     effectArray : {[n: number]:{[s: string]: string|number|string[]}}; 
-    effect : () => Promise<void>;
+    // effect : effect
     constructor(){
         super();
         this.cardType = "Spell"
-        
+    }
+}
+
+class effect {
+    card : Card;
+    effType : string;
+    speed : number;
+    range : string[];
+    actionPossible : boolean;
+    target : Card[];
+    whenActive : () => Promise<any>;
+    whenResolve : () => Promise<any>;
+    constructor(card){
+        this.card = card
+        this.target = [];
     }
 }
 
@@ -263,7 +280,8 @@ window.onload = function() {
         handToBoard(card);
         await animationHandToBoard(card,"ATK");
         await animationChainEffectActivate(card);
-        await card.effect();
+        await card.effect.whenActive();
+        await card.effect.whenResolve();
         await BoardToGY(card);
         await animationBoardToGY(card);
         return
@@ -512,15 +530,16 @@ window.onload = function() {
      * デッキからサーチする
      * @param count
      */
-    const search = () => {
+    const search = (target: Card[]) => {
         return new Promise<void>(async(resolve, reject) => {
-            game.selectedCards.map((card, index, array) => {
-                game.deck = game.deck.filter(i => i !== card);
-                game.hand.push(card);
-                card.location = "HAND";
-
-                console.log("search"+card.cardName);
-                HandButtonSetting(card);
+            target.map((card, index, array) => {
+                if(game.deck.includes(card)){
+                    game.deck = game.deck.filter(i => i !== card);
+                    game.hand.push(card);
+                    card.location = "HAND";
+                    console.log("search"+card.cardName);
+                    HandButtonSetting(card);                    
+                };
             });
             await animationHandAdjust();
             await deckShuffle();
@@ -635,17 +654,6 @@ window.onload = function() {
             card.imgContainer.removeAllEventListeners();
         };
     };
-
-    const awaitForClick = (target:Container) => {
-        return new Promise((resolve, reject) => {
-            target.addEventListener('click', (e) => resolve());
-        });
-    };
-
-
-
-
-
     
     const game = new Game;
 
@@ -678,32 +686,50 @@ window.onload = function() {
         "target":undefined}
     };
     potOfGreed.imageFileName = "PotOfGreed.png"
-    potOfGreed.effect = () => {
+    potOfGreed.effect = new effect(potOfGreed);
+    potOfGreed.effect.whenActive = () => {
+        return new Promise<void>((resolve, reject) => {
+            resolve();
+        });
+    };
+    potOfGreed.effect.whenResolve = () => {
         return new Promise<void>(async(resolve, reject) => {
             await draw(2);
             resolve();
         });
     };
     
-    const Reinforcement = new SpellCard
-    Reinforcement.effectArray = {
+    const reinforcement = new SpellCard
+    reinforcement.effectArray = {
     1:{"EffctType":"Ignnition",
         "spellSpeed":1,
         "range":["field"],
         "target":undefined}
     };
-    Reinforcement.imageFileName = "Reinforcement.jpg"
-    Reinforcement.effect = () => {
+    
+    reinforcement.imageFileName = "Reinforcement.jpg";
+    reinforcement.effect = new effect(reinforcement);
+
+    reinforcement.effect.whenActive = () => {
+        return new Promise((resolve, reject) => {
+            const cardlist = game.deck.filter(i => i.cardType == "Monster");
+            openCardSelectWindow(cardlist,reinforcement,1);
+            OkButton.addEventListener("click",clickOkButton);
+            function clickOkButton(e) {
+                divSelectMenuContainer.style.visibility = "hidden";
+                disprayStage.removeAllChildren();
+                resolve();
+            }
+        });
+    };
+    reinforcement.effect.whenResolve = () => {
         return new Promise<void>(async(resolve, reject) => {
-            const cardlist = game.deck.filter(i => i.cardType !== "Monster");
-            openCardSelectWindow(cardlist);
-            await selectOkButtonClick(null);
-            await search();
+            await search(reinforcement.effect.target);
             resolve();
         });
     };
 
-    const myDeck : Card[]= [ALPHA,BETA,GAMMA,potOfGreed,Reinforcement];
+    const myDeck : Card[]= [ALPHA,BETA,GAMMA,potOfGreed,reinforcement];
     deckset(stage, myDeck);
     console.log(game.deck); 
 
@@ -725,15 +751,15 @@ window.onload = function() {
         deckShuffle();
     }, null, false);
 
-    const WindowButton = createButton("listWindow", 150, 40, "#0275d8");
-    WindowButton.x = 1200;
-    WindowButton.y = 550;
-    stage.addChild(WindowButton);
+    // const WindowButton = createButton("listWindow", 150, 40, "#0275d8");
+    // WindowButton.x = 1200;
+    // WindowButton.y = 550;
+    // stage.addChild(WindowButton);
 
-    WindowButton.on("click", function(e){
-        divSelectMenuContainer.style.visibility = "visible";
-        openCardSelectWindow(game.deck);
-    }, null, false);
+    // WindowButton.on("click", function(e){
+    //     divSelectMenuContainer.style.visibility = "visible";
+    //     openCardSelectWindow(game.deck);
+    // }, null, false);
 
     createjs.Ticker.addEventListener("tick", handleTick);
     function handleTick() {
@@ -758,23 +784,16 @@ window.onload = function() {
     OkButton.y = 650;
     windowBackStage.addChild(OkButton);
 
-    OkButton.addEventListener("click",selectOkButtonClick);
-    function selectOkButtonClick(event) {
-        divSelectMenuContainer.style.visibility = "hidden";
-        disprayStage.removeAllChildren();
-        return new Promise((resolve, reject) => {
-            resolve()
-        });
-    };
-
     scrollAreaContainer.style.width = String(windowSize.w)+"px";
     scrollAreaContainer.style.height = String(windowSize.h)+"px";
 
-    const openCardSelectWindow = (cards :Card[]) => {
-        game.selectedCards = [];
+    const openCardSelectWindow = (disprayCards :Card[], activeCard :Card, count :Number) => {
+        divSelectMenuContainer.style.visibility = "visible";
+        activeCard.effect.target = [];
+        OkButton.mouseEnabled = false ;
 
-        disprayCanv.style.width = String((10+cardImgSize.x)*cards.length+10)+"px";
-        disprayCanv.width = (10+cardImgSize.x)*cards.length+10;
+        disprayCanv.style.width = String((10+cardImgSize.x)*disprayCards.length+10)+"px";
+        disprayCanv.width = (10+cardImgSize.x)*disprayCards.length+10;
         disprayCanv.style.height = String(100+cardImgSize.y)+"px";
         disprayCanv.height = 100+cardImgSize.y;
 
@@ -798,7 +817,7 @@ window.onload = function() {
             
         const PromiseArray :Promise<unknown>[] = [];
 
-        cards.map((card, index, array) => {
+        disprayCards.map((card, index, array) => {
             const ImgLabelContainer = new createjs.Container();
             disprayStage.addChild(ImgLabelContainer);
 
@@ -821,7 +840,9 @@ window.onload = function() {
 
             cardImgContainer.addEventListener("mouseover", handleSelectMover);
             function handleSelectMover(event) {
-                selectedMouseOver.visible = true;
+                if(activeCard.effect.target.length<count){
+                    selectedMouseOver.visible = true;
+                };
             };
             cardImgContainer.addEventListener("mouseout", handleSelectMout);
             function handleSelectMout(event) {
@@ -829,13 +850,14 @@ window.onload = function() {
             };
             cardImgContainer.addEventListener("click", handleSelectClick);
             function handleSelectClick(event) {
-                if(selected.visible==false){
+                if(selected.visible==false && activeCard.effect.target.length<count){
                     selected.visible = true;
-                    game.selectedCards.push(card);
+                    activeCard.effect.target.push(card);
                 }else{
                     selected.visible = false; 
-                    game.selectedCards.splice(game.selectedCards.indexOf(card), 1);
+                    activeCard.effect.target = activeCard.effect.target.filter(i => i !== card);
                 };
+                OkButton.mouseEnabled = activeCard.effect.target.length===count;
                 selectedMouseOver.visible = false;
             };
 
@@ -860,6 +882,7 @@ window.onload = function() {
             };
             PromiseArray.push(twPromise());
         });
+        
         return Promise.all(PromiseArray);
     };
 }
