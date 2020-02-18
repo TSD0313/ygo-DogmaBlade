@@ -301,7 +301,6 @@ window.onload = function() {
         };
         await animationHandToBoard(card,position);
         console.log("NS");
-        animationChainEffectActivate(card);
     }
     
     /**
@@ -678,7 +677,8 @@ window.onload = function() {
     const BETA = generateMonsterCard(Beta);
     const GAMMA = generateMonsterCard(Gamma);
     
-    const potOfGreed = new SpellCard
+    const potOfGreed = new SpellCard;
+    potOfGreed.cardName = "potOfGreed";
     potOfGreed.effectArray = {
     1:{"EffctType":"Ignnition",
         "spellSpeed":1,
@@ -700,6 +700,7 @@ window.onload = function() {
     };
     
     const reinforcement = new SpellCard
+    reinforcement .cardName = "reinforcement";
     reinforcement.effectArray = {
     1:{"EffctType":"Ignnition",
         "spellSpeed":1,
@@ -713,6 +714,7 @@ window.onload = function() {
     reinforcement.effect.whenActive = () => {
         return new Promise((resolve, reject) => {
             const cardlist = game.deck.filter(i => i.cardType == "Monster");
+            console.log(cardlist)
             openCardSelectWindow(cardlist,reinforcement,1);
             OkButton.addEventListener("click",clickOkButton);
             function clickOkButton(e) {
@@ -827,16 +829,16 @@ window.onload = function() {
             cardImgContainer.cursor = "pointer";
             cardImgContainer.y = 0;
 
+            const selectedMouseOver = new createjs.Bitmap("selectedMouseOver.png");
+            selectedMouseOver.setTransform (cardImgSize.x/4,cardImgSize.y/4,0.5,0.5);      
+            selectedMouseOver.alpha = 0.7;
+            selectedMouseOver.visible = false;
+            cardImgContainer.addChild(selectedMouseOver);
+
             const selected = new createjs.Bitmap("selected.png");
             selected.setTransform (cardImgSize.x/4,cardImgSize.y/4,0.5,0.5); 
             selected.visible = false;
             cardImgContainer.addChild(selected);            
-
-            const selectedMouseOver = new createjs.Bitmap("selectedMouseOver.png");
-            selectedMouseOver.setTransform (cardImgSize.x/4,cardImgSize.y/4,0.5,0.5);      
-            selectedMouseOver.alpha = 0.5;
-            selectedMouseOver.visible = false;
-            cardImgContainer.addChild(selectedMouseOver);
 
             cardImgContainer.addEventListener("mouseover", handleSelectMover);
             function handleSelectMover(event) {
@@ -858,7 +860,7 @@ window.onload = function() {
                     activeCard.effect.target = activeCard.effect.target.filter(i => i !== card);
                 };
                 OkButton.mouseEnabled = activeCard.effect.target.length===count;
-                selectedMouseOver.visible = false;
+                // selectedMouseOver.visible = false;
             };
 
             const newlabelBox = createLocLabelBox(card);
