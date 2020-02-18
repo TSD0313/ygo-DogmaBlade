@@ -18,14 +18,14 @@
     transform: translate(-50%,-50%);
 }
 
-.box1 {
+#selectMessageBox {
     padding: 0.5em 1em;
     margin: 0 0;
     color: #2c2c2f;
     background: #cde4ff;
 }
 
-.box1 p {
+#selectMessageText {
     text-align:center;
     margin: 0; 
     padding: 0;
