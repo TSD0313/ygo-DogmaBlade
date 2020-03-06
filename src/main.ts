@@ -6,8 +6,8 @@ import Beta from './Beta.json';
 import Gamma from './Gamma.json';
 const DEFAULT_LIFE = 8000;
 const cardImgSize = {x:123,y:180,margin:10} 
-// {x:122,y:178,margin:10} 
 const windowSize = {w:cardImgSize.x*7, h:cardImgSize.y+20}
+let selectedCardImgArray = [];
 
 class Grid {
     front: number[][];
@@ -277,6 +277,7 @@ window.onload = function() {
      * 手札の魔法発動
      */
     const handSpellActivate = async(card: SpellCard) => {
+        mainCanv.style.pointerEvents = "none"
         handToBoard(card);
         await animationHandToBoard(card,"ATK");
         await animationChainEffectActivate(card);
@@ -284,6 +285,7 @@ window.onload = function() {
         await card.effect.whenResolve();
         await BoardToGY(card);
         await animationBoardToGY(card);
+        mainCanv.style.pointerEvents = "auto"
         return
     }
 
@@ -301,6 +303,7 @@ window.onload = function() {
         };
         await animationHandToBoard(card,position);
         console.log("NS");
+        animationChainEffectActivate(card);
     }
     
     /**
@@ -402,7 +405,7 @@ window.onload = function() {
                     .wait(index*(100/array.length))
                     .to({x:orgX+100-(200*(index%2))},100)
                     .to({x:orgX-100+(200*(index%2))},200)
-                    .to({x:game.displayOrder.deck[0][0]+index*2,y:game.displayOrder.deck[0][1]-index*2},100)
+                    .to({x:game.displayOrder.deck[0][0]+index*1,y:game.displayOrder.deck[0][1]-index*2},100)
                     .call(()=>{stage.setChildIndex(card.imgContainer,stage.numChildren - array.length + index)})
                     .call(()=>{resolve()});                
                 });
@@ -519,7 +522,7 @@ window.onload = function() {
 
                 await animationHandAdjust();
                 console.log("draw");
-                HandButtonSetting(targetCard);
+                CardInHandButtonSetting(targetCard);
             };
             resolve();
         });
@@ -537,7 +540,7 @@ window.onload = function() {
                     game.hand.push(card);
                     card.location = "HAND";
                     console.log("search"+card.cardName);
-                    HandButtonSetting(card);                    
+                    CardInHandButtonSetting(card);                    
                 };
             });
             await animationHandAdjust();
@@ -545,11 +548,91 @@ window.onload = function() {
             resolve();
         });
     } 
+
+    /**
+     * 場カードボタン設定
+     */
+    function CardInFieldButtonSetting(card:Card){
+        const ChangePositionButton = createButton("POSITION", cardImgSize.x, 40, "#0275d8");
+        const FlipButton = createButton("FLIP", cardImgSize.x, 40, "#0275d8");
+        const ActivateButton = createButton("ACTIVEATE", cardImgSize.x, 40, "#0275d8");
+        const fieldButton = {
+            "Monster":[ChangePositionButton,FlipButton,ActivateButton],
+            "Spell":[ActivateButton],
+            "Trap":[ActivateButton]
+        };
+
+        if(card instanceof MonsterCard){
+            fieldButton.Monster.map((button, index, array) => {
+                card.imgContainer.addChild(button);
+                button.visible = false;
+            })
+        }else{
+            if(card instanceof SpellCard){
+                fieldButton.Spell.map((button, index, array) => {
+                    card.imgContainer.addChild(button);
+                    button.visible = false;
+                });
+            };
+        };
+
+        //Field MouseOver
+        card.imgContainer.addEventListener("mouseover", handleFieldMover);
+         /**
+         * 条件を満たすボタンを表示
+         */
+        function handleFieldMover(event) {
+            const disprayButton = (() => {
+                const disprayButtonArray = [];
+                if(card instanceof MonsterCard){
+                    if(card.monsterType=="Effect"){
+                        disprayButtonArray.push(ActivateButton);
+                    };
+                    if(card.face=="DOWN"){
+                        disprayButtonArray.push(FlipButton);
+                    }else{
+                        disprayButtonArray.push(ChangePositionButton);
+                    };
+                    return disprayButtonArray;
+                };
+                if (card instanceof SpellCard){
+                    return [ActivateButton];
+                };
+            });
+
+            disprayButton().map((button, index, array) => {
+                button.x = -cardImgSize.x/2;
+                button.y = cardImgSize.x/2-40*(array.length) + 40*(index+1);
+                button.visible = true 
+            });
+        };
+
+        //Field MouseOut
+        card.imgContainer.addEventListener("mouseout", handleFieldMout);
+        /**
+         * 全てのボタンを非表示
+         */
+        function handleFieldMout(event) {
+            if(card instanceof MonsterCard){
+                fieldButton.Monster.map((button, index, array) => {
+                    button.visible = false;
+                })
+            }
+            if(card instanceof SpellCard){
+                fieldButton.Spell.map((button, index, array) => {
+                    button.visible = false;
+                });
+            };
+        };
+
+        //Fieldボタンクリック 
+        //mouseover,outイベント消去
+    };
     
     /**
-     * 手札ボタン設定
+     * 手札カードボタン設定
      */
-    function HandButtonSetting(card:Card){
+    function CardInHandButtonSetting(card:Card){
         // ボタン生成
         const NSButton = createButton("NS", cardImgSize.x, 40, "#0275d8");
         const ActivateButton = createButton("ACTIVEATE", cardImgSize.x, 40, "#0275d8");
@@ -568,9 +651,9 @@ window.onload = function() {
                 handButton.Spell.map((button, index, array) => {
                     card.imgContainer.addChild(button);
                     button.visible = false;
-                })
-            }
-        }
+                });
+            };
+        };
 
         //Hand MouseOver
         card.imgContainer.addEventListener("mouseover", handleHandMover);
@@ -591,7 +674,7 @@ window.onload = function() {
 
             disprayButton().map((button, index, array) => {
                 button.x = -cardImgSize.x/2;
-                button.y = 40*(array.length-2) + 40*(index) + 10;
+                button.y = cardImgSize.x/2-40*(array.length) + 40*(index+1);
                 button.visible = true 
             });
             
@@ -641,6 +724,7 @@ window.onload = function() {
                 card.imgContainer.removeChild(SETButton);
             };
             card.imgContainer.removeAllEventListeners();
+            CardInFieldButtonSetting(card);
         };
 
         ActivateButton.addEventListener("click",handleACTbuttonClick);
@@ -677,8 +761,7 @@ window.onload = function() {
     const BETA = generateMonsterCard(Beta);
     const GAMMA = generateMonsterCard(Gamma);
     
-    const potOfGreed = new SpellCard;
-    potOfGreed.cardName = "potOfGreed";
+    const potOfGreed = new SpellCard
     potOfGreed.effectArray = {
     1:{"EffctType":"Ignnition",
         "spellSpeed":1,
@@ -700,7 +783,6 @@ window.onload = function() {
     };
     
     const reinforcement = new SpellCard
-    reinforcement .cardName = "reinforcement";
     reinforcement.effectArray = {
     1:{"EffctType":"Ignnition",
         "spellSpeed":1,
@@ -714,7 +796,6 @@ window.onload = function() {
     reinforcement.effect.whenActive = () => {
         return new Promise((resolve, reject) => {
             const cardlist = game.deck.filter(i => i.cardType == "Monster");
-            console.log(cardlist)
             openCardSelectWindow(cardlist,reinforcement,1);
             OkButton.addEventListener("click",clickOkButton);
             function clickOkButton(e) {
@@ -753,16 +834,6 @@ window.onload = function() {
         deckShuffle();
     }, null, false);
 
-    // const WindowButton = createButton("listWindow", 150, 40, "#0275d8");
-    // WindowButton.x = 1200;
-    // WindowButton.y = 550;
-    // stage.addChild(WindowButton);
-
-    // WindowButton.on("click", function(e){
-    //     divSelectMenuContainer.style.visibility = "visible";
-    //     openCardSelectWindow(game.deck);
-    // }, null, false);
-
     createjs.Ticker.addEventListener("tick", handleTick);
     function handleTick() {
         stage.update();
@@ -792,6 +863,7 @@ window.onload = function() {
     const openCardSelectWindow = (disprayCards :Card[], activeCard :Card, count :Number) => {
         divSelectMenuContainer.style.visibility = "visible";
         activeCard.effect.target = [];
+        selectedCardImgArray = [];
         OkButton.mouseEnabled = false ;
 
         disprayCanv.style.width = String((10+cardImgSize.x)*disprayCards.length+10)+"px";
@@ -829,22 +901,24 @@ window.onload = function() {
             cardImgContainer.cursor = "pointer";
             cardImgContainer.y = 0;
 
-            const selectedMouseOver = new createjs.Bitmap("selectedMouseOver.png");
-            selectedMouseOver.setTransform (cardImgSize.x/4,cardImgSize.y/4,0.5,0.5);      
-            selectedMouseOver.alpha = 0.7;
-            selectedMouseOver.visible = false;
-            cardImgContainer.addChild(selectedMouseOver);
-
             const selected = new createjs.Bitmap("selected.png");
             selected.setTransform (cardImgSize.x/4,cardImgSize.y/4,0.5,0.5); 
             selected.visible = false;
             cardImgContainer.addChild(selected);            
 
+            const selectedMouseOver = new createjs.Bitmap("selectedMouseOver.png");
+            selectedMouseOver.setTransform (cardImgSize.x/4,cardImgSize.y/4,0.5,0.5);      
+            selectedMouseOver.alpha = 0.5;
+            selectedMouseOver.visible = false;
+            cardImgContainer.addChild(selectedMouseOver);
+
+            const selectedCardImg = {imgContainer: cardImgContainer,
+                                    selected: selected
+            };
+
             cardImgContainer.addEventListener("mouseover", handleSelectMover);
             function handleSelectMover(event) {
-                if(activeCard.effect.target.length<count){
-                    selectedMouseOver.visible = true;
-                };
+                selectedMouseOver.visible = true;
             };
             cardImgContainer.addEventListener("mouseout", handleSelectMout);
             function handleSelectMout(event) {
@@ -852,15 +926,22 @@ window.onload = function() {
             };
             cardImgContainer.addEventListener("click", handleSelectClick);
             function handleSelectClick(event) {
-                if(selected.visible==false && activeCard.effect.target.length<count){
+                if(selected.visible==false){
+                    if(activeCard.effect.target.length==count){
+                        selectedCardImgArray[0].selected.visible = false;
+                        activeCard.effect.target.shift();
+                        selectedCardImgArray.shift();
+                    }
                     selected.visible = true;
                     activeCard.effect.target.push(card);
+                    selectedCardImgArray.push(selectedCardImg);
                 }else{
                     selected.visible = false; 
                     activeCard.effect.target = activeCard.effect.target.filter(i => i !== card);
+                    selectedCardImgArray = selectedCardImgArray.filter(i => i !== selectedCardImg);
                 };
                 OkButton.mouseEnabled = activeCard.effect.target.length===count;
-                // selectedMouseOver.visible = false;
+                selectedMouseOver.visible = false;
             };
 
             const newlabelBox = createLocLabelBox(card);
