@@ -77,7 +77,35 @@ class Game{
     }
 }
 
-class Card {
+interface CardProps {
+    frontImg : Bitmap;  cardBackImg : Bitmap;
+    imageFileName : String;  cardBackImageFileName : String;
+    ID : Number;
+    cardName : String;
+    location : "MO"|"ST"|"FIELD"|"DECK"|"HAND"|"GY"|"DD";
+    fromLocation : String;
+    imgContainer : Container;
+    cardType : "Monster"|"Spell"|"Trap";
+    face : "UP"|"DOWN" ;
+    effect : effect
+
+    monsterType : "Normal"|"Effect";
+    level : Number;
+    race : String;
+    attribute : String;
+    atkPoint : Number;
+    defPoint : Number;
+    position : "ATK"|"DEF";
+    canNS : Boolean
+    NSed : Boolean;
+
+    spellType : "Normal"|"Quick"|"Equip"|"Field"|"Continuous";
+    actionPossible : {key: boolean[]};
+    effectArray : {[n: number]:{[s: string]: string|number|string[]|Card[]}}; 
+};
+
+
+class Card  {
     frontImg : Bitmap;  cardBackImg : Bitmap;
     imageFileName : String;  cardBackImageFileName : String;
     ID : Number;
@@ -116,8 +144,7 @@ class MonsterCard extends Card {
 class SpellCard extends Card {
     spellType : "Normal"|"Quick"|"Equip"|"Field"|"Continuous";
     actionPossible : {key: boolean[]};
-    effectArray : {[n: number]:{[s: string]: string|number|string[]}}; 
-    // effect : effect
+    effectArray : {[n: number]:{[s: string]: string|number|string[]|Card[]}}; 
     constructor(){
         super();
         this.cardType = "Spell"
@@ -214,6 +241,11 @@ window.onload = function() {
             drawzone(target[0],target[1],i);
         }
     }
+
+    type FromProps = { [k in keyof CardProps]?: any }
+    const genCardArray = (conditions: FromProps)=> {
+    }
+
     /**
      * カードオブジェクトを場から墓地に移動
      */
@@ -280,6 +312,23 @@ window.onload = function() {
         mainCanv.style.pointerEvents = "none"
         handToBoard(card);
         await animationHandToBoard(card,"ATK");
+        await animationChainEffectActivate(card);
+        await card.effect.whenActive();
+        await card.effect.whenResolve();
+        await BoardToGY(card);
+        await animationBoardToGY(card);
+        mainCanv.style.pointerEvents = "auto"
+        return
+    }
+
+    /**
+     * 場の魔法発動
+     */
+    const fieldSpellActivate =  async(card: SpellCard) => {
+        mainCanv.style.pointerEvents = "none"
+        if (card.face=="DOWN"){
+            await cardFlip(card)
+        };
         await animationChainEffectActivate(card);
         await card.effect.whenActive();
         await card.effect.whenResolve();
@@ -457,7 +506,11 @@ window.onload = function() {
                 return [close(back),open(front)]
             };
         };
-        return Promise.all(PromiseArray());
+        return new Promise<void>(async(resolve, reject) => {
+            await Promise.all(PromiseArray());
+            resolve();
+        });
+        // return Promise.all(PromiseArray());
     };
 
     /**
@@ -626,6 +679,15 @@ window.onload = function() {
         };
 
         //Fieldボタンクリック 
+        ActivateButton.addEventListener("click",handleActivatebuttonClick);
+        function handleActivatebuttonClick(event) {
+            if(card instanceof SpellCard){
+                fieldSpellActivate(card);
+                card.imgContainer.removeChild(ActivateButton);
+            };
+            card.imgContainer.removeAllEventListeners();
+        };
+
         //mouseover,outイベント消去
     };
     
@@ -769,6 +831,7 @@ window.onload = function() {
         "target":undefined}
     };
     potOfGreed.imageFileName = "PotOfGreed.png"
+    potOfGreed.cardName = "PotOfGreed"
     potOfGreed.effect = new effect(potOfGreed);
     potOfGreed.effect.whenActive = () => {
         return new Promise<void>((resolve, reject) => {
@@ -792,7 +855,7 @@ window.onload = function() {
     
     reinforcement.imageFileName = "Reinforcement.jpg";
     reinforcement.effect = new effect(reinforcement);
-
+    reinforcement.cardName = "Reinforcement"
     reinforcement.effect.whenActive = () => {
         return new Promise((resolve, reject) => {
             const cardlist = game.deck.filter(i => i.cardType == "Monster");
