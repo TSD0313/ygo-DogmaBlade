@@ -4,6 +4,7 @@ import { createButton }  from './createButton';
 import Alpha from './Alpha.json';
 import Beta from './Beta.json';
 import Gamma from './Gamma.json';
+import Airman from './Airman.json';
 const DEFAULT_LIFE = 8000;
 const cardImgSize = {x:123,y:180,margin:10} 
 const windowSize = {w:cardImgSize.x*7, h:cardImgSize.y+20}
@@ -33,6 +34,7 @@ class Game{
     displayOrder : any;
     selectedCards : Card[];
     chainArray : effect[];
+    time : Time;
     constructor(){
         this.field = [undefined];
         this.monsterZone = [undefined,undefined,undefined,undefined,undefined];
@@ -45,6 +47,7 @@ class Game{
         this.enemyLifePoint= DEFAULT_LIFE;
         this.normalSummon = true;
         this.chainArray = [];
+        this.time = new Time;
 
 
         const front_position: number[][] = (() => {
@@ -75,7 +78,16 @@ class Game{
                 hand:[this.grid.front[3][0],this.grid.front[3][1]*5]
                     };
     }
-}
+};
+
+class Time{
+    summon?:{type:"NS"|"SS";
+            card:MonsterCard;
+            position : "ATK"|"DEF";
+        };
+    spellSpeed:1|2|3
+};
+
 
 interface CardProps {
     frontImg : Bitmap;  cardBackImg : Bitmap;
@@ -148,29 +160,30 @@ class SpellCard extends Card {
     constructor(){
         super();
         this.cardType = "Spell"
-    }
-}
+    };
+};
 
 class effect {
     card : Card;
     effType : string;
-    speed : number;
+    spellSpeed : number;
     range : string[];
-    actionPossible : boolean;
+    effCondition : {};
     target : Card[];
+    actionPossible :(time:Time) => boolean;
     whenActive : () => Promise<any>;
     whenResolve : () => Promise<any>;
-    constructor(card){
+    constructor(card:Card){
         this.card = card
         this.target = [];
-    }
-}
+    };
+};
 
 
 /**
  * jsonからカードオブジェクト生成
  */
-const generateMonsterCard = (json:Object) => {
+const genMonsterCard = (json:Object) => {
     const newCard = new MonsterCard;
     Object.keys(json).map((key, index, array) => {
         newCard[key] = json[key]
@@ -242,9 +255,27 @@ window.onload = function() {
         }
     }
 
-    type FromProps = { [k in keyof CardProps]?: any }
-    const genCardArray = (conditions: FromProps)=> {
-    }
+
+    /**
+     * エフェクトチェック
+     */
+    const effectCheck = (time: Time) =>{
+        let CardArray = myDeck;
+        CardArray = CardArray.filter(card => "effect" in card && "actionPossible" in card.effect &&  card.effect.actionPossible(time));
+        return CardArray
+    };
+
+    /**
+     * カード検索
+     */
+    type CondetionProps = { [k in keyof CardProps]?: CardProps[k][] }
+    const genCardArray = (conditions: CondetionProps)=> {
+        let CardArray = myDeck
+        for (let key in conditions) {
+            CardArray = CardArray.filter(card => key in card && conditions[key].includes(card[key]));
+        };
+        return CardArray
+    };
 
     /**
      * カードオブジェクトを場から墓地に移動
@@ -319,7 +350,7 @@ window.onload = function() {
         await animationBoardToGY(card);
         mainCanv.style.pointerEvents = "auto"
         return
-    }
+    };
 
     /**
      * 場の魔法発動
@@ -336,7 +367,19 @@ window.onload = function() {
         await animationBoardToGY(card);
         mainCanv.style.pointerEvents = "auto"
         return
-    }
+    };
+
+    /**
+     * 効果発動
+     */
+    const EffctActivate = async(card: Card) => {
+        mainCanv.style.pointerEvents = "none"
+        await animationChainEffectActivate(card);
+        await card.effect.whenActive();
+        await card.effect.whenResolve();
+        mainCanv.style.pointerEvents = "auto"
+        return
+    };
 
     /**
      * 通常召喚する
@@ -352,8 +395,18 @@ window.onload = function() {
         };
         await animationHandToBoard(card,position);
         console.log("NS");
-        animationChainEffectActivate(card);
-    }
+        // animationChainEffectActivate(card);
+
+        game.time.summon = {type:"NS",
+                            card:card,
+                            position:card.position
+                        };
+        game.time.spellSpeed = 1 ;
+        console.log(effectCheck(game.time));
+        if (effectCheck(game.time).length > 0){
+            await EffctActivate(effectCheck(game.time)[0])
+        };
+    };
     
     /**
      * 通常召喚可能か判定する
@@ -819,10 +872,38 @@ window.onload = function() {
 
     setBoard(stage);
 
-    const ALPHA = generateMonsterCard(Alpha);
-    const BETA = generateMonsterCard(Beta);
-    const GAMMA = generateMonsterCard(Gamma);
+    const ALPHA = genMonsterCard(Alpha);
+    const BETA = genMonsterCard(Beta);
+    const GAMMA = genMonsterCard(Gamma);
+    const AIRMAN = genMonsterCard(Airman);
     
+    AIRMAN.effect = new effect(AIRMAN)
+    AIRMAN.effect.actionPossible = (time:Time) =>{
+        const boolarray = [time.summon.type=="NS",
+                        time.summon.card==AIRMAN,
+                        time.spellSpeed==1]
+        return boolarray.every(value => value)
+    };
+    AIRMAN.effect.whenActive = () => {
+        return new Promise((resolve, reject) => {
+            const cardlist = genCardArray({race:["ROCK"]});
+            openCardSelectWindow(cardlist,reinforcement,1);
+            OkButton.addEventListener("click",clickOkButton);
+            function clickOkButton(e) {
+                divSelectMenuContainer.style.visibility = "hidden";
+                disprayStage.removeAllChildren();
+                resolve();
+            };
+        });
+    };
+    AIRMAN.effect.whenResolve = () => {
+        return new Promise<void>(async(resolve, reject) => {
+            await search(reinforcement.effect.target);
+            resolve();
+        });
+    };
+
+
     const potOfGreed = new SpellCard
     potOfGreed.effectArray = {
     1:{"EffctType":"Ignnition",
@@ -858,7 +939,7 @@ window.onload = function() {
     reinforcement.cardName = "Reinforcement"
     reinforcement.effect.whenActive = () => {
         return new Promise((resolve, reject) => {
-            const cardlist = game.deck.filter(i => i.cardType == "Monster");
+            const cardlist = genCardArray({race:["ROCK"]});
             openCardSelectWindow(cardlist,reinforcement,1);
             OkButton.addEventListener("click",clickOkButton);
             function clickOkButton(e) {
@@ -875,9 +956,10 @@ window.onload = function() {
         });
     };
 
-    const myDeck : Card[]= [ALPHA,BETA,GAMMA,potOfGreed,reinforcement];
+    const myDeck : Card[]= [ALPHA,BETA,GAMMA,potOfGreed,reinforcement,AIRMAN];
     deckset(stage, myDeck);
     console.log(game.deck); 
+    console.log(genCardArray({race:["ROCK"]})); 
 
     const drawButton = createButton("draw", 150, 40, "#0275d8");
     drawButton.x = 1200;
@@ -910,10 +992,10 @@ window.onload = function() {
     selectMenuBack.alpha = 0.5;
     windowBackStage.addChild(selectMenuBack);
 
-    selectMenuBack.on("click", function(e){
-        divSelectMenuContainer.style.visibility = "hidden";
-        disprayStage.removeAllChildren();
-    }, null, false);
+    // selectMenuBack.on("click", function(e){
+    //     divSelectMenuContainer.style.visibility = "hidden";
+    //     disprayStage.removeAllChildren();
+    // }, null, false);
 
     const OkButton = createButton("OK", 150, 40, "#0275d8");
     OkButton.x = windowBackCanv.width/2 - 75;
