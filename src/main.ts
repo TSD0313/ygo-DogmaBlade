@@ -260,7 +260,7 @@ window.onload = function() {
      * エフェクトチェック
      */
     const effectCheck = (time: Time) =>{
-        let CardArray = myDeck;
+        let CardArray = Array.from(myDeck);
         CardArray = CardArray.filter(card => "effect" in card && "actionPossible" in card.effect &&  card.effect.actionPossible(time));
         return CardArray
     };
@@ -334,7 +334,7 @@ window.onload = function() {
                     .call(()=>{card.imgContainer.removeChild(effImg)})
                     .call(()=>{resolve()});
         });
-    }
+    };
 
     /**
      * 手札の魔法発動
@@ -400,9 +400,9 @@ window.onload = function() {
         game.time.summon = {type:"NS",
                             card:card,
                             position:card.position
-                        };
+                        };               
         game.time.spellSpeed = 1 ;
-        console.log(effectCheck(game.time));
+        console.log(game.time);
         if (effectCheck(game.time).length > 0){
             await EffctActivate(effectCheck(game.time)[0])
         };
@@ -880,15 +880,16 @@ window.onload = function() {
     AIRMAN.effect = new effect(AIRMAN)
     AIRMAN.effect.actionPossible = (time:Time) =>{
         const boolarray = [time.summon.type=="NS",
-                        time.summon.card==AIRMAN,
-                        time.spellSpeed==1]
+                        time.summon.card== AIRMAN,
+                        time.spellSpeed==1];
         return boolarray.every(value => value)
     };
+
     AIRMAN.effect.whenActive = () => {
         return new Promise((resolve, reject) => {
-            const cardlist = genCardArray({race:["ROCK"]});
+            const cardlist = genCardArray({race:["ROCK"],location:["DECK"]});
             openCardSelectWindow(cardlist,reinforcement,1);
-            OkButton.addEventListener("click",clickOkButton);
+            SelectOkButton.addEventListener("click",clickOkButton);
             function clickOkButton(e) {
                 divSelectMenuContainer.style.visibility = "hidden";
                 disprayStage.removeAllChildren();
@@ -939,9 +940,9 @@ window.onload = function() {
     reinforcement.cardName = "Reinforcement"
     reinforcement.effect.whenActive = () => {
         return new Promise((resolve, reject) => {
-            const cardlist = genCardArray({race:["ROCK"]});
+            const cardlist = genCardArray({race:["ROCK"],location:["DECK"]});
             openCardSelectWindow(cardlist,reinforcement,1);
-            OkButton.addEventListener("click",clickOkButton);
+            SelectOkButton.addEventListener("click",clickOkButton);
             function clickOkButton(e) {
                 divSelectMenuContainer.style.visibility = "hidden";
                 disprayStage.removeAllChildren();
@@ -957,7 +958,7 @@ window.onload = function() {
     };
 
     const myDeck : Card[]= [ALPHA,BETA,GAMMA,potOfGreed,reinforcement,AIRMAN];
-    deckset(stage, myDeck);
+    deckset(stage, Array.from(myDeck));
     console.log(game.deck); 
     console.log(genCardArray({race:["ROCK"]})); 
 
@@ -997,10 +998,16 @@ window.onload = function() {
     //     disprayStage.removeAllChildren();
     // }, null, false);
 
-    const OkButton = createButton("OK", 150, 40, "#0275d8");
-    OkButton.x = windowBackCanv.width/2 - 75;
-    OkButton.y = 650;
-    windowBackStage.addChild(OkButton);
+    const SelectOkButton = createButton("OK", 150, 40, "#0275d8");
+    SelectOkButton.x = windowBackCanv.width/2 - 75;
+    SelectOkButton.y = 650;
+    windowBackStage.addChild(SelectOkButton);
+
+    const HandOkButton = createButton("OK", 150, 40, "#0275d8");
+    HandOkButton.x = game.displayOrder.hand[0];
+    HandOkButton.y = game.displayOrder.hand[1];
+    HandOkButton.visible = false
+    stage.addChild(HandOkButton);
 
     scrollAreaContainer.style.width = String(windowSize.w)+"px";
     scrollAreaContainer.style.height = String(windowSize.h)+"px";
@@ -1009,7 +1016,7 @@ window.onload = function() {
         divSelectMenuContainer.style.visibility = "visible";
         activeCard.effect.target = [];
         selectedCardImgArray = [];
-        OkButton.mouseEnabled = false ;
+        SelectOkButton.mouseEnabled = false ;
 
         disprayCanv.style.width = String((10+cardImgSize.x)*disprayCards.length+10)+"px";
         disprayCanv.width = (10+cardImgSize.x)*disprayCards.length+10;
@@ -1085,7 +1092,7 @@ window.onload = function() {
                     activeCard.effect.target = activeCard.effect.target.filter(i => i !== card);
                     selectedCardImgArray = selectedCardImgArray.filter(i => i !== selectedCardImg);
                 };
-                OkButton.mouseEnabled = activeCard.effect.target.length===count;
+                SelectOkButton.mouseEnabled = activeCard.effect.target.length===count;
                 selectedMouseOver.visible = false;
             };
 
@@ -1113,4 +1120,67 @@ window.onload = function() {
         
         return Promise.all(PromiseArray);
     };
-}
+
+    const SelectHandCards = (targetArray : Card[], activeCard :Card, count :Number) =>{
+        stage.children.map((child, index, array)=>{
+            child.mouseEnabled = false;
+        });
+
+        const cloneArray = [];
+        const selected = new createjs.Bitmap("selected.png");
+        selected.setTransform (cardImgSize.x/4,cardImgSize.y/4,0.5,0.5); 
+        selected.visible = false;           
+
+        const selectedMouseOver = new createjs.Bitmap("selectedMouseOver.png");
+        selectedMouseOver.setTransform (cardImgSize.x/4,cardImgSize.y/4,0.5,0.5);      
+        selectedMouseOver.alpha = 0.5;
+        selectedMouseOver.visible = false;
+        
+        game.hand.map((card, index, array)=>{
+            const cloneImageContainer = card.imgContainer.clone();
+            cloneArray.push(cloneImageContainer);
+            stage.addChild(cloneImageContainer);
+
+            if(targetArray.includes(card)){
+                cloneImageContainer.addChild(selected);
+                cloneImageContainer.addChild(selectedMouseOver);
+                cloneImageContainer.cursor = "pointer";
+            };
+
+            const selectedCardImg = {
+                imgContainer: cloneImageContainer,
+                selected: selected
+            };
+
+            cloneImageContainer.addEventListener("mouseover", handleSelectMover);
+            function handleSelectMover(event) {
+            selectedMouseOver.visible = true;
+            };
+            cloneImageContainer.addEventListener("mouseout", handleSelectMout);
+            function handleSelectMout(event) {
+            selectedMouseOver.visible = false;
+            };
+            cloneImageContainer.addEventListener("click", handleSelectClick);
+            function handleSelectClick(event) {
+            if(selected.visible==false){
+                if(activeCard.effect.target.length==count){
+                    selectedCardImgArray[0].selected.visible = false;
+                    activeCard.effect.target.shift();
+                    selectedCardImgArray.shift();
+                };
+                selected.visible = true;
+                activeCard.effect.target.push(card);
+                selectedCardImgArray.push(selectedCardImg);
+            }else{
+                selected.visible = false; 
+                activeCard.effect.target = activeCard.effect.target.filter(i => i !== card);
+                selectedCardImgArray = selectedCardImgArray.filter(i => i !== selectedCardImg);
+            };
+            
+            HandOkButton.visible = true;
+            HandOkButton.mouseEnabled = activeCard.effect.target.length===count;
+            selectedMouseOver.visible = false;
+            };
+        });
+    };
+};
