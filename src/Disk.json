@@ -1,14 +1,14 @@
 {
-    "imageFileName": "Air.jpg",
+    "imageFileName": "Disk.jpg",
     "bar": 123,
     "ID": 111,
-    "cardName": "Air",
+    "cardName": "Disk",
     "category" : "HERO" ,
     "cardType": "Monster",
     "monsterType": "Effect",
-    "level": 4,
+    "level": 1,
     "race": "WARRIOR",
-    "attribute": "WIND",
-    "atkPoint" : 1800,
+    "attribute": "DARK",
+    "atkPoint" : 300,
     "defPoint" : 300
   }

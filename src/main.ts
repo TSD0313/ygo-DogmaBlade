@@ -5,6 +5,8 @@ import Alpha from './Alpha.json';
 import Beta from './Beta.json';
 import Gamma from './Gamma.json';
 import Airman from './Airman.json';
+import Disk from './Disk.json';
+import Dogma from './Dogma.json';
 const DEFAULT_LIFE = 8000;
 const cardImgSize = {x:123,y:180,margin:10} 
 const windowSize = {w:cardImgSize.x*7, h:cardImgSize.y+20}
@@ -94,6 +96,7 @@ interface CardProps {
     imageFileName : String;  cardBackImageFileName : String;
     ID : Number;
     cardName : String;
+    category : String ;
     location : "MO"|"ST"|"FIELD"|"DECK"|"HAND"|"GY"|"DD";
     fromLocation : String;
     imgContainer : Container;
@@ -127,7 +130,8 @@ class Card  {
     imgContainer : Container;
     cardType : "Monster"|"Spell"|"Trap";
     face : "UP"|"DOWN" ;
-    effect : effect
+    effect : effect ;
+    category : String ;
     constructor(){
         this.cardBackImageFileName = "cardback.jpeg";
         this.location = "DECK"
@@ -169,13 +173,15 @@ class effect {
     spellSpeed : number;
     range : string[];
     effCondition : {};
-    target : Card[];
+    costCard : Card[];
+    targetCard : Card[];
     actionPossible :(time:Time) => boolean;
     whenActive : () => Promise<any>;
     whenResolve : () => Promise<any>;
     constructor(card:Card){
-        this.card = card
-        this.target = [];
+        this.card = card;
+        this.targetCard = [];
+        this.costCard = [];
     };
 };
 
@@ -277,6 +283,43 @@ window.onload = function() {
         return CardArray
     };
 
+    // /**
+    //  * カードオブジェクトを手札から墓地に移動
+    //  */
+    // const HandToGY = (target: Card[]) => {
+    //     return new Promise<void>(async(resolve, reject) => {
+    //         target.map((card, index, array) => {
+    //             game.graveYard.push(card);
+    //             game.hand = game.hand.filter(n => n !== card);                  
+    //         });
+    //         resolve();
+    //     });
+    // };
+
+    /**
+     * カードを手札から墓地に送る
+     */
+    const HandToGY = (target: Card[]) => {
+        const PromiseArray :Promise<unknown>[] = [];
+        target.map((card, index, array) => {
+            const twPromise = () => {
+                return new Promise((resolve, reject) => {
+                    game.graveYard.push(card);
+                    game.hand = game.hand.filter(n => n !== card); 
+                    card.location = "GY";
+                    const toX : number = game.displayOrder.gy[0][0]+(game.graveYard.length-1)*2
+                    const toY : number = game.displayOrder.gy[0][1]-(game.graveYard.length-1)*2
+                    createjs.Tween.get(card.imgContainer)
+                        .call(()=>{stage.setChildIndex(card.imgContainer,stage.numChildren-1)})
+                        .to({x:toX,y:toY,rotation:0},500,createjs.Ease.cubicOut)
+                        .call(()=>{resolve()});
+                });
+            };
+            PromiseArray.push(twPromise());
+        });
+        return Promise.all(PromiseArray);
+    };
+
     /**
      * カードオブジェクトを場から墓地に移動
      */
@@ -301,7 +344,7 @@ window.onload = function() {
         card.location = "GY";
         return;
         
-    }
+    };
 
     /**
      * カードを場から墓地に送るアニメーション
@@ -315,10 +358,11 @@ window.onload = function() {
             cardFlip(card);
         };
             createjs.Tween.get(card.imgContainer)
+                .call(()=>{stage.setChildIndex(card.imgContainer,stage.numChildren-1)})
                 .to({x:toX,y:toY,rotation:0},500,createjs.Ease.cubicOut)
                 .call(()=>{resolve()});
         });
-    }
+    };
 
     /**
      * チェーンに乗る効果発動アニメーション
@@ -485,7 +529,7 @@ window.onload = function() {
             };
             stage.setChildIndex(card.imgContainer,stage.numChildren-1);
             animationHandAdjust();
-            console.log(position);
+            console.log(card.face);
             TWEEN().call(()=>{resolve()})
         });
     };
@@ -623,8 +667,8 @@ window.onload = function() {
                 targetCard.location = "HAND";
                 game.hand.push(targetCard);
 
-                game.hand.map((h,i,a) =>{ console.log("hand: " + h.cardName)})
-                game.deck.map((h,i,a) =>{ console.log("deck: " + h.cardName)})
+                // game.hand.map((h,i,a) =>{ console.log("hand: " + h.cardName)})
+                // game.deck.map((h,i,a) =>{ console.log("deck: " + h.cardName)})
 
                 await animationHandAdjust();
                 console.log("draw");
@@ -645,7 +689,7 @@ window.onload = function() {
                     game.deck = game.deck.filter(i => i !== card);
                     game.hand.push(card);
                     card.location = "HAND";
-                    console.log("search"+card.cardName);
+                    console.log("search "+card.cardName);
                     CardInHandButtonSetting(card);                    
                 };
             });
@@ -876,6 +920,8 @@ window.onload = function() {
     const BETA = genMonsterCard(Beta);
     const GAMMA = genMonsterCard(Gamma);
     const AIRMAN = genMonsterCard(Airman);
+    const DISK = genMonsterCard(Disk);
+    const DOGMA = genMonsterCard(Dogma);
     
     AIRMAN.effect = new effect(AIRMAN)
     AIRMAN.effect.actionPossible = (time:Time) =>{
@@ -887,8 +933,8 @@ window.onload = function() {
 
     AIRMAN.effect.whenActive = () => {
         return new Promise((resolve, reject) => {
-            const cardlist = genCardArray({race:["ROCK"],location:["DECK"]});
-            openCardSelectWindow(cardlist,reinforcement,1);
+            const cardlist = genCardArray({category:["HERO"],location:["DECK"]});
+            openCardSelectWindow(cardlist,AIRMAN,1);
             SelectOkButton.addEventListener("click",clickOkButton);
             function clickOkButton(e) {
                 divSelectMenuContainer.style.visibility = "hidden";
@@ -899,7 +945,7 @@ window.onload = function() {
     };
     AIRMAN.effect.whenResolve = () => {
         return new Promise<void>(async(resolve, reject) => {
-            await search(reinforcement.effect.target);
+            await search(AIRMAN.effect.targetCard);
             resolve();
         });
     };
@@ -940,27 +986,59 @@ window.onload = function() {
     reinforcement.cardName = "Reinforcement"
     reinforcement.effect.whenActive = () => {
         return new Promise((resolve, reject) => {
-            const cardlist = genCardArray({race:["ROCK"],location:["DECK"]});
+            const cardlist = genCardArray({race:["WARRIOR"],location:["DECK"]})
+                                .filter(card => card instanceof MonsterCard && card.level <= 4);
             openCardSelectWindow(cardlist,reinforcement,1);
             SelectOkButton.addEventListener("click",clickOkButton);
             function clickOkButton(e) {
                 divSelectMenuContainer.style.visibility = "hidden";
                 disprayStage.removeAllChildren();
                 resolve();
-            }
+            };
         });
     };
     reinforcement.effect.whenResolve = () => {
         return new Promise<void>(async(resolve, reject) => {
-            await search(reinforcement.effect.target);
+            await search(reinforcement.effect.targetCard);
             resolve();
         });
     };
 
-    const myDeck : Card[]= [ALPHA,BETA,GAMMA,potOfGreed,reinforcement,AIRMAN];
+    const destinyDraw = new SpellCard
+    destinyDraw.effectArray = {
+    1:{"EffctType":"Ignnition",
+        "spellSpeed":1,
+        "range":["field"],
+        "target":undefined}
+    };
+    destinyDraw.imageFileName = "Ddraw.jpg"
+    destinyDraw.cardName = "destinyDraw"
+    destinyDraw.effect = new effect(destinyDraw);
+    destinyDraw.effect.whenActive = () => {
+        return new Promise((resolve, reject) => {
+            const cardlist = genCardArray({category:["HERO"],location:["HAND"]});
+            openCardSelectWindow(cardlist,destinyDraw,1);
+            const clickOkButton = async (e) => {
+                console.log("cost " + destinyDraw.effect.targetCard.map(({ cardName }) => cardName))
+                divSelectMenuContainer.style.visibility = "hidden";
+                disprayStage.removeAllChildren();
+                // await HandToGY(destinyDraw.effect.costCard);
+                await HandToGY(destinyDraw.effect.targetCard);
+                resolve();
+            };
+            SelectOkButton.addEventListener("click",clickOkButton);
+        });
+    };
+    destinyDraw.effect.whenResolve = () => {
+        return new Promise<void>(async(resolve, reject) => {
+            await draw(2);
+            resolve();
+        });
+    };
+
+    const myDeck : Card[]= [DOGMA,DISK,ALPHA,BETA,GAMMA,potOfGreed,AIRMAN,reinforcement,destinyDraw];
     deckset(stage, Array.from(myDeck));
     console.log(game.deck); 
-    console.log(genCardArray({race:["ROCK"]})); 
 
     const drawButton = createButton("draw", 150, 40, "#0275d8");
     drawButton.x = 1200;
@@ -1014,7 +1092,7 @@ window.onload = function() {
 
     const openCardSelectWindow = (disprayCards :Card[], activeCard :Card, count :Number) => {
         divSelectMenuContainer.style.visibility = "visible";
-        activeCard.effect.target = [];
+        activeCard.effect.targetCard = [];
         selectedCardImgArray = [];
         SelectOkButton.mouseEnabled = false ;
 
@@ -1079,20 +1157,20 @@ window.onload = function() {
             cardImgContainer.addEventListener("click", handleSelectClick);
             function handleSelectClick(event) {
                 if(selected.visible==false){
-                    if(activeCard.effect.target.length==count){
+                    if(activeCard.effect.targetCard.length==count){
                         selectedCardImgArray[0].selected.visible = false;
-                        activeCard.effect.target.shift();
+                        activeCard.effect.targetCard.shift();
                         selectedCardImgArray.shift();
                     }
                     selected.visible = true;
-                    activeCard.effect.target.push(card);
+                    activeCard.effect.targetCard.push(card);
                     selectedCardImgArray.push(selectedCardImg);
                 }else{
                     selected.visible = false; 
-                    activeCard.effect.target = activeCard.effect.target.filter(i => i !== card);
+                    activeCard.effect.targetCard = activeCard.effect.targetCard.filter(i => i !== card);
                     selectedCardImgArray = selectedCardImgArray.filter(i => i !== selectedCardImg);
                 };
-                SelectOkButton.mouseEnabled = activeCard.effect.target.length===count;
+                SelectOkButton.mouseEnabled = activeCard.effect.targetCard.length===count;
                 selectedMouseOver.visible = false;
             };
 
@@ -1121,66 +1199,66 @@ window.onload = function() {
         return Promise.all(PromiseArray);
     };
 
-    const SelectHandCards = (targetArray : Card[], activeCard :Card, count :Number) =>{
-        stage.children.map((child, index, array)=>{
-            child.mouseEnabled = false;
-        });
+    // const SelectHandCards = (targetArray : Card[], activeCard :Card, count :Number) =>{
+    //     stage.children.map((child, index, array)=>{
+    //         child.mouseEnabled = false;
+    //     });
 
-        const cloneArray = [];
-        const selected = new createjs.Bitmap("selected.png");
-        selected.setTransform (cardImgSize.x/4,cardImgSize.y/4,0.5,0.5); 
-        selected.visible = false;           
+    //     const cloneArray = [];
+    //     const selected = new createjs.Bitmap("selected.png");
+    //     selected.setTransform (cardImgSize.x/4,cardImgSize.y/4,0.5,0.5); 
+    //     selected.visible = false;           
 
-        const selectedMouseOver = new createjs.Bitmap("selectedMouseOver.png");
-        selectedMouseOver.setTransform (cardImgSize.x/4,cardImgSize.y/4,0.5,0.5);      
-        selectedMouseOver.alpha = 0.5;
-        selectedMouseOver.visible = false;
+    //     const selectedMouseOver = new createjs.Bitmap("selectedMouseOver.png");
+    //     selectedMouseOver.setTransform (cardImgSize.x/4,cardImgSize.y/4,0.5,0.5);      
+    //     selectedMouseOver.alpha = 0.5;
+    //     selectedMouseOver.visible = false;
         
-        game.hand.map((card, index, array)=>{
-            const cloneImageContainer = card.imgContainer.clone();
-            cloneArray.push(cloneImageContainer);
-            stage.addChild(cloneImageContainer);
+    //     game.hand.map((card, index, array)=>{
+    //         const cloneImageContainer = card.imgContainer.clone();
+    //         cloneArray.push(cloneImageContainer);
+    //         stage.addChild(cloneImageContainer);
 
-            if(targetArray.includes(card)){
-                cloneImageContainer.addChild(selected);
-                cloneImageContainer.addChild(selectedMouseOver);
-                cloneImageContainer.cursor = "pointer";
-            };
+    //         if(targetArray.includes(card)){
+    //             cloneImageContainer.addChild(selected);
+    //             cloneImageContainer.addChild(selectedMouseOver);
+    //             cloneImageContainer.cursor = "pointer";
+    //         };
 
-            const selectedCardImg = {
-                imgContainer: cloneImageContainer,
-                selected: selected
-            };
+    //         const selectedCardImg = {
+    //             imgContainer: cloneImageContainer,
+    //             selected: selected
+    //         };
 
-            cloneImageContainer.addEventListener("mouseover", handleSelectMover);
-            function handleSelectMover(event) {
-            selectedMouseOver.visible = true;
-            };
-            cloneImageContainer.addEventListener("mouseout", handleSelectMout);
-            function handleSelectMout(event) {
-            selectedMouseOver.visible = false;
-            };
-            cloneImageContainer.addEventListener("click", handleSelectClick);
-            function handleSelectClick(event) {
-            if(selected.visible==false){
-                if(activeCard.effect.target.length==count){
-                    selectedCardImgArray[0].selected.visible = false;
-                    activeCard.effect.target.shift();
-                    selectedCardImgArray.shift();
-                };
-                selected.visible = true;
-                activeCard.effect.target.push(card);
-                selectedCardImgArray.push(selectedCardImg);
-            }else{
-                selected.visible = false; 
-                activeCard.effect.target = activeCard.effect.target.filter(i => i !== card);
-                selectedCardImgArray = selectedCardImgArray.filter(i => i !== selectedCardImg);
-            };
+    //         cloneImageContainer.addEventListener("mouseover", handleSelectMover);
+    //         function handleSelectMover(event) {
+    //         selectedMouseOver.visible = true;
+    //         };
+    //         cloneImageContainer.addEventListener("mouseout", handleSelectMout);
+    //         function handleSelectMout(event) {
+    //         selectedMouseOver.visible = false;
+    //         };
+    //         cloneImageContainer.addEventListener("click", handleSelectClick);
+    //         function handleSelectClick(event) {
+    //         if(selected.visible==false){
+    //             if(activeCard.effect.target.length==count){
+    //                 selectedCardImgArray[0].selected.visible = false;
+    //                 activeCard.effect.target.shift();
+    //                 selectedCardImgArray.shift();
+    //             };
+    //             selected.visible = true;
+    //             activeCard.effect.target.push(card);
+    //             selectedCardImgArray.push(selectedCardImg);
+    //         }else{
+    //             selected.visible = false; 
+    //             activeCard.effect.target = activeCard.effect.target.filter(i => i !== card);
+    //             selectedCardImgArray = selectedCardImgArray.filter(i => i !== selectedCardImg);
+    //         };
             
-            HandOkButton.visible = true;
-            HandOkButton.mouseEnabled = activeCard.effect.target.length===count;
-            selectedMouseOver.visible = false;
-            };
-        });
-    };
+    //         HandOkButton.visible = true;
+    //         HandOkButton.mouseEnabled = activeCard.effect.target.length===count;
+    //         selectedMouseOver.visible = false;
+    //         };
+    //     });
+    // };
 };

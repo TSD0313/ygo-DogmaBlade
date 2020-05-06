@@ -1,0 +1,14 @@
+{
+    "imageFileName": "Dogma.jpg",
+    "bar": 123,
+    "ID": 111,
+    "cardName": "Dogma",
+    "category" : "HERO" ,
+    "cardType": "Monster",
+    "monsterType": "Effect",
+    "level": 8,
+    "race": "WARRIOR",
+    "attribute": "DARK",
+    "atkPoint" : 3400,
+    "defPoint" : 2400
+  }

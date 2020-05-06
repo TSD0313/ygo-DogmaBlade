@@ -3,7 +3,7 @@
     "bar": 123,
     "ID": 111,
     "cardName": "Beta",
-    "cardType": "monster",
+    "cardType": "Monster",
     "monsterType": "Normal",
     "level": 4,
     "race": "ROCK",
