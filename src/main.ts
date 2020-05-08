@@ -79,13 +79,17 @@ class Game{
                 deck:[this.grid.back[6]],
                 hand:[this.grid.front[3][0],this.grid.front[3][1]*5]
                     };
-    }
+    };
 };
 
 class Time{
-    summon?:{type:"NS"|"SS";
-            card:MonsterCard;
+    phase?:"DP"|"SP"|"M1"|"BP"|"M2"|"EP";
+    summon?:{
+            card : MonsterCard;
+            type : "NS"|"SS";
             position : "ATK"|"DEF";
+            face : "UP"|"DOWN";
+            from? : "MO"|"ST"|"FIELD"|"DECK"|"HAND"|"GY"|"DD";
         };
     spellSpeed:1|2|3
 };
@@ -169,10 +173,10 @@ class SpellCard extends Card {
 
 class effect {
     card : Card;
-    effType : string;
-    spellSpeed : number;
+    effType : "Ignition"|"Trigger"|"Continuous";
+    spellSpeed : 1|2|3;
     range : string[];
-    effCondition : {};
+    whetherToActivate : "Any"|"Forced";
     costCard : Card[];
     targetCard : Card[];
     actionPossible :(time:Time) => boolean;
@@ -258,16 +262,26 @@ window.onload = function() {
                 };
             })();
             drawzone(target[0],target[1],i);
-        }
-    }
+        };
+    };
 
 
     /**
      * エフェクトチェック
      */
-    const effectCheck = (time: Time) =>{
+    const TriggerEffCheck = (time: Time) =>{
         let CardArray = Array.from(myDeck);
-        CardArray = CardArray.filter(card => "effect" in card && "actionPossible" in card.effect &&  card.effect.actionPossible(time));
+        CardArray = CardArray.filter(card => 
+            "effect" in card &&
+            "actionPossible" in card.effect &&
+            card.effect.actionPossible(time)
+        );
+        // 誘発効果の確認
+        // 公開ForcedTrigger→複数あったら発動順選択
+        // 公開AnyTrigger→複数あったら発動有無と発動順選択　ここまで同時発動
+        // 
+        // 公開非公開返す関数書く
+
         return CardArray
     };
 
@@ -283,18 +297,6 @@ window.onload = function() {
         return CardArray
     };
 
-    // /**
-    //  * カードオブジェクトを手札から墓地に移動
-    //  */
-    // const HandToGY = (target: Card[]) => {
-    //     return new Promise<void>(async(resolve, reject) => {
-    //         target.map((card, index, array) => {
-    //             game.graveYard.push(card);
-    //             game.hand = game.hand.filter(n => n !== card);                  
-    //         });
-    //         resolve();
-    //     });
-    // };
 
     /**
      * カードを手札から墓地に送る
@@ -434,21 +436,24 @@ window.onload = function() {
         handToBoard(card);
         if(position=="ATK"){
             card.position=position;
-        }else{
+        };
+        if(position=="SET"){
             card.position="DEF";
         };
+
         await animationHandToBoard(card,position);
-        console.log("NS");
-        // animationChainEffectActivate(card);
+        console.log("NS " + position);
 
         game.time.summon = {type:"NS",
                             card:card,
-                            position:card.position
+                            position:card.position,
+                            face:card.face,
                         };               
         game.time.spellSpeed = 1 ;
+
         console.log(game.time);
-        if (effectCheck(game.time).length > 0){
-            await EffctActivate(effectCheck(game.time)[0])
+        if (TriggerEffCheck(game.time).length > 0){
+            await EffctActivate(TriggerEffCheck(game.time)[0])
         };
     };
     
@@ -529,7 +534,6 @@ window.onload = function() {
             };
             stage.setChildIndex(card.imgContainer,stage.numChildren-1);
             animationHandAdjust();
-            console.log(card.face);
             TWEEN().call(()=>{resolve()})
         });
     };
@@ -927,7 +931,8 @@ window.onload = function() {
     AIRMAN.effect.actionPossible = (time:Time) =>{
         const boolarray = [time.summon.type=="NS",
                         time.summon.card== AIRMAN,
-                        time.spellSpeed==1];
+                        time.summon.face== "UP",
+                        time.spellSpeed== 1];
         return boolarray.every(value => value)
     };
 
