@@ -35,8 +35,9 @@ class Game{
     grid : Grid;
     displayOrder : any;
     selectedCards : Card[];
-    chainArray : effect[];
+    chain : effect[];
     time : Time;
+    timeArray : Time[];
     constructor(){
         this.field = [undefined];
         this.monsterZone = [undefined,undefined,undefined,undefined,undefined];
@@ -48,8 +49,9 @@ class Game{
         this.myLifePoint = DEFAULT_LIFE;
         this.enemyLifePoint= DEFAULT_LIFE;
         this.normalSummon = true;
-        this.chainArray = [];
+        this.chain = [];
         this.time = new Time;
+        this.timeArray = [];
 
 
         const front_position: number[][] = (() => {
@@ -91,11 +93,11 @@ class Time{
             face : "UP"|"DOWN";
             from? : "MO"|"ST"|"FIELD"|"DECK"|"HAND"|"GY"|"DD";
         };
-    spellSpeed:1|2|3
+    spellSpeed:1|2|3;
 };
 
 
-interface CardProps {
+interface CardCondetionProps {
     frontImg : Bitmap;  cardBackImg : Bitmap;
     imageFileName : String;  cardBackImageFileName : String;
     ID : Number;
@@ -115,12 +117,10 @@ interface CardProps {
     atkPoint : Number;
     defPoint : Number;
     position : "ATK"|"DEF";
-    canNS : Boolean
+    canNS : Boolean;
     NSed : Boolean;
 
     spellType : "Normal"|"Quick"|"Equip"|"Field"|"Continuous";
-    actionPossible : {key: boolean[]};
-    effectArray : {[n: number]:{[s: string]: string|number|string[]|Card[]}}; 
 };
 
 
@@ -134,14 +134,16 @@ class Card  {
     imgContainer : Container;
     cardType : "Monster"|"Spell"|"Trap";
     face : "UP"|"DOWN" ;
-    effect : effect ;
+    effect : effect[];
+    
     category : String ;
     constructor(){
         this.cardBackImageFileName = "cardback.jpeg";
         this.location = "DECK"
         this.face = "DOWN"
-    }
-}
+        this.effect = [];
+    };
+};
 
 class MonsterCard extends Card {
     monsterType : "Normal"|"Effect";
@@ -164,7 +166,6 @@ class MonsterCard extends Card {
 class SpellCard extends Card {
     spellType : "Normal"|"Quick"|"Equip"|"Field"|"Continuous";
     actionPossible : {key: boolean[]};
-    effectArray : {[n: number]:{[s: string]: string|number|string[]|Card[]}}; 
     constructor(){
         super();
         this.cardType = "Spell"
@@ -173,15 +174,15 @@ class SpellCard extends Card {
 
 class effect {
     card : Card;
-    effType : "Ignition"|"Trigger"|"Continuous";
+    effType : "CardActived"|"Ignition"|"Trigger"|"Continuous";
     spellSpeed : 1|2|3;
     range : string[];
     whetherToActivate : "Any"|"Forced";
     costCard : Card[];
     targetCard : Card[];
     actionPossible :(time:Time) => boolean;
-    whenActive : () => Promise<any>;
-    whenResolve : () => Promise<any>;
+    whenActive : (eff?: effect) => Promise<any>;
+    whenResolve : (eff?: effect) => Promise<any>;
     constructor(card:Card){
         this.card = card;
         this.targetCard = [];
@@ -199,7 +200,19 @@ const genMonsterCard = (json:Object) => {
         newCard[key] = json[key]
     });
     return newCard;
-}
+};
+
+/**
+ * 公開 非公開領域判定
+ */
+const publicOrPrivate = (card:Card)=>{
+    const PublicArea = ["MO","ST","FIELD","GY","DD"]
+    if (PublicArea.includes(card.location)){
+        return "Public"
+    }else{
+        return "Private"
+    };
+};
 
 window.onload = function() {
 
@@ -265,30 +278,240 @@ window.onload = function() {
         };
     };
 
+    const TriggerQuickeEffect = async() =>{
+        do{
+            const canActiveEffects =(EffArray:effect[],time:Time[])=>{
+                return EffArray.filter(eff => 
+                    time.map(t => eff.actionPossible(t))
+                    .includes(true)
+                )
+            };
+
+            const AllTrigger = (()=>{
+                const tmpTriggerArray :effect[] = [];
+                [...myDeck].map((card,index,array)=>{
+                    tmpTriggerArray.push(
+                        ...(
+                            card.effect.filter(eff => 
+                            eff.effType == "Trigger" )
+                        )
+                    );
+                });
+                return tmpTriggerArray
+            })();
+
+            const　TriggerObj = (() => { 
+                const TriggerPublicForced = AllTrigger.filter(eff => 
+                    eff.whetherToActivate == "Forced" &&
+                    publicOrPrivate(eff.card) == "Public"
+                );
+                const TriggerPublicAny = AllTrigger.filter(eff => 
+                    eff.whetherToActivate == "Any" &&
+                    publicOrPrivate(eff.card) == "Public"
+                );
+                const TriggerPrivateForced = AllTrigger.filter(eff => 
+                    eff.whetherToActivate == "Forced" &&
+                    publicOrPrivate(eff.card) == "Private"
+                );
+                const TriggerPrivateAny = AllTrigger.filter(eff => 
+                    eff.whetherToActivate == "Any" &&
+                    publicOrPrivate(eff.card) == "Private"
+                );
+    
+                return {
+                    "PublicForced":TriggerPublicForced,
+                    "PublicAny":TriggerPublicAny,
+                    "PrivateForced":TriggerPrivateForced,
+                    "PrivateAny":TriggerPrivateAny
+                };
+            })();
+
+            const tmpCard = new Card
+            const tmpEff = new effect(tmpCard)
+            const selectCardPromise = (effArray:effect[]) => {
+            return new Promise<Card>((resolve, reject) => {
+                    const cardlist = effArray.flatMap(eff => eff.card)
+                    openCardSelectWindow(cardlist,1,tmpEff);
+                    SelectOkButton.addEventListener("click",clickOkButton);
+                    function clickOkButton(e) {
+                        divSelectMenuContainer.style.visibility = "hidden";
+                        disprayStage.removeAllChildren();
+                        resolve(tmpEff.targetCard.pop());
+                    };
+                });
+            };
+
+            const TriggerTime = [...game.timeArray];
+            game.timeArray = [];
+
+            do{
+                const PubForced = canActiveEffects(TriggerObj.PublicForced,TriggerTime);
+                if(PubForced.length >1){
+                    // const activeCard = await selectCardPromise(PubForced);
+                    const activeEffOrg = (await selectCardPromise(PubForced)).effect.filter(eff => 
+                        eff.effType == "Trigger" && canActiveEffects([eff],TriggerTime) ).pop();
+                    const result :effect = {...activeEffOrg,targetCard:[],costCard:[]};
+                    await result.whenActive(result);
+                    game.chain.push(result);
+                    TriggerObj.PublicForced = TriggerObj.PublicForced.filter(eff => 
+                        eff !== activeEffOrg );
+                }else if(PubForced.length ==1){
+                    const activeEffOrg = PubForced.pop()
+                    const result :effect = {...activeEffOrg,targetCard:[],costCard:[]};
+                    await result.whenActive(result);
+                    game.chain.push(result);
+                    TriggerObj.PublicForced = TriggerObj.PublicForced.filter(eff => 
+                        eff !== activeEffOrg );
+                };
+            }while(canActiveEffects(TriggerObj.PublicForced,TriggerTime).length > 0);
+
+            do{
+                const PubAny = canActiveEffects(TriggerObj.PublicAny,TriggerTime);
+                if(PubAny.length >1){
+                    // const activeCard = await selectCardPromise(PubAny);
+                    const activeEffOrg = (await selectCardPromise(PubAny)).effect.filter(eff => 
+                        eff.effType == "Trigger" && canActiveEffects([eff],TriggerTime) ).pop();
+                    const result :effect = {...activeEffOrg,targetCard:[],costCard:[]};
+                    await result.whenActive(result);
+                    game.chain.push(result);
+                    TriggerObj.PublicAny = TriggerObj.PublicAny.filter(eff => 
+                        eff !== activeEffOrg );
+                }else if(PubAny.length ==1){
+                    //YesNo Window出す
+                    const activeEffOrg = PubAny.pop()
+                    const result :effect = {...activeEffOrg,targetCard:[],costCard:[]};
+                    await result.whenActive(result);
+                    game.chain.push(result);
+                    TriggerObj.PublicAny = TriggerObj.PublicAny.filter(eff => 
+                        eff !== activeEffOrg );
+                };
+            }while(canActiveEffects(TriggerObj.PublicAny,TriggerTime).length > 0);
+
+        }while(game.timeArray.length == 0);
+
+        (async () => {
+            for(let eff of game.chain.reverse()) {
+                await eff.whenResolve(eff);
+            }
+        })();
+    };
 
     /**
-     * エフェクトチェック
+     * 誘発有無チェック
      */
     const TriggerEffCheck = (time: Time) =>{
-        let CardArray = Array.from(myDeck);
-        CardArray = CardArray.filter(card => 
-            "effect" in card &&
-            "actionPossible" in card.effect &&
-            card.effect.actionPossible(time)
-        );
-        // 誘発効果の確認
-        // 公開ForcedTrigger→複数あったら発動順選択
-        // 公開AnyTrigger→複数あったら発動有無と発動順選択　ここまで同時発動
-        // 
-        // 公開非公開返す関数書く
+        const tmpArray :effect[] = [];
+        [...myDeck].map((card,index,array)=>{
+            tmpArray.push(
+                ...(
+                    card.effect.filter(eff => 
+                    eff.effType == "Trigger" &&
+                    eff.actionPossible(time))
+                )
+            );
+        });
+        return tmpArray
+    };
 
-        return CardArray
+    /**
+     * 誘発発動
+     */
+    const TriggerEffPromise = async(time: Time) =>{
+        
+        const TriggerEffArray = (()=>{
+            const tmpArray :effect[] = [];
+            [...myDeck].map((card,index,array)=>{
+                tmpArray.push(
+                    ...(
+                        card.effect.filter(eff => 
+                        eff.effType == "Trigger" &&
+                        eff.actionPossible(time))
+                    )
+                );
+            });
+            return tmpArray
+        })();
+
+        const　TriggerCards = (() => { 
+            const TriggerForcedPublic = TriggerEffArray.filter(eff => 
+                eff.whetherToActivate == "Forced" &&
+                publicOrPrivate(eff.card) == "Public"
+            );
+            const TriggerAnyPublic = TriggerEffArray.filter(eff => 
+                eff.whetherToActivate == "Any" &&
+                publicOrPrivate(eff.card) == "Public"
+            );
+            const TriggerForcedPrivate = TriggerEffArray.filter(eff => 
+                eff.whetherToActivate == "Forced" &&
+                publicOrPrivate(eff.card) == "Private"
+            );
+            const TriggerAnyPrivate = TriggerEffArray.filter(eff => 
+                eff.whetherToActivate == "Any" &&
+                publicOrPrivate(eff.card) == "Private"
+            );
+
+            return {
+                "ForcedPublic":TriggerForcedPublic,
+                "AnyPublic":TriggerAnyPublic,
+                "ForcedPrivate":TriggerForcedPrivate,
+                "AnyPrivate":TriggerAnyPrivate
+            };
+        })();
+
+        console.log(TriggerCards)
+
+        const tmpCard = new Card
+        const tmpEff = new effect(tmpCard)
+        const selectCardPromise = (effArray:effect[]) => {
+            return new Promise<Card>((resolve, reject) => {
+                const cardlist = effArray.flatMap(eff => eff.card)
+                openCardSelectWindow(cardlist,1,tmpEff);
+                SelectOkButton.addEventListener("click",clickOkButton);
+                function clickOkButton(e) {
+                    divSelectMenuContainer.style.visibility = "hidden";
+                    disprayStage.removeAllChildren();
+                    resolve(tmpEff.targetCard.pop());
+                };
+            });
+        };
+
+        if(TriggerCards.ForcedPublic.length > 0){
+            if(TriggerCards.ForcedPublic.length > 1){
+                const activeCard = await selectCardPromise(TriggerCards.ForcedPublic);
+                console.log(activeCard.cardName + " Effect")
+                const activeEffOrg = activeCard.effect.filter(eff => eff.effType == "Trigger" && eff.actionPossible(time)).pop();
+                const result :effect = {...activeEffOrg,targetCard:[],costCard:[]};
+                return result
+            }else{
+                const activeEffOrg = TriggerCards.ForcedPublic.pop();
+                const result :effect = {...activeEffOrg,targetCard:[],costCard:[]};
+                return result
+            };
+        };
+
+        if(TriggerCards.AnyPublic.length > 0){
+            const activeCard = await selectCardPromise(TriggerCards.AnyPublic);
+            console.log(activeCard.cardName + " Effect")
+            const activeEffOrg = activeCard.effect.filter(eff => eff.effType == "Trigger" && eff.actionPossible(time)).pop();
+            const result :effect = {...activeEffOrg,targetCard:[],costCard:[]};
+            return result
+        };
+
+        if(TriggerCards.AnyPrivate.length > 0){
+            const activeCard = await selectCardPromise(TriggerCards.AnyPrivate);
+            console.log(activeCard.cardName + " Effect")
+            const activeEffOrg = activeCard.effect.filter(eff => eff.effType == "Trigger" && eff.actionPossible(time)).pop();
+            const result :effect = {...activeEffOrg,targetCard:[],costCard:[]};
+            return result
+        };
+
+        return
     };
 
     /**
      * カード検索
      */
-    type CondetionProps = { [k in keyof CardProps]?: CardProps[k][] }
+    type CondetionProps = { [k in keyof CardCondetionProps]?: CardCondetionProps[k][] }
     const genCardArray = (conditions: CondetionProps)=> {
         let CardArray = myDeck
         for (let key in conditions) {
@@ -387,11 +610,12 @@ window.onload = function() {
      */
     const handSpellActivate = async(card: SpellCard) => {
         mainCanv.style.pointerEvents = "none"
+        const ActivedEffect = card.effect.find(Eff => Eff.effType == "CardActived")
         handToBoard(card);
         await animationHandToBoard(card,"ATK");
         await animationChainEffectActivate(card);
-        await card.effect.whenActive();
-        await card.effect.whenResolve();
+        await ActivedEffect.whenActive();
+        await ActivedEffect.whenResolve();
         await BoardToGY(card);
         await animationBoardToGY(card);
         mainCanv.style.pointerEvents = "auto"
@@ -403,12 +627,13 @@ window.onload = function() {
      */
     const fieldSpellActivate =  async(card: SpellCard) => {
         mainCanv.style.pointerEvents = "none"
+        const ActivedEffect = card.effect.find(Eff => Eff.effType == "CardActived")
         if (card.face=="DOWN"){
             await cardFlip(card)
         };
         await animationChainEffectActivate(card);
-        await card.effect.whenActive();
-        await card.effect.whenResolve();
+        await ActivedEffect.whenActive();
+        await ActivedEffect.whenResolve();
         await BoardToGY(card);
         await animationBoardToGY(card);
         mainCanv.style.pointerEvents = "auto"
@@ -420,12 +645,28 @@ window.onload = function() {
      */
     const EffctActivate = async(card: Card) => {
         mainCanv.style.pointerEvents = "none"
+        const ActivedEffect = card.effect.find(Eff => Eff.effType == "CardActived")
         await animationChainEffectActivate(card);
-        await card.effect.whenActive();
-        await card.effect.whenResolve();
+        await ActivedEffect.whenActive();
+        await ActivedEffect.whenResolve();
         mainCanv.style.pointerEvents = "auto"
         return
     };
+
+    /**
+     * 誘発効果発動
+     */
+    const TriggerEffctActivate = async(effPromise:Promise<effect>) => {
+        mainCanv.style.pointerEvents = "none"
+        const ActivedEffect = await effPromise
+        await animationChainEffectActivate(ActivedEffect.card);
+        await ActivedEffect.whenActive(ActivedEffect);
+        await ActivedEffect.whenResolve(ActivedEffect);
+        mainCanv.style.pointerEvents = "auto"
+        return
+    };
+
+    
 
     /**
      * 通常召喚する
@@ -433,7 +674,7 @@ window.onload = function() {
     const normalSummon = async(card: MonsterCard, position: "ATK"|"SET") => {
         // game.normalSummon = false;
         card.NSed=true;
-        handToBoard(card);
+        await handToBoard(card);
         if(position=="ATK"){
             card.position=position;
         };
@@ -443,6 +684,7 @@ window.onload = function() {
 
         await animationHandToBoard(card,position);
         console.log("NS " + position);
+        console.log("location " + card.location);
 
         game.time.summon = {type:"NS",
                             card:card,
@@ -450,10 +692,10 @@ window.onload = function() {
                             face:card.face,
                         };               
         game.time.spellSpeed = 1 ;
-
         console.log(game.time);
+
         if (TriggerEffCheck(game.time).length > 0){
-            await EffctActivate(TriggerEffCheck(game.time)[0])
+            await TriggerEffctActivate(TriggerEffPromise(game.time))
         };
     };
     
@@ -927,19 +1169,21 @@ window.onload = function() {
     const DISK = genMonsterCard(Disk);
     const DOGMA = genMonsterCard(Dogma);
     
-    AIRMAN.effect = new effect(AIRMAN)
-    AIRMAN.effect.actionPossible = (time:Time) =>{
-        const boolarray = [time.summon.type=="NS",
+    AIRMAN.effect[0] = new effect(AIRMAN)
+    AIRMAN.effect[0].effType = "Trigger"
+    AIRMAN.effect[0].whetherToActivate = "Any"
+    AIRMAN.effect[0].actionPossible = (time:Time) =>{
+        const boolarray = [time.summon.type=="NS"||time.summon.type=="SS",
                         time.summon.card== AIRMAN,
                         time.summon.face== "UP",
                         time.spellSpeed== 1];
         return boolarray.every(value => value)
     };
 
-    AIRMAN.effect.whenActive = () => {
+    AIRMAN.effect[0].whenActive = (eff :effect) => {
         return new Promise((resolve, reject) => {
             const cardlist = genCardArray({category:["HERO"],location:["DECK"]});
-            openCardSelectWindow(cardlist,AIRMAN,1);
+            openCardSelectWindow(cardlist,1,eff);
             SelectOkButton.addEventListener("click",clickOkButton);
             function clickOkButton(e) {
                 divSelectMenuContainer.style.visibility = "hidden";
@@ -948,30 +1192,25 @@ window.onload = function() {
             };
         });
     };
-    AIRMAN.effect.whenResolve = () => {
+    AIRMAN.effect[0].whenResolve = (eff :effect) => {
         return new Promise<void>(async(resolve, reject) => {
-            await search(AIRMAN.effect.targetCard);
+            await search(eff.targetCard);
             resolve();
         });
     };
 
 
     const potOfGreed = new SpellCard
-    potOfGreed.effectArray = {
-    1:{"EffctType":"Ignnition",
-        "spellSpeed":1,
-        "range":["field"],
-        "target":undefined}
-    };
     potOfGreed.imageFileName = "PotOfGreed.png"
     potOfGreed.cardName = "PotOfGreed"
-    potOfGreed.effect = new effect(potOfGreed);
-    potOfGreed.effect.whenActive = () => {
+    potOfGreed.effect[0] = new effect(potOfGreed);
+    potOfGreed.effect[0].effType = "CardActived"
+    potOfGreed.effect[0].whenActive = () => {
         return new Promise<void>((resolve, reject) => {
             resolve();
         });
     };
-    potOfGreed.effect.whenResolve = () => {
+    potOfGreed.effect[0].whenResolve = () => {
         return new Promise<void>(async(resolve, reject) => {
             await draw(2);
             resolve();
@@ -979,21 +1218,15 @@ window.onload = function() {
     };
     
     const reinforcement = new SpellCard
-    reinforcement.effectArray = {
-    1:{"EffctType":"Ignnition",
-        "spellSpeed":1,
-        "range":["field"],
-        "target":undefined}
-    };
-    
     reinforcement.imageFileName = "Reinforcement.jpg";
-    reinforcement.effect = new effect(reinforcement);
+    reinforcement.effect[0] = new effect(reinforcement);
+    reinforcement.effect[0].effType = "CardActived"
     reinforcement.cardName = "Reinforcement"
-    reinforcement.effect.whenActive = () => {
+    reinforcement.effect[0].whenActive = () => {
         return new Promise((resolve, reject) => {
             const cardlist = genCardArray({race:["WARRIOR"],location:["DECK"]})
                                 .filter(card => card instanceof MonsterCard && card.level <= 4);
-            openCardSelectWindow(cardlist,reinforcement,1);
+            openCardSelectWindow(cardlist,1,reinforcement.effect[0]);
             SelectOkButton.addEventListener("click",clickOkButton);
             function clickOkButton(e) {
                 divSelectMenuContainer.style.visibility = "hidden";
@@ -1002,39 +1235,33 @@ window.onload = function() {
             };
         });
     };
-    reinforcement.effect.whenResolve = () => {
+    reinforcement.effect[0].whenResolve = () => {
         return new Promise<void>(async(resolve, reject) => {
-            await search(reinforcement.effect.targetCard);
+            await search(reinforcement.effect[0].targetCard);
             resolve();
         });
     };
 
     const destinyDraw = new SpellCard
-    destinyDraw.effectArray = {
-    1:{"EffctType":"Ignnition",
-        "spellSpeed":1,
-        "range":["field"],
-        "target":undefined}
-    };
     destinyDraw.imageFileName = "Ddraw.jpg"
     destinyDraw.cardName = "destinyDraw"
-    destinyDraw.effect = new effect(destinyDraw);
-    destinyDraw.effect.whenActive = () => {
+    destinyDraw.effect[0] = new effect(destinyDraw);
+    destinyDraw.effect[0].effType = "CardActived"
+    destinyDraw.effect[0].whenActive = () => {
         return new Promise((resolve, reject) => {
             const cardlist = genCardArray({category:["HERO"],location:["HAND"]});
-            openCardSelectWindow(cardlist,destinyDraw,1);
+            openCardSelectWindow(cardlist,1,destinyDraw.effect[0]);
             const clickOkButton = async (e) => {
-                console.log("cost " + destinyDraw.effect.targetCard.map(({ cardName }) => cardName))
+                console.log("cost " + destinyDraw.effect[0].targetCard.map(({ cardName }) => cardName))
                 divSelectMenuContainer.style.visibility = "hidden";
                 disprayStage.removeAllChildren();
-                // await HandToGY(destinyDraw.effect.costCard);
-                await HandToGY(destinyDraw.effect.targetCard);
+                await HandToGY(destinyDraw.effect[0].targetCard);
                 resolve();
             };
             SelectOkButton.addEventListener("click",clickOkButton);
         });
     };
-    destinyDraw.effect.whenResolve = () => {
+    destinyDraw.effect[0].whenResolve = () => {
         return new Promise<void>(async(resolve, reject) => {
             await draw(2);
             resolve();
@@ -1095,9 +1322,10 @@ window.onload = function() {
     scrollAreaContainer.style.width = String(windowSize.w)+"px";
     scrollAreaContainer.style.height = String(windowSize.h)+"px";
 
-    const openCardSelectWindow = (disprayCards :Card[], activeCard :Card, count :Number) => {
+    const openCardSelectWindow = (disprayCards :Card[], count :Number, activeEff :effect) => {
         divSelectMenuContainer.style.visibility = "visible";
-        activeCard.effect.targetCard = [];
+
+        activeEff.targetCard = [];
         selectedCardImgArray = [];
         SelectOkButton.mouseEnabled = false ;
 
@@ -1162,20 +1390,20 @@ window.onload = function() {
             cardImgContainer.addEventListener("click", handleSelectClick);
             function handleSelectClick(event) {
                 if(selected.visible==false){
-                    if(activeCard.effect.targetCard.length==count){
+                    if(activeEff.targetCard.length==count){
                         selectedCardImgArray[0].selected.visible = false;
-                        activeCard.effect.targetCard.shift();
+                        activeEff.targetCard.shift();
                         selectedCardImgArray.shift();
                     }
                     selected.visible = true;
-                    activeCard.effect.targetCard.push(card);
+                    activeEff.targetCard.push(card);
                     selectedCardImgArray.push(selectedCardImg);
                 }else{
                     selected.visible = false; 
-                    activeCard.effect.targetCard = activeCard.effect.targetCard.filter(i => i !== card);
+                    activeEff.targetCard = activeEff.targetCard.filter(i => i !== card);
                     selectedCardImgArray = selectedCardImgArray.filter(i => i !== selectedCardImg);
                 };
-                SelectOkButton.mouseEnabled = activeCard.effect.targetCard.length===count;
+                SelectOkButton.mouseEnabled = activeEff.targetCard.length===count;
                 selectedMouseOver.visible = false;
             };
 
@@ -1203,67 +1431,4 @@ window.onload = function() {
         
         return Promise.all(PromiseArray);
     };
-
-    // const SelectHandCards = (targetArray : Card[], activeCard :Card, count :Number) =>{
-    //     stage.children.map((child, index, array)=>{
-    //         child.mouseEnabled = false;
-    //     });
-
-    //     const cloneArray = [];
-    //     const selected = new createjs.Bitmap("selected.png");
-    //     selected.setTransform (cardImgSize.x/4,cardImgSize.y/4,0.5,0.5); 
-    //     selected.visible = false;           
-
-    //     const selectedMouseOver = new createjs.Bitmap("selectedMouseOver.png");
-    //     selectedMouseOver.setTransform (cardImgSize.x/4,cardImgSize.y/4,0.5,0.5);      
-    //     selectedMouseOver.alpha = 0.5;
-    //     selectedMouseOver.visible = false;
-        
-    //     game.hand.map((card, index, array)=>{
-    //         const cloneImageContainer = card.imgContainer.clone();
-    //         cloneArray.push(cloneImageContainer);
-    //         stage.addChild(cloneImageContainer);
-
-    //         if(targetArray.includes(card)){
-    //             cloneImageContainer.addChild(selected);
-    //             cloneImageContainer.addChild(selectedMouseOver);
-    //             cloneImageContainer.cursor = "pointer";
-    //         };
-
-    //         const selectedCardImg = {
-    //             imgContainer: cloneImageContainer,
-    //             selected: selected
-    //         };
-
-    //         cloneImageContainer.addEventListener("mouseover", handleSelectMover);
-    //         function handleSelectMover(event) {
-    //         selectedMouseOver.visible = true;
-    //         };
-    //         cloneImageContainer.addEventListener("mouseout", handleSelectMout);
-    //         function handleSelectMout(event) {
-    //         selectedMouseOver.visible = false;
-    //         };
-    //         cloneImageContainer.addEventListener("click", handleSelectClick);
-    //         function handleSelectClick(event) {
-    //         if(selected.visible==false){
-    //             if(activeCard.effect.target.length==count){
-    //                 selectedCardImgArray[0].selected.visible = false;
-    //                 activeCard.effect.target.shift();
-    //                 selectedCardImgArray.shift();
-    //             };
-    //             selected.visible = true;
-    //             activeCard.effect.target.push(card);
-    //             selectedCardImgArray.push(selectedCardImg);
-    //         }else{
-    //             selected.visible = false; 
-    //             activeCard.effect.target = activeCard.effect.target.filter(i => i !== card);
-    //             selectedCardImgArray = selectedCardImgArray.filter(i => i !== selectedCardImg);
-    //         };
-            
-    //         HandOkButton.visible = true;
-    //         HandOkButton.mouseEnabled = activeCard.effect.target.length===count;
-    //         selectedMouseOver.visible = false;
-    //         };
-    //     });
-    // };
 };
