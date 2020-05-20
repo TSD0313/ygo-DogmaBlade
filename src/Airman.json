@@ -3,7 +3,7 @@
     "bar": 123,
     "ID": 111,
     "cardName": "Air",
-    "category" : "HERO" ,
+    "category" : ["HERO"] ,
     "cardType": "Monster",
     "monsterType": "Effect",
     "level": 4,
