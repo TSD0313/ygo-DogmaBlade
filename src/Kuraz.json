@@ -1,0 +1,14 @@
+{
+    "imageFileName": "Kuraz.jpg",
+    "bar": 123,
+    "ID": 111,
+    "cardName": "Kuraz",
+    "category" : [] ,
+    "cardType": "Monster",
+    "monsterType": "Effect",
+    "level": 6,
+    "race": "WARRIOR",
+    "attribute": "LIGHT",
+    "atkPoint" : 2400,
+    "defPoint" : 1000
+  }
