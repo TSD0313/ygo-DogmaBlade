@@ -1,4 +1,3 @@
-// 78.0.3904.97
 // EaselJS系の読み込み
 import { Shape, Stage, Bitmap, Container, Tween, Timeline} from 'createjs-module';
 import { createButton }  from './createButton';
@@ -39,6 +38,7 @@ class Game{
     displayOrder : any;
     selectedCards : Card[];
     chain : effect[];
+    nowTime : Time;
     timeArray : Time[];
     constructor(){
         this.field = [undefined];
@@ -53,6 +53,7 @@ class Game{
         this.enemyLifePoint= DEFAULT_LIFE;
         this.normalSummon = true;
         this.chain = [];
+        this.nowTime = {};
         this.timeArray = [];
 
 
@@ -92,23 +93,41 @@ class Game{
 };
 
 class Time{
-    phase?:"DP"|"SP"|"M1"|"BP"|"M2"|"EP";
-    spellSpeed?:1|2|3;
     summon?:{
             card : MonsterCard;
             type : "NS"|"SS";
             position : "ATK"|"DEF";
             face : "UP"|"DOWN";
             from? : "MO"|"ST"|"FIELD"|"DECK"|"HAND"|"GY"|"DD";
-        }[];
-    leaveBoard?:{
+    }[];
+    move?:{
         card : Card;
-        by? : "DESTROY"|"RELEASE";
+        from? : "BOARD"|"DECK"|"HAND"|"GY"|"DD";
+        to? : "MO"|"ST"|"FIELD"|"DECK"|"HAND"|"GY"|"DD";
+    }[];
+    discard?:{
+        card : Card;
+    }[];
+    destroy?:{
+        card : Card;
+        by? : "BATTLE"|"EFFECT"|"RULE";
+    }[];
+    release?:{
+        card : Card;
+        by? : "ADVANCE"|"EFFECT"|"RULE";
+    }[];
+    effectActive?:{
+        card : Card;
+        eff : effect;
     }[];
     constructor(){
         this.summon = [];
-        this.leaveBoard = [];
-    }
+        this.move = [];
+        this.discard = [];
+        this.destroy = [];
+        this.release= [];
+        this.effectActive= [];
+    };
 };
 
 
@@ -152,11 +171,13 @@ class Card  {
     effect : effect[];
     button : {NS:button,SS:button,SET:button,ACTIVATE:button,FLIP:button};
     category : string[] ;
+    canDestroy : boolean ;
     constructor(){
         this.cardBackImageFileName = "cardback.jpeg";
         this.location = "DECK"
         this.face = "DOWN"
         this.effect = [];
+        this.canDestroy = true ;
         this.button = (()=>{
             const NSButton = new button(this, "NS", cardImgSize.x, 40, "#0275d8");
             const SSButton = new button(this, "SS", cardImgSize.x, 40, "#0275d8");
@@ -193,12 +214,13 @@ class SpellCard extends Card {
     constructor(){
         super();
         this.cardType = "Spell"
+        this.peggingTarget = [];
     };
 };
 
 class effect {
     card : Card;
-    effType : "CardActived"|"Ignition"|"Trigger"|"Continuous"|"Quick";
+    effType : "CardActived"|"Ignition"|"Trigger"|"Continuous"|"Quick"|"Rule";
     spellSpeed : 1|2|3;
     range : string[];
     whetherToActivate : "Any"|"Forced";
@@ -207,7 +229,7 @@ class effect {
     actionPossible :(time:Time) => boolean;
     whenActive : (eff?: effect) => Promise<any>;
     whenResolve : (eff?: effect) => Promise<any>;
-    apply : (eff?: effect) => Promise<any>;
+    apply : () => Promise<any>;
     constructor(card:Card){
         this.card = card;
         this.targetCard = [];
@@ -324,13 +346,13 @@ window.onload = function() {
      */
     const ContinuousEffect = async(time:Time) =>{
         const boardUp = genCardArray({location:["MO","ST","GY"],face:["UP"]});
-        const AllCo = (()=>{
+        const AllCoRu = (()=>{
             const tmpCoArray :effect[] = [];
             boardUp.map((card,index,array)=>{
                 tmpCoArray.push(
                     ...(
                         card.effect.filter(eff => 
-                        eff.effType == "Continuous" )
+                        eff.effType == "Continuous"||eff.effType == "Rule" )
                     )
                 );
             });
@@ -341,8 +363,8 @@ window.onload = function() {
                 eff.actionPossible(time));
         };
         await (async () => {
-            for(let eff of canActiveEffects(AllCo,time)){
-                await eff.apply(eff)
+            for(let eff of canActiveEffects(AllCoRu,time)){
+                await eff.apply()
             };
         })();
     };
@@ -431,16 +453,28 @@ window.onload = function() {
                     const activeEffOrg = (await selectCardPromise(PubForced)).effect.filter(eff => 
                         eff.effType == "Trigger" && canActiveEffects([eff],TriggerTime) ).pop();
                     const result :effect = {...activeEffOrg,targetCard:[],costCard:[]};
+                    game.nowTime = new Time;
+                        game.nowTime.effectActive.push({
+                            card:result.card,
+                            eff:result
+                        });
                     await animationChainEffectActivate(result.card);
                     await result.whenActive(result);
+                    game.timeArray.push({...game.nowTime});
                     game.chain.push(result);
                     TriggerObj.PublicForced = TriggerObj.PublicForced.filter(eff => 
                         eff !== activeEffOrg );
                 }else if(PubForced.length ==1){
                     const activeEffOrg = PubForced.pop()
                     const result :effect = {...activeEffOrg,targetCard:[],costCard:[]};
+                    game.nowTime = new Time;
+                        game.nowTime.effectActive.push({
+                            card:result.card,
+                            eff:result
+                        });
                     await animationChainEffectActivate(result.card);
                     await result.whenActive(result);
+                    game.timeArray.push({...game.nowTime});
                     game.chain.push(result);
                     TriggerObj.PublicForced = TriggerObj.PublicForced.filter(eff => 
                         eff !== activeEffOrg );
@@ -457,8 +491,14 @@ window.onload = function() {
                         TriggerObj.PublicAny = [];
                     }else{
                         const result :effect = {...activeEffOrg,targetCard:[],costCard:[]};
+                        game.nowTime = new Time;
+                        game.nowTime.effectActive.push({
+                            card:result.card,
+                            eff:result
+                        });
                         await animationChainEffectActivate(result.card);
                         await result.whenActive(result);
+                        game.timeArray.push({...game.nowTime});
                         console.log(result.card.cardName + " Effect")
                         game.chain.push(result);
                         TriggerObj.PublicAny = TriggerObj.PublicAny.filter(eff => 
@@ -468,8 +508,14 @@ window.onload = function() {
                     const activeEffOrg = PubAny.pop()
                     if(await(OpenYesNoWindow(activeEffOrg.card.cardName + "の効果を発動しますか？"))){
                         const result :effect = {...activeEffOrg,targetCard:[],costCard:[]};
+                        game.nowTime = new Time;
+                        game.nowTime.effectActive.push({
+                            card:result.card,
+                            eff:result
+                        });
                         await animationChainEffectActivate(result.card);
                         await result.whenActive(result);
+                        game.timeArray.push({...game.nowTime});
                         console.log(result.card.cardName + " Effect")
                         game.chain.push(result);
                     };
@@ -483,6 +529,7 @@ window.onload = function() {
             console.log("NO TriggerEffect")
             }else{
                 await (async () => {
+                    console.log("Chain resolve")
                     for(let eff of game.chain.reverse()) {
                         await eff.whenResolve(eff);
                     };
@@ -491,8 +538,6 @@ window.onload = function() {
                     for(let eff of game.chain){
                         if(eff.card instanceof SpellCard && (eff.card.spellType=="Normal"||eff.card.spellType=="Quick")){
                             await moveCard.BOARD.toGY(eff.card);
-                            // await BoardToGY(eff.card);
-                            // await animationBoardToGY(eff.card); 
                         };
                     };
                 })();
@@ -608,9 +653,9 @@ window.onload = function() {
             };
 
             card.button.SET.buttonContainer.addEventListener("click",handleSETbuttonClick);
-            function handleSETbuttonClick(event) {
+            async function handleSETbuttonClick(event) {
                 if(card instanceof MonsterCard){
-                    normalSummon(card,"SET");
+                    await normalSummon(card,"SET");
                 };
                 if(card instanceof SpellCard){
                     SpellTrapSet.fromHAND(card);
@@ -761,6 +806,7 @@ window.onload = function() {
                     fromZone[fromZone.indexOf(card)]=void 0;
                     game.graveYard.push(card);
                     card.location = "GY";
+                    buttonSetting.gy(card); 
                     return;
                 };
                 const animationBoardToGY = (card: Card) => {
@@ -964,7 +1010,6 @@ window.onload = function() {
             );
         });
         return Promise.all(twPromise);
-        
     };
 
     /**
@@ -974,9 +1019,11 @@ window.onload = function() {
         mainCanv.style.pointerEvents = "none"
         const Effect = card.effect.find(Eff => Eff.effType == "CardActived")
         const ActivedEffect = {...Effect,targetCard:[],costCard:[]}
+        game.nowTime = new Time;
         await moveCard.HAND.toBOARD(card,"ATK");
         await animationChainEffectActivate(card);
         await ActivedEffect.whenActive(ActivedEffect);
+        game.timeArray.push({...game.nowTime});
         game.chain.push(ActivedEffect);
         await TriggerQuickeEffect();
         mainCanv.style.pointerEvents = "auto"
@@ -990,26 +1037,31 @@ window.onload = function() {
         mainCanv.style.pointerEvents = "none"
         const Effect = card.effect.find(Eff => Eff.effType == "CardActived")
         const ActivedEffect = {...Effect,targetCard:[],costCard:[]}
+        game.nowTime = new Time;
         if (card.face=="DOWN"){
             await cardFlip(card)
         };
+        game.nowTime = new Time;
+        game.nowTime.effectActive.push({
+            card:ActivedEffect.card,
+            eff:ActivedEffect
+        });
         await animationChainEffectActivate(card);
         await ActivedEffect.whenActive(ActivedEffect);
+        game.timeArray.push({...game.nowTime});
         game.chain.push(ActivedEffect);
         await TriggerQuickeEffect();
         mainCanv.style.pointerEvents = "auto"
         return
     };
+
     /**
      * 魔法罠セット
      */
     const SpellTrapSet = {
         fromHAND:async(card: SpellCard) => {
             await moveCard.HAND.toBOARD(card,"SET");
-            const now = new Time;
-            now.spellSpeed = 1;         
-            console.log(now);
-            game.timeArray.push(now);
+            // game.timeArray.push({...game.nowTime});
             await TriggerQuickeEffect();
         },
     };
@@ -1019,7 +1071,6 @@ window.onload = function() {
      */
     const SpecialSummon = {
         fromGY: async(cardArray:Card[],posiSelect:boolean,position?:"ATK"|"DEF") => {
-            const now = new Time;
             await (async () => {
                 for(let card of cardArray) {
                     if(card instanceof MonsterCard){
@@ -1035,8 +1086,7 @@ window.onload = function() {
                         card.position=posi;
                         console.log("SS "+ card.cardName + " fromGY " + posi);
                         console.log("location " + card.location); 
-
-                        now.summon.push({
+                        game.nowTime.summon.push({
                             type: "SS",
                             card: card,
                             position: posi,
@@ -1045,12 +1095,11 @@ window.onload = function() {
                         });
                     };
                 };
-            })();
-            now.spellSpeed = 1;            
+            })();          
     
-            console.log(now);
-            await ContinuousEffect(now);
-            game.timeArray.push(now)
+            console.log(game.nowTime);
+            await ContinuousEffect(game.nowTime);
+            game.timeArray.push(game.nowTime)
             if(game.chain.length==0){
                 await TriggerQuickeEffect()
                 game.timeArray.map(time=>console.log(time))
@@ -1084,7 +1133,9 @@ window.onload = function() {
                     divSelectMenuContainer.style.visibility = "hidden";
                     disprayStage.removeAllChildren();
                     SelectOkButton.removeEventListener("click", clickOkButton);
-                    await release(tmpEff.targetCard)
+                    game.nowTime = new Time;
+                    await release(tmpEff.targetCard,"ADVANCE")
+                    game.timeArray.push({...game.nowTime});
                     resolve();
                 };
                 SelectOkButton.addEventListener("click",clickOkButton);
@@ -1100,22 +1151,26 @@ window.onload = function() {
             card.position="DEF";
         };
 
+        game.nowTime = new Time;
         await moveCard.HAND.toBOARD(card,position)
+        game.nowTime.summon.push({
+            card:card,
+            type: "NS",
+            position: card.position,
+            face: card.face,
+            from:"HAND",
+        });
+        game.nowTime.move.push({
+            card:card,
+            from:"HAND",
+            to:"MO"
+        });
+        game.timeArray.push({...game.nowTime});
+
         console.log("NS " + position);
         console.log("location " + card.location);
 
-        const now = new Time;
-        now.summon=[{
-            type: "NS",
-            card: card,
-            position: card.position,
-            face: card.face,
-        }];
-        now.spellSpeed = 1;            
-        console.log(now);
-        await ContinuousEffect(now);
-        
-        game.timeArray.push(now)
+        await ContinuousEffect(game.nowTime);
         await TriggerQuickeEffect()
         game.timeArray.map(time=>console.log(time))
     };
@@ -1137,39 +1192,46 @@ window.onload = function() {
     /**
      * リリースする
      */
-    const release = async(cardArray : Card[]) => {
-        const now = new Time;
+    const release = async(cardArray : Card[],by:"ADVANCE"|"EFFECT"|"RULE") => {
         await (async () => {
             for(let card of cardArray){
                 await moveCard.BOARD.toGY(card);
-                now.leaveBoard.push({
-                    card: card,
-                    by: "RELEASE"
+                game.nowTime.release.push({
+                    card:card,
+                    by:by
+                });
+                game.nowTime.move.push({
+                    card:card,
+                    from:"BOARD",
+                    to:"GY"
                 });
             };
         })();
-        await ContinuousEffect(now);
-        // プロパティ更新
-        // time処理
+        await ContinuousEffect(game.nowTime);
     };
 
     /**
      * 破壊する
      */
-    const destroy = async(cardArray : Card[]) => {
-        const now = new Time;
+    const destroy = async(cardArray : Card[],by:"BATTLE"|"EFFECT"|"RULE") => {
         await (async () => {
             for(let card of cardArray){
-                await moveCard.BOARD.toGY(card);
-                now.leaveBoard.push({
-                    card: card,
-                    by: "DESTROY"
+                card.canDestroy = false ;
+                game.nowTime.destroy.push({
+                    card:card,
+                    by:by
                 });
+                if(by=="BATTLE"||by=="EFFECT"){
+                    console.log("destroy "+card.cardName+" by "+by);
+                }else if(by=="RULE"){
+                    console.log("destroy "+card.cardName+" lost equip target");
+                };
             };
         })();
-        await ContinuousEffect(now);
-        // プロパティ更新
-        // time処理
+        await ContinuousEffect(game.nowTime);
+        cardArray.forEach(card=>{
+            card.canDestroy = true;
+        });
     };
 
 
@@ -1310,6 +1372,7 @@ window.onload = function() {
             })();
             resolve();
         });
+        // time処理
     };
 
     /**
@@ -1338,7 +1401,51 @@ window.onload = function() {
     const canActiveEffects =(card:Card)=>{
         return card.effect.filter(eff => 
             (eff.effType=="CardActived"||eff.effType=="Quick"||eff.effType=="Ignition") &&
-            eff.actionPossible({spellSpeed:1}));
+            eff.actionPossible({}));
+    };
+    /**
+     * 装備魔法の対象が消えたとき自身を破壊する効果
+     */
+    const equipDestroy = (card:SpellCard) =>{
+        const EDeff = new effect(card);
+        EDeff.effType = "Rule";
+        EDeff.actionPossible = (time:Time) =>{
+            const timeCondition = (()=>{
+                const timeBoolArray :boolean[] = [];
+                time.move.forEach(tMove=>{
+                    timeBoolArray.push(card.peggingTarget.includes(tMove.card));
+                });
+                return timeBoolArray.some(value => value);
+            })();
+            const boolarray = [
+                card.canDestroy,
+               card.peggingTarget.length==1,
+               card.location=="ST",
+               card.face=="UP",
+               timeCondition
+            ];
+            return boolarray.every(value => value==true)
+        };
+        EDeff.apply = () => {
+            return new Promise<void>(async(resolve, reject) => {
+                if(card.location=="ST"){
+                    await destroy([card],"RULE");
+                    await (async () => {
+                        for(let tCard of [card]){
+                            await moveCard.BOARD.toGY(tCard);
+                            game.nowTime.move.push({
+                                card:tCard,
+                                from:"BOARD",
+                                to:"GY"
+                            });
+                        };
+                    })();
+                };
+                card.peggingTarget = [];
+                resolve();
+            });
+        };
+        return EDeff;
     };
     
     
@@ -1390,7 +1497,6 @@ window.onload = function() {
 
         const boolarray = [
             timeCondition,
-            time.spellSpeed== 1,
             genCardArray({category:["HERO"],location:["DECK"]}).length > 0];
         return boolarray.every(value => value)
     };
@@ -1410,7 +1516,9 @@ window.onload = function() {
     };
     AIRMAN.effect[0].whenResolve = (eff :effect) => {
         return new Promise<void>(async(resolve, reject) => {
+            game.nowTime = new Time;
             await search(eff.targetCard);
+            game.timeArray.push({...game.nowTime});
             resolve();
         });
     };
@@ -1428,15 +1536,12 @@ window.onload = function() {
                     ts.from== "GY",
                     ts.card== DISK,
                     ts.face== "UP",
-                    time.spellSpeed== 1
                     ].every(value => value)
                 );
             });
             return timeBoolArray.some(value => value);
         })();
-        const boolarray = [
-            timeCondition,
-            time.spellSpeed== 1];
+        const boolarray = [timeCondition];
         return boolarray.every(value => value)
     };
 
@@ -1447,7 +1552,9 @@ window.onload = function() {
     };
     DISK.effect[0].whenResolve = (eff :effect) => {
         return new Promise<void>(async(resolve, reject) => {
+            game.nowTime = new Time;
             await draw(2);
+            game.timeArray.push({...game.nowTime});
             resolve();
         });
     };
@@ -1472,7 +1579,6 @@ window.onload = function() {
 
         const boolarray = [
             timeCondition,
-            time.spellSpeed== 1,
             genCardArray({location:["MO","ST"]}).length > 0];
         return boolarray.every(value => value)
     };
@@ -1492,10 +1598,24 @@ window.onload = function() {
     };
     KURAZ.effect[0].whenResolve = (eff :effect) => {
         return new Promise<void>(async(resolve, reject) => {
+            game.nowTime = new Time;
             const targetLocation = ["ST","MO","FIELD"]
             const target = eff.targetCard.filter(card=>targetLocation.includes(card.location))
-            await destroy(target);
+            await destroy(target,"EFFECT");
+            await (async () => {
+                for(let tCard of target){
+                    await moveCard.BOARD.toGY(tCard);
+                    game.nowTime.move.push({
+                        card:tCard,
+                        from:"BOARD",
+                        to:"GY"
+                    });
+                };
+            })();
+            await ContinuousEffect(game.nowTime);
             await draw(target.length);
+
+            game.timeArray.push({...game.nowTime});
             resolve();
         });
     };
@@ -1514,7 +1634,6 @@ window.onload = function() {
     };
     potOfGreed.effect[0].actionPossible = (time:Time) =>{
         const boolarray = [
-            time.spellSpeed = 1,
             genCardArray({location:["DECK"]}).length > 0
         ];
         return boolarray.every(value => value==true)
@@ -1534,7 +1653,6 @@ window.onload = function() {
     reinforcement.effect[0].effType = "CardActived"
     reinforcement.effect[0].actionPossible = (time:Time) =>{
         const boolarray = [
-            time.spellSpeed = 1,
             genCardArray({race:["WARRIOR"],location:["DECK"]})
                                 .filter(card => card instanceof MonsterCard && card.level <= 4).length > 0
         ];
@@ -1556,7 +1674,9 @@ window.onload = function() {
     };
     reinforcement.effect[0].whenResolve = (eff :effect) => {
         return new Promise<void>(async(resolve, reject) => {
+            game.nowTime = new Time;
             await search(eff.targetCard);
+            game.timeArray.push({...game.nowTime});
             resolve();
         });
     };
@@ -1569,7 +1689,6 @@ window.onload = function() {
     destinyDraw.effect[0].effType = "CardActived"
     destinyDraw.effect[0].actionPossible = (time:Time) =>{
         const boolarray = [
-            time.spellSpeed = 1,
             genCardArray({category:["D-HERO"],location:["HAND"]}).length > 0
         ];
         return boolarray.every(value => value==true)
@@ -1591,7 +1710,9 @@ window.onload = function() {
     };
     destinyDraw.effect[0].whenResolve = (eff :effect) => {
         return new Promise<void>(async(resolve, reject) => {
+            game.nowTime = new Time;
             await draw(2);
+            game.timeArray.push({...game.nowTime});
             resolve();
         });
     };
@@ -1604,7 +1725,6 @@ window.onload = function() {
     monsterReborn.effect[0].effType = "CardActived"
     monsterReborn.effect[0].actionPossible = (time:Time) =>{
         const boolarray = [
-            time.spellSpeed = 1,
             genCardArray({cardType:["Monster"],location:["GY"]}).length > 0
         ];
         return boolarray.every(value => value==true)
@@ -1638,7 +1758,6 @@ window.onload = function() {
     prematureBrial.effect[0].effType = "CardActived"
     prematureBrial.effect[0].actionPossible = (time:Time) =>{
         const boolarray = [
-            time.spellSpeed = 1,
             genCardArray({cardType:["Monster"],location:["GY"]}).length > 0
         ];
         return boolarray.every(value => value==true)
@@ -1659,8 +1778,10 @@ window.onload = function() {
     };
     prematureBrial.effect[0].whenResolve = (eff :effect) => {
         return new Promise<void>(async(resolve, reject) => {
+            game.nowTime = new Time;
             await SpecialSummon.fromGY(eff.targetCard,false,"ATK");
             prematureBrial.peggingTarget = eff.targetCard;
+            game.timeArray.push({...game.nowTime});
             resolve();
         });
     };
@@ -1669,36 +1790,39 @@ window.onload = function() {
     prematureBrial.effect[1].actionPossible = (time:Time) =>{
         const timeCondition = (()=>{
             const timeBoolArray :boolean[] = [];
-            time.leaveBoard.forEach(tlb=>{
-                timeBoolArray.push([
-                    [tlb.card== prematureBrial,tlb.by== "DESTROY"].every(value => value),
-                    tlb.card==prematureBrial.peggingTarget[0]
-                ].some(value => value)
-                );
+            time.destroy.forEach(tDestroy=>{
+                timeBoolArray.push(tDestroy.card== prematureBrial);
             });
             return timeBoolArray.some(value => value);
         })();
         const boolarray = [
            "peggingTarget" in prematureBrial,
+           prematureBrial.peggingTarget.filter(card=>card.canDestroy).length>0,
            timeCondition
         ];
         return boolarray.every(value => value==true)
     };
-    prematureBrial.effect[1].apply = (eff :effect) => {
+    prematureBrial.effect[1].apply = () => {
         return new Promise<void>(async(resolve, reject) => {
-            if(prematureBrial.location=="ST"){
-                // 埋葬を破壊する
-                await destroy([prematureBrial])
-            }else if(prematureBrial.peggingTarget[0].location=="MO"){
-                // 装備対象を破壊する
-                await destroy(prematureBrial.peggingTarget)
+            if(prematureBrial.peggingTarget[0].location=="MO"){
+                await destroy(prematureBrial.peggingTarget,"EFFECT");
+                await (async () => {
+                    for(let tCard of prematureBrial.peggingTarget){
+                        await moveCard.BOARD.toGY(tCard);
+                        game.nowTime.move.push({
+                            card:tCard,
+                            from:"BOARD",
+                            to:"GY"
+                        });
+                    };
+                })();
             };
-            delete prematureBrial.peggingTarget;
+            prematureBrial.peggingTarget = [];
             resolve();
         });
     };
-
-
+    prematureBrial.effect.push( equipDestroy(prematureBrial) )
+    
 
     const myDeck : Card[]= [DOGMA,ALPHA,BETA,GAMMA,potOfGreed,reinforcement,
         AIRMAN,destinyDraw,DISK,monsterReborn,prematureBrial,KURAZ];
