@@ -114,7 +114,7 @@ class Time{
     }[];
     release?:{
         card : Card;
-        by? : "ADVANCE"|"EFFECT"|"RULE";
+        by? : "ADVANCE"|"EFFECT"|"RULE"|"COST";
     }[];
     effectActived?:{
         card : Card;
@@ -172,7 +172,7 @@ class Card  {
     cardType : "Monster"|"Spell"|"Trap";
     face : "UP"|"DOWN" ;
     effect : effect[];
-    button : {NS:button,SS:button,SET:button,ACTIVATE:button,FLIP:button};
+    button : {NS:button,SS:button,SET:button,ACTIVATE:button,FLIP:button,VIEW:button};
     category : string[] ;
     canDestroy : boolean ;
     constructor(){
@@ -187,7 +187,8 @@ class Card  {
             const SETButton = new button(this, "SET", cardImgSize.x, 40, "#0275d8"); 
             const ACTIVATEButton = new button(this, "ACTIVATE", cardImgSize.x, 40, "#0275d8"); 
             const FLIPButton = new button(this, "FLIP", cardImgSize.x, 40, "#0275d8"); 
-            return {NS:NSButton,SS:SSButton,SET:SETButton,ACTIVATE:ACTIVATEButton,FLIP:FLIPButton};
+            const VIEWButton = new button(this, "VIEW", cardImgSize.x, 40, "#0275d8"); 
+            return {NS:NSButton,SS:SSButton,SET:SETButton,ACTIVATE:ACTIVATEButton,FLIP:FLIPButton,VIEW:VIEWButton};
         })();
     };
 };
@@ -671,6 +672,46 @@ window.onload = function() {
                 button.removeAllEventListeners("click");
                 button.visible=false;
             });
+
+            card.imgContainer.addEventListener("mouseover", handleFieldMover);
+            function handleFieldMover(event) {
+                const disprayButtonArray :Container[] = []
+                const canActivateGYCard = game.GY.filter(card=>canActiveEffects(card).length >0);
+                if(game.GY[game.GY.length-1]===card){
+                    if(canActivateGYCard.length >0){
+                        disprayButtonArray.push(card.button.ACTIVATE.buttonContainer);
+                    };
+                    disprayButtonArray.push(card.button.VIEW.buttonContainer);
+                };
+                disprayButtonArray.forEach((button, index, array) => {
+                    button.x = -cardImgSize.x/2;
+                    button.y = cardImgSize.x/2-40*(array.length) + 40*(index+1)-10;
+                    button.visible = true ;
+                });
+            };
+
+            card.imgContainer.addEventListener("mouseout", handleFieldMout);
+            function handleFieldMout(event) {
+                buConArray.forEach(b =>{b.visible=false;});
+            };
+
+            card.button.ACTIVATE.buttonContainer.addEventListener("click",handleActivatebuttonClick);
+            function handleActivatebuttonClick(event) {
+                // 墓地効果発動
+                buConArray.forEach(b =>{b.removeAllEventListeners("click");});
+            };
+
+            card.button.VIEW.buttonContainer.addEventListener("click",handlViewbuttonClick);
+            function handlViewbuttonClick(event) {
+                openCardListWindow.view(game.GY,"GY");
+                console.log(game.GY)
+                const clickOkButton = async (e) => {
+                    divSelectMenuContainer.style.visibility = "hidden";
+                    disprayStage.removeAllChildren();
+                    SelectOkButton.removeEventListener("click", clickOkButton);
+                };
+                SelectOkButton.addEventListener("click",clickOkButton);
+            };
         },
         DD:async(card:Card)=>{
             card.imgContainer.removeAllEventListeners();
@@ -714,220 +755,144 @@ window.onload = function() {
             await buttonSetting[to](card);
         };
     };
-    
+
+    /**
+     * 移動カードのanimation設定
+     */  
+    const Animation = {
+        toBOARD:(card: Card, position: "ATK"|"DEF"|"SET")=>{
+            const toGrid = (() => {
+                if(card instanceof MonsterCard){
+                    let toX : Number = game.displayOrder.mon[game.MO.indexOf(card)][0];
+                    let toY : Number = game.displayOrder.mon[game.MO.indexOf(card)][1];
+                    return{toX,toY};
+                }
+                else{
+                    let toX : Number = game.displayOrder.st[game.ST.indexOf(card)][0];
+                    let toY : Number = game.displayOrder.st[game.ST.indexOf(card)][1];
+                    return{toX,toY};
+                };
+            })();
+            const {toX,toY} = toGrid;
+            const TWEEN = () => {
+                if(position=="ATK"){
+                    if(card instanceof MonsterCard){
+                        return createjs.Tween.get(card.imgContainer)
+                            .to({x:toX,y:toY,scaleX:1.5,scaleY:1.5},400,createjs.Ease.cubicOut)
+                            .to({scaleX:1,scaleY:1},400,createjs.Ease.cubicIn)
+                            .wait(200)
+                    }else{
+                        return createjs.Tween.get(card.imgContainer)
+                        .to({x:toX,y:toY},500,createjs.Ease.cubicOut)
+                    };
+                };
+                if(position=="DEF"){
+                    if(card instanceof MonsterCard){
+                        return createjs.Tween.get(card.imgContainer)
+                            .to({x:toX,y:toY,rotation:-90,scaleX:1.5,scaleY:1.5},400,createjs.Ease.cubicOut)
+                            .to({scaleX:1,scaleY:1},400,createjs.Ease.cubicIn)
+                    };
+                };
+                if(position=="SET"){
+                    if(card instanceof MonsterCard){
+                        return createjs.Tween.get(card.imgContainer)
+                                .call(()=>{cardFlip(card)})
+                                .to({x:toX,y:toY,rotation:-90},500,createjs.Ease.cubicOut);
+                    };
+                    if(card instanceof SpellCard){
+                        return createjs.Tween.get(card.imgContainer)
+                                .call(()=>{cardFlip(card)})
+                                .to({x:toX,y:toY},500,createjs.Ease.cubicOut);
+                    };
+                };
+            };
+            return new Promise((resolve, reject) => {
+                TWEEN().call(()=>{resolve()})
+            });
+        },
+        toGY:(card: Card)=>{
+            const toX : number = game.displayOrder.gy[0][0]+(game.GY.length-1)*2
+                const toY : number = game.displayOrder.gy[0][1]-(game.GY.length-1)*2
+                return new Promise((resolve, reject) => {
+                    if (card.face=="DOWN"){
+                        cardFlip(card);
+                    };
+                    createjs.Tween.get(card.imgContainer)
+                        .call(()=>{stage.setChildIndex(card.imgContainer,stage.numChildren-1)})
+                        .to({x:toX,y:toY,rotation:0},500,createjs.Ease.cubicOut)
+                        .call(()=>{resolve()});
+                }); 
+        },
+        fromGY:(card: Card)=>{
+            stage.setChildIndex(card.imgContainer,stage.numChildren-1);
+            const PromiseArray :Promise<unknown>[] = [];
+            game.GY.map((card, index, array) => {
+                const twPromise = () => {
+                    return new Promise((resolve, reject) => {
+                    createjs.Tween.get(card.imgContainer)
+                        .to({x:game.displayOrder.gy[0][0]+index*1,y:game.displayOrder.gy[0][1]-index*2})
+                        .call(()=>{stage.setChildIndex(card.imgContainer,stage.numChildren - array.length + index)})
+                        .call(()=>{resolve()});                
+                    });
+                };
+                PromiseArray.push(twPromise());
+            });
+            return Promise.all(PromiseArray);
+        },
+    };
 
     const moveCard = {
         HAND:{
             toBOARD:async(card: Card, position: "ATK"|"DEF"|"SET")=>{
-                const animationHandToBoard = (card: Card, position: "ATK"|"DEF"|"SET") => {
-                    return new Promise(async(resolve, reject) => {
-                        const toGrid = () => {
-                            if(card instanceof MonsterCard){
-                                let toX : Number = game.displayOrder.mon[game.MO.indexOf(card)][0];
-                                let toY : Number = game.displayOrder.mon[game.MO.indexOf(card)][1];
-                                return{toX,toY};
-                            }
-                            else{
-                                let toX : Number = game.displayOrder.st[game.ST.indexOf(card)][0];
-                                let toY : Number = game.displayOrder.st[game.ST.indexOf(card)][1];
-                                return{toX,toY};
-                            };
-                        };
-                        const {toX,toY} = toGrid();
-                        const TWEEN = () => {
-                            if(position=="ATK"){
-                                if(card instanceof MonsterCard){
-                                    return createjs.Tween.get(card.imgContainer)
-                                        .to({x:toX,y:toY,scaleX:1.5,scaleY:1.5},400,createjs.Ease.cubicOut)
-                                        .to({scaleX:1,scaleY:1},400,createjs.Ease.cubicIn)
-                                        .wait(200)
-                                }else{
-                                    return createjs.Tween.get(card.imgContainer)
-                                    .to({x:toX,y:toY},500,createjs.Ease.cubicOut)
-                                };
-                            };
-                            if(position=="SET"){
-                                if(card instanceof MonsterCard){
-                                    return createjs.Tween.get(card.imgContainer)
-                                            .call(()=>{cardFlip(card)})
-                                            .to({x:toX,y:toY,rotation:-90},500,createjs.Ease.cubicOut);
-                                };
-                                if(card instanceof SpellCard){
-                                    return createjs.Tween.get(card.imgContainer)
-                                            .call(()=>{cardFlip(card)})
-                                            .to({x:toX,y:toY},500,createjs.Ease.cubicOut);
-                                };
-                            };
-                        };
-                        stage.setChildIndex(card.imgContainer,stage.numChildren-1);
-                        animationHandAdjust();
-                        TWEEN().call(()=>{resolve()})
-                    });
-                };
                 if(card instanceof MonsterCard){
-                    await LocationSetting(card,"MO")
+                    await LocationSetting(card,"MO");
                 }else{
-                    await LocationSetting(card,"ST")
+                    await LocationSetting(card,"ST");
                 };
-                await animationHandToBoard(card,position)
+                await Promise.all([animationHandAdjust(), Animation.toBOARD(card, position)])
             },
 
             toGY:async(card: Card) => {
-                const animationHandToGY = (card: Card) => {
-                    const toX : number = game.displayOrder.gy[0][0]+(game.GY.length-1)*2
-                    const toY : number = game.displayOrder.gy[0][1]-(game.GY.length-1)*2
-                    
-                    return new Promise((resolve, reject) => {
-                        createjs.Tween.get(card.imgContainer)
-                            .call(()=>{stage.setChildIndex(card.imgContainer,stage.numChildren-1)})
-                            .to({x:toX,y:toY,rotation:0},500,createjs.Ease.cubicOut)
-                            .call(()=>{resolve()});
-                    });
-                };
-                await LocationSetting(card,"GY")
-                await Promise.all([animationHandAdjust(),animationHandToGY(card)]);
+                await LocationSetting(card,"GY");
+                await Promise.all([animationHandAdjust(),Animation.toGY(card)]);
             },
         },
         DECK:{
-            toHAND:(card: Card)=>{
-                const deckToHand = async(card: Card) => {
-                    if(game.DECK.includes(card)){
-                        game.DECK = game.DECK.filter(i => i !== card);
-                        game.HAND.push(card);
-                        card.location = "HAND";
-                        buttonSetting.HAND(card); 
-                    };
+            toHAND:async(card: Card)=>{
+                await LocationSetting(card,"HAND");
+                await animationHandAdjust();
+            },
+            toGY:async(card: Card)=>{
+                await LocationSetting(card,"GY");
+                await Animation.toGY(card);
+            },
+            toBOARD:async(card: Card, position: "ATK"|"DEF"|"SET")=>{
+                if(card instanceof MonsterCard){
+                    await LocationSetting(card,"MO");
+                }else{
+                    await LocationSetting(card,"ST");
                 };
-                return new Promise<void>(async(resolve, reject) => {
-                    await deckToHand(card);
-                    await animationHandAdjust();
-                    resolve();
-                });
+                await Promise.all([Animation.toBOARD(card, position)])
             },
         },
         BOARD:{
             toGY:async(card: Card) => {
-
-                const animationBoardToGY = (card: Card) => {
-                    const toX : number = game.displayOrder.gy[0][0]+(game.GY.length-1)*2
-                    const toY : number = game.displayOrder.gy[0][1]-(game.GY.length-1)*2
-                    
-                    return new Promise((resolve, reject) => {
-                        if (card.face=="DOWN"){
-                        cardFlip(card);
-                    };
-                        createjs.Tween.get(card.imgContainer)
-                            .call(()=>{stage.setChildIndex(card.imgContainer,stage.numChildren-1)})
-                            .to({x:toX,y:toY,rotation:0},500,createjs.Ease.cubicOut)
-                            .call(()=>{resolve()});
-                    });
-                };
                 await LocationSetting(card,"GY")
-                await animationBoardToGY(card);
+                await Animation.toGY(card);
             },
-            toHAND:(card: Card)=>{
-                const BoardToHAND = async(card: Card) => {
-                    const fromZone = (() => {
-                        if(card instanceof MonsterCard){
-                            return game.MO;
-                        };
-                        if(card instanceof SpellCard){
-                            if(card.spellType=="Field"){
-                                return game.FIELD;
-                            }else{
-                                return game.ST;
-                            };
-                        }
-                        // TODO: Trapのことあとでかく
-                        return game.ST;
-                    })();
-                    fromZone[fromZone.indexOf(card)]=void 0;
-
-                    game.HAND.push(card);
-                    card.location = "HAND";
-                    buttonSetting.HAND(card);
-                    return;
-                };
-                return new Promise<void>(async(resolve, reject) => {
-                    await BoardToHAND(card);
-                    await animationHandAdjust();
-                    resolve();
-                });
+            toHAND:async(card: Card)=>{
+                await LocationSetting(card,"HAND")
+                await animationHandAdjust();
             },
         },
         GY:{
             toBOARD:async(card: Card, position: "ATK"|"DEF"|"SET")=>{
-                const animationGyToBoard = (card: Card, position: "ATK"|"DEF"|"SET") => {
-                    const toGrid = () => {
-                        if(card instanceof MonsterCard){
-                            let toX : Number = game.displayOrder.mon[game.MO.indexOf(card)][0];
-                            let toY : Number = game.displayOrder.mon[game.MO.indexOf(card)][1];
-                            return{toX,toY};
-                        }
-                        else{
-                            let toX : Number = game.displayOrder.st[game.ST.indexOf(card)][0];
-                            let toY : Number = game.displayOrder.st[game.ST.indexOf(card)][1];
-                            return{toX,toY};
-                        };
-                    };
-                    const {toX,toY} = toGrid();
-                    const TWEEN = () => {
-                        if(position=="ATK"){
-                            if(card instanceof MonsterCard){
-                                return createjs.Tween.get(card.imgContainer)
-                                    .to({x:toX,y:toY,scaleX:1.5,scaleY:1.5},400,createjs.Ease.cubicOut)
-                                    .to({scaleX:1,scaleY:1},400,createjs.Ease.cubicIn)
-                                    .wait(200)
-                            }else{
-                                return createjs.Tween.get(card.imgContainer)
-                                .to({x:toX,y:toY},500,createjs.Ease.cubicOut)
-                            };
-                        };
-                        if(position=="DEF"){
-                            if(card instanceof MonsterCard){
-                                return createjs.Tween.get(card.imgContainer)
-                                    .to({x:toX,y:toY,rotation:-90,scaleX:1.5,scaleY:1.5},400,createjs.Ease.cubicOut)
-                                    .to({scaleX:1,scaleY:1},400,createjs.Ease.cubicIn)
-                            };
-                        };
-                        if(position=="SET"){
-                            if(card instanceof MonsterCard){
-                                return createjs.Tween.get(card.imgContainer)
-                                        .call(()=>{cardFlip(card)})
-                                        .to({x:toX,y:toY,rotation:-90},500,createjs.Ease.cubicOut);
-                            };
-                            if(card instanceof SpellCard){
-                                return createjs.Tween.get(card.imgContainer)
-                                        .call(()=>{cardFlip(card)})
-                                        .to({x:toX,y:toY},500,createjs.Ease.cubicOut);
-                            };
-                        };
-                    };
-                    const movePromise =  new Promise((resolve, reject) => {
-                        TWEEN().call(()=>{resolve()})
-                    });
-
-                    stage.setChildIndex(card.imgContainer,stage.numChildren-1);
-                    const PromiseArray :Promise<unknown>[] = [];
-                    game.GY.map((card, index, array) => {
-                        const twPromise = () => {
-                            return new Promise((resolve, reject) => {
-                            createjs.Tween.get(card.imgContainer)
-                                .to({x:game.displayOrder.gy[0][0]+index*1,y:game.displayOrder.gy[0][1]-index*2})
-                                .call(()=>{stage.setChildIndex(card.imgContainer,stage.numChildren - array.length + index)})
-                                .call(()=>{resolve()});                
-                            });
-                        };
-                        PromiseArray.push(twPromise());
-                    });
-                    return Promise.all([Promise.all(PromiseArray), movePromise])
-                };
                 if(card instanceof MonsterCard){
                     await LocationSetting(card,"MO")
                 }else{
                     await LocationSetting(card,"ST")
                 };
-                await animationGyToBoard(card,position);
+                await Promise.all([Animation.fromGY(card), Animation.toBOARD(card, position)]);
             },
         },
     };
@@ -1082,6 +1047,41 @@ window.onload = function() {
                 game.timeArray.map(time=>console.log(time))
             };
         },
+        fromDECK: async(cardArray:Card[],posiSelect:boolean,position?:"ATK"|"DEF") => {
+            await (async () => {
+                for(let card of cardArray) {
+                    if(card instanceof MonsterCard){
+                        const posi = await (async()=>{
+                            if(posiSelect){
+                                return await OpenPositionWindow(card);
+                            }else{
+                            return position;
+                            };
+                        })();
+
+                        await moveCard.DECK.toBOARD(card,posi);
+                        card.position=posi;
+                        console.log("SS "+ card.cardName + " fromDECK " + posi);
+                        console.log("location " + card.location); 
+                        game.nowTime.summon.push({
+                            type: "SS",
+                            card: card,
+                            position: posi,
+                            face: card.face,
+                            from: "DECK"
+                        });
+                    };
+                };
+            })();          
+    
+            console.log(game.nowTime);
+            await ContinuousEffect(game.nowTime);
+            game.timeArray.push(game.nowTime)
+            if(game.chain.length==0){
+                await TriggerQuickeEffect()
+                game.timeArray.map(time=>console.log(time))
+            };
+        },
     };
 
     /**
@@ -1189,7 +1189,7 @@ window.onload = function() {
     /**
      * リリースする
      */
-    const release = async(cardArray : Card[],by:"ADVANCE"|"EFFECT"|"RULE") => {
+    const release = async(cardArray : Card[],by:"ADVANCE"|"EFFECT"|"RULE"|"COST") => {
         await (async () => {
             for(let card of cardArray){
                 await moveCard.BOARD.toGY(card);
@@ -1818,11 +1818,71 @@ window.onload = function() {
             resolve();
         });
     };
-    prematureBrial.effect.push( equipDestroy(prematureBrial) )
-    
+    prematureBrial.effect.push( equipDestroy(prematureBrial) );
 
-    const myDeck : Card[]= [DOGMA,ALPHA,BETA,GAMMA,potOfGreed,reinforcement,
-        AIRMAN,destinyDraw,DISK,monsterReborn,prematureBrial,KURAZ];
+    const monsterGate = new SpellCard
+    monsterGate.cardName="prematureBrial";
+    monsterGate.spellType="Normal";
+    monsterGate.imageFileName="monsterGate.jpg";
+    monsterGate.effect[0] = new effect(monsterGate);
+    monsterGate.effect[0].effType = "CardActived";
+    monsterGate.effect[0].actionPossible = (time:Time) =>{
+        const boolarray = [
+            genCardArray({cardType:["Monster"],location:["DECK"]}).length > 0,
+            genCardArray({location:["MO"]}).length > 0
+        ];
+        return boolarray.every(value => value==true)
+    };
+    monsterGate.effect[0].whenActive = (eff :effect) => {
+        return new Promise((resolve, reject) => {
+            const cardlist = genCardArray({location:["MO"]});
+            openCardListWindow.select(cardlist,1,1,eff,"リリースするモンスターを選択してください");
+            const clickOkButton = async (e) => {
+                console.log("cost " + eff.targetCard.map(({ cardName }) => cardName))
+                divSelectMenuContainer.style.visibility = "hidden";
+                disprayStage.removeAllChildren();
+                await release(eff.targetCard,"COST");
+                SelectOkButton.removeEventListener("click", clickOkButton);
+                resolve();
+            };
+            SelectOkButton.addEventListener("click",clickOkButton);
+        });
+    };
+    monsterGate.effect[0].whenResolve = (eff :effect) => {
+        return new Promise<void>(async(resolve, reject) => {
+            game.nowTime = new Time;
+            const decktop = ()=> {return game.DECK[game.DECK.length -1]};
+            if(genCardArray({cardType:["Monster"],location:["DECK"]}).length > 0){
+                await (async () => {
+                    do{
+                    const topcard = game.DECK[game.DECK.length -1];
+                    await cardFlip(topcard);
+                    await timeout(250);
+                    console.log(game.DECK)
+                    if(topcard.cardType!=="Monster"){
+                        await moveCard.DECK.toGY(topcard);
+                        game.nowTime.move.push({
+                            card:topcard,
+                            from:"DECK",
+                            to:"GY"
+                        });
+                    };
+                }while(decktop().cardType!=="Monster");
+                })();
+
+                if( decktop() instanceof MonsterCard){
+                    await cardFlip(decktop());
+                    await SpecialSummon.fromDECK([decktop()],true);
+                };
+            };
+            game.timeArray.push({...game.nowTime});
+            resolve();
+        });
+    };
+
+
+    const myDeck : Card[]= [DOGMA,ALPHA,BETA,GAMMA,potOfGreed,
+        AIRMAN,KURAZ,prematureBrial,monsterReborn,destinyDraw,reinforcement,DISK,monsterGate];
     deckset(stage, Array.from(myDeck));
     console.log(game.DECK); 
 
@@ -1890,6 +1950,7 @@ window.onload = function() {
         stage.update();
         windowBackStage.update();
         disprayStage.update();
+
     };
 
     const selectMenuBack = new createjs.Shape();
