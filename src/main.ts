@@ -698,13 +698,12 @@ window.onload = function() {
             card.button.ACTIVATE.buttonContainer.addEventListener("click",handleActivatebuttonClick);
             function handleActivatebuttonClick(event) {
                 // 墓地効果発動
-                buConArray.forEach(b =>{b.removeAllEventListeners("click");});
+                // buConArray.forEach(b =>{b.removeAllEventListeners("click");});
             };
 
             card.button.VIEW.buttonContainer.addEventListener("click",handlViewbuttonClick);
             function handlViewbuttonClick(event) {
                 openCardListWindow.view(game.GY,"GY");
-                console.log(game.GY)
                 const clickOkButton = async (e) => {
                     divSelectMenuContainer.style.visibility = "hidden";
                     disprayStage.removeAllChildren();
@@ -778,17 +777,20 @@ window.onload = function() {
                 if(position=="ATK"){
                     if(card instanceof MonsterCard){
                         return createjs.Tween.get(card.imgContainer)
+                            .call(()=>{stage.setChildIndex(card.imgContainer,stage.numChildren-1)})
                             .to({x:toX,y:toY,scaleX:1.5,scaleY:1.5},400,createjs.Ease.cubicOut)
                             .to({scaleX:1,scaleY:1},400,createjs.Ease.cubicIn)
                             .wait(200)
                     }else{
                         return createjs.Tween.get(card.imgContainer)
-                        .to({x:toX,y:toY},500,createjs.Ease.cubicOut)
+                            .call(()=>{stage.setChildIndex(card.imgContainer,stage.numChildren-1)})
+                            .to({x:toX,y:toY},500,createjs.Ease.cubicOut)
                     };
                 };
                 if(position=="DEF"){
                     if(card instanceof MonsterCard){
                         return createjs.Tween.get(card.imgContainer)
+                            .call(()=>{stage.setChildIndex(card.imgContainer,stage.numChildren-1)}) 
                             .to({x:toX,y:toY,rotation:-90,scaleX:1.5,scaleY:1.5},400,createjs.Ease.cubicOut)
                             .to({scaleX:1,scaleY:1},400,createjs.Ease.cubicIn)
                     };
@@ -796,11 +798,13 @@ window.onload = function() {
                 if(position=="SET"){
                     if(card instanceof MonsterCard){
                         return createjs.Tween.get(card.imgContainer)
+                                .call(()=>{stage.setChildIndex(card.imgContainer,stage.numChildren-1)})
                                 .call(()=>{cardFlip(card)})
                                 .to({x:toX,y:toY,rotation:-90},500,createjs.Ease.cubicOut);
                     };
                     if(card instanceof SpellCard){
                         return createjs.Tween.get(card.imgContainer)
+                                .call(()=>{stage.setChildIndex(card.imgContainer,stage.numChildren-1)})
                                 .call(()=>{cardFlip(card)})
                                 .to({x:toX,y:toY},500,createjs.Ease.cubicOut);
                     };
@@ -811,8 +815,8 @@ window.onload = function() {
             });
         },
         toGY:(card: Card)=>{
-            const toX : number = game.displayOrder.gy[0][0]+(game.GY.length-1)*2
-                const toY : number = game.displayOrder.gy[0][1]-(game.GY.length-1)*2
+            const toX : number = game.displayOrder.gy[0][0]+(game.GY.length-1)*1
+                const toY : number = game.displayOrder.gy[0][1]-(game.GY.length-1)*1
                 return new Promise((resolve, reject) => {
                     if (card.face=="DOWN"){
                         cardFlip(card);
@@ -830,7 +834,7 @@ window.onload = function() {
                 const twPromise = () => {
                     return new Promise((resolve, reject) => {
                     createjs.Tween.get(card.imgContainer)
-                        .to({x:game.displayOrder.gy[0][0]+index*1,y:game.displayOrder.gy[0][1]-index*2})
+                        .to({x:game.displayOrder.gy[0][0]+index*1,y:game.displayOrder.gy[0][1]-index*1})
                         .call(()=>{stage.setChildIndex(card.imgContainer,stage.numChildren - array.length + index)})
                         .call(()=>{resolve()});                
                     });
@@ -907,9 +911,9 @@ window.onload = function() {
         card.imgContainer.addChild(effImg);
         return new Promise((resolve, reject) => {
             createjs.Tween.get(effImg)
-                    .to({scaleX:3,scaleY:3,alpha:0},500,createjs.Ease.cubicOut)
-                    .call(()=>{card.imgContainer.removeChild(effImg)})
-                    .call(()=>{resolve()});
+                .to({scaleX:3,scaleY:3,alpha:0},500,createjs.Ease.cubicOut)
+                .call(()=>{card.imgContainer.removeChild(effImg)})
+                .call(()=>{resolve()});
         });
     };
 
@@ -1088,6 +1092,7 @@ window.onload = function() {
      * 通常召喚する
      */
     const normalSummon = async(card: MonsterCard, position: "ATK"|"SET") => {
+        mainCanv.style.pointerEvents = "none"
         const numberToRelease :number = (()=>{
             if(5<=card.level && card.level<=6){
                 return 1;
@@ -1129,7 +1134,7 @@ window.onload = function() {
         };
 
         game.nowTime = new Time;
-        await moveCard.HAND.toBOARD(card,position)
+        await moveCard.HAND.toBOARD(card,position);
         game.nowTime.summon.push({
             card:card,
             type: "NS",
@@ -1149,6 +1154,7 @@ window.onload = function() {
 
         await ContinuousEffect(game.nowTime);
         await TriggerQuickeEffect()
+        mainCanv.style.pointerEvents = "auto"
         game.timeArray.map(time=>console.log(time))
     };
     
@@ -1836,7 +1842,7 @@ window.onload = function() {
     monsterGate.effect[0].whenActive = (eff :effect) => {
         return new Promise((resolve, reject) => {
             const cardlist = genCardArray({location:["MO"]});
-            openCardListWindow.select(cardlist,1,1,eff,"リリースするモンスターを選択してください");
+            openCardListWindow.select(cardlist,1,1,eff);
             const clickOkButton = async (e) => {
                 console.log("cost " + eff.targetCard.map(({ cardName }) => cardName))
                 divSelectMenuContainer.style.visibility = "hidden";
@@ -1858,8 +1864,8 @@ window.onload = function() {
                     const topcard = game.DECK[game.DECK.length -1];
                     await cardFlip(topcard);
                     await timeout(250);
-                    console.log(game.DECK)
                     if(topcard.cardType!=="Monster"){
+                        console.log("send " +topcard.cardName+ " to GY")
                         await moveCard.DECK.toGY(topcard);
                         game.nowTime.move.push({
                             card:topcard,
@@ -1869,9 +1875,9 @@ window.onload = function() {
                     };
                 }while(decktop().cardType!=="Monster");
                 })();
-
                 if( decktop() instanceof MonsterCard){
                     await cardFlip(decktop());
+                    await timeout(250);
                     await SpecialSummon.fromDECK([decktop()],true);
                 };
             };
@@ -2217,6 +2223,7 @@ window.onload = function() {
     const OpenPositionWindow = (card :Card) => {
         SelectOkButton.visible = false;
         divSelectMenuContainer.style.visibility = "visible";
+        messageText.innerText = "表示形式を選択";
         const AtkDefContainer = new createjs.Container();
 
         disprayCanv.style.width = String(windowSize.w)+"px";
