@@ -1,5 +1,5 @@
 // EaselJS系の読み込み
-import { Shape, Stage, Bitmap, Container, Tween, Timeline} from 'createjs-module';
+import { Text, Shape, Stage, Bitmap, Container, Tween, Timeline} from 'createjs-module';
 import { createButton }  from './createButton';
 import Alpha from './Alpha.json';
 import Beta from './Beta.json';
@@ -112,6 +112,10 @@ class Time{
         card : Card;
         by? : "BATTLE"|"EFFECT"|"RULE";
     }[];
+    vanish?:{
+        card : Card;
+        by? : "EFFECT"|"COST";
+    }[];
     release?:{
         card : Card;
         by? : "ADVANCE"|"EFFECT"|"RULE"|"COST";
@@ -128,6 +132,7 @@ class Time{
         this.move = [];
         this.discard = [];
         this.destroy = [];
+        this.vanish = [];
         this.release= [];
         this.effectActived= [];
     };
@@ -200,6 +205,11 @@ class MonsterCard extends Card {
     attribute : string;
     atkPoint : Number;
     defPoint : Number;
+    buff : {
+        eff:effect;
+        atkBuff:Number;
+        defBuff:Number;
+    }[];
     position : "ATK"|"DEF";
     canNS : Boolean
     NSed : Boolean;
@@ -208,6 +218,7 @@ class MonsterCard extends Card {
         super();
         this.cardType = "Monster";
         this.canNS = true;
+        this.buff = [];
     };
 };
 
@@ -226,10 +237,11 @@ class effect {
     card : Card;
     effType : "CardActived"|"Ignition"|"Trigger"|"Continuous"|"Quick"|"Rule";
     spellSpeed : 1|2|3;
-    range : string[];
+    range : ("MO"|"ST"|"FIELD"|"DECK"|"HAND"|"GY"|"DD")[];
     whetherToActivate : "Any"|"Forced";
     costCard : Card[];
     targetCard : Card[];
+    chainBrock : Text;
     actionPossible :(time:Time) => boolean;
     whenActive : (eff?: effect) => Promise<any>;
     whenResolve : (eff?: effect) => Promise<any>;
@@ -346,6 +358,30 @@ window.onload = function() {
     };
 
     /**
+     * 発動するカードを選択する
+     */
+    const selectActivateCard = (effArray:effect[],cancel?:boolean) => {
+        const tmpCard = new Card
+        const tmpEff = new effect(tmpCard)
+        return new Promise<Card>((resolve, reject) => {
+            const cardlist = effArray.flatMap(eff => eff.card)
+            openCardListWindow.select(cardlist,1,1,tmpEff,"発動する効果を選択してください",cancel);
+            SelectOkButton.addEventListener("click",clickOkButton);
+            function clickOkButton(e) {
+                divSelectMenuContainer.style.visibility = "hidden";
+                disprayStage.removeAllChildren();
+                resolve(tmpEff.targetCard.pop());
+            };
+            SelectCancelButton.addEventListener("click",clickCancelButton);
+            function clickCancelButton(e) {
+                divSelectMenuContainer.style.visibility = "hidden";
+                disprayStage.removeAllChildren();
+                resolve();
+            };
+        });
+    };
+
+    /**
      * 永続チェック
      */
     const ContinuousEffect = async(time:Time) =>{
@@ -427,26 +463,26 @@ window.onload = function() {
                 };
             })();
 
-            const tmpCard = new Card
-            const tmpEff = new effect(tmpCard)
-            const selectCardPromise = (effArray:effect[],cancel?:boolean) => {
-            return new Promise<Card>((resolve, reject) => {
-                    const cardlist = effArray.flatMap(eff => eff.card)
-                    openCardListWindow.select(cardlist,1,1,tmpEff,"発動する効果を選択してください",cancel);
-                    SelectOkButton.addEventListener("click",clickOkButton);
-                    function clickOkButton(e) {
-                        divSelectMenuContainer.style.visibility = "hidden";
-                        disprayStage.removeAllChildren();
-                        resolve(tmpEff.targetCard.pop());
-                    };
-                    SelectCancelButton.addEventListener("click",clickCancelButton);
-                    function clickCancelButton(e) {
-                        divSelectMenuContainer.style.visibility = "hidden";
-                        disprayStage.removeAllChildren();
-                        resolve();
-                    };
-                });
-            };
+            // const tmpCard = new Card
+            // const tmpEff = new effect(tmpCard)
+            // const selectCardPromise = (effArray:effect[],cancel?:boolean) => {
+            //     return new Promise<Card>((resolve, reject) => {
+            //         const cardlist = effArray.flatMap(eff => eff.card)
+            //         openCardListWindow.select(cardlist,1,1,tmpEff,"発動する効果を選択してください",cancel);
+            //         SelectOkButton.addEventListener("click",clickOkButton);
+            //         function clickOkButton(e) {
+            //             divSelectMenuContainer.style.visibility = "hidden";
+            //             disprayStage.removeAllChildren();
+            //             resolve(tmpEff.targetCard.pop());
+            //         };
+            //         SelectCancelButton.addEventListener("click",clickCancelButton);
+            //         function clickCancelButton(e) {
+            //             divSelectMenuContainer.style.visibility = "hidden";
+            //             disprayStage.removeAllChildren();
+            //             resolve();
+            //         };
+            //     });
+            // };
 
             const TriggerTime = [...game.timeArray];
             game.timeArray = [];
@@ -454,7 +490,7 @@ window.onload = function() {
             do{
                 const PubForced = canActiveEffects(TriggerObj.PublicForced,TriggerTime);
                 if(PubForced.length >1){
-                    const activeEffOrg = (await selectCardPromise(PubForced)).effect.filter(eff => 
+                    const activeEffOrg = (await selectActivateCard(PubForced)).effect.filter(eff => 
                         eff.effType == "Trigger" && canActiveEffects([eff],TriggerTime) ).pop();
                     const result :effect = {...activeEffOrg,targetCard:[],costCard:[]};
                     game.nowTime = new Time;
@@ -462,7 +498,7 @@ window.onload = function() {
                             card:result.card,
                             eff:result
                         });
-                    await animationChainEffectActivate(result.card);
+                    await animationChainEffectActivate(result);
                     await result.whenActive(result);
                     game.timeArray.push({...game.nowTime});
                     game.chain.push(result);
@@ -476,7 +512,7 @@ window.onload = function() {
                             card:result.card,
                             eff:result
                         });
-                    await animationChainEffectActivate(result.card);
+                    await animationChainEffectActivate(result);
                     await result.whenActive(result);
                     game.timeArray.push({...game.nowTime});
                     game.chain.push(result);
@@ -488,25 +524,26 @@ window.onload = function() {
             do{
                 const PubAny = canActiveEffects(TriggerObj.PublicAny,TriggerTime);
                 if(PubAny.length >1){
-                    const activeEffOrg = (await selectCardPromise(PubAny,true)).effect.filter(eff => 
-                        eff.effType == "Trigger" && canActiveEffects([eff],TriggerTime) 
-                    ).pop();
-                    if(activeEffOrg===undefined){
-                        TriggerObj.PublicAny = [];
-                    }else{
+                    const selectedCard = await selectActivateCard(PubAny,true)
+                    if(selectedCard){
+                        const activeEffOrg = selectedCard.effect.filter(eff => 
+                            eff.effType == "Trigger" && canActiveEffects([eff],TriggerTime) 
+                        ).pop();
                         const result :effect = {...activeEffOrg,targetCard:[],costCard:[]};
                         game.nowTime = new Time;
                         game.nowTime.effectActived.push({
                             card:result.card,
                             eff:result
                         });
-                        await animationChainEffectActivate(result.card);
+                        await animationChainEffectActivate(result);
                         await result.whenActive(result);
                         game.timeArray.push({...game.nowTime});
                         console.log(result.card.cardName + " Effect")
                         game.chain.push(result);
                         TriggerObj.PublicAny = TriggerObj.PublicAny.filter(eff => 
                             eff !== activeEffOrg ); 
+                    }else{
+                        TriggerObj.PublicAny = [];
                     };
                 }else if(PubAny.length ==1){
                     const activeEffOrg = PubAny.pop()
@@ -517,7 +554,7 @@ window.onload = function() {
                             card:result.card,
                             eff:result
                         });
-                        await animationChainEffectActivate(result.card);
+                        await animationChainEffectActivate(result);
                         await result.whenActive(result);
                         game.timeArray.push({...game.nowTime});
                         console.log(result.card.cardName + " Effect")
@@ -535,6 +572,7 @@ window.onload = function() {
                 await (async () => {
                     console.log("Chain resolve")
                     for(let eff of game.chain.reverse()) {
+                        await chainResolveanimation(eff);
                         await eff.whenResolve(eff);
                     };
                 })();
@@ -697,7 +735,7 @@ window.onload = function() {
 
             card.button.ACTIVATE.buttonContainer.addEventListener("click",handleActivatebuttonClick);
             function handleActivatebuttonClick(event) {
-                // 墓地効果発動
+                GyEffActivate();
                 // buConArray.forEach(b =>{b.removeAllEventListeners("click");});
             };
 
@@ -719,6 +757,45 @@ window.onload = function() {
                 button.removeAllEventListeners("click");
                 button.visible=false;
             });
+
+            card.imgContainer.addEventListener("mouseover", handleFieldMover);
+            function handleFieldMover(event) {
+                const disprayButtonArray :Container[] = []
+                const canActivateGYCard = game.DD.filter(card=>canActiveEffects(card).length >0);
+                if(game.DD[game.DD.length-1]===card){
+                    if(canActivateGYCard.length >0){
+                        disprayButtonArray.push(card.button.ACTIVATE.buttonContainer);
+                    };
+                    disprayButtonArray.push(card.button.VIEW.buttonContainer);
+                };
+                disprayButtonArray.forEach((button, index, array) => {
+                    button.x = -cardImgSize.x/2;
+                    button.y = cardImgSize.x/2-40*(array.length) + 40*(index+1)-10;
+                    button.visible = true ;
+                });
+            };
+
+            card.imgContainer.addEventListener("mouseout", handleFieldMout);
+            function handleFieldMout(event) {
+                buConArray.forEach(b =>{b.visible=false;});
+            };
+
+            card.button.ACTIVATE.buttonContainer.addEventListener("click",handleActivatebuttonClick);
+            function handleActivatebuttonClick(event) {
+                // 除外ゾーン効果発動
+                // buConArray.forEach(b =>{b.removeAllEventListeners("click");});
+            };
+
+            card.button.VIEW.buttonContainer.addEventListener("click",handlViewbuttonClick);
+            function handlViewbuttonClick(event) {
+                openCardListWindow.view(game.DD,"DD");
+                const clickOkButton = async (e) => {
+                    divSelectMenuContainer.style.visibility = "hidden";
+                    disprayStage.removeAllChildren();
+                    SelectOkButton.removeEventListener("click", clickOkButton);
+                };
+                SelectOkButton.addEventListener("click",clickOkButton);
+            };
         },
         DECK:async(card:Card)=>{
             card.imgContainer.removeAllEventListeners();
@@ -843,6 +920,35 @@ window.onload = function() {
             });
             return Promise.all(PromiseArray);
         },
+        toDD:(card: Card)=>{
+            const toX : number = game.displayOrder.dd[0][0]+(game.DD.length-1)*1
+                const toY : number = game.displayOrder.dd[0][1]-(game.DD.length-1)*1
+                return new Promise((resolve, reject) => {
+                    if (card.face=="DOWN"){
+                        cardFlip(card);
+                    };
+                    createjs.Tween.get(card.imgContainer)
+                        .call(()=>{stage.setChildIndex(card.imgContainer,stage.numChildren-1)})
+                        .to({x:toX,y:toY,rotation:0},500,createjs.Ease.cubicOut)
+                        .call(()=>{resolve()});
+                }); 
+        },
+        fromDD:(card: Card)=>{
+            stage.setChildIndex(card.imgContainer,stage.numChildren-1);
+            const PromiseArray :Promise<unknown>[] = [];
+            game.DD.map((card, index, array) => {
+                const twPromise = () => {
+                    return new Promise((resolve, reject) => {
+                    createjs.Tween.get(card.imgContainer)
+                        .to({x:game.displayOrder.dd[0][0]+index*1,y:game.displayOrder.dd[0][1]-index*1})
+                        .call(()=>{stage.setChildIndex(card.imgContainer,stage.numChildren - array.length + index)})
+                        .call(()=>{resolve()});                
+                    });
+                };
+                PromiseArray.push(twPromise());
+            });
+            return Promise.all(PromiseArray);
+        },
     };
 
     const moveCard = {
@@ -898,64 +1004,134 @@ window.onload = function() {
                 };
                 await Promise.all([Animation.fromGY(card), Animation.toBOARD(card, position)]);
             },
+            toDD:async(card: Card) => {
+                await LocationSetting(card,"DD");
+                await Animation.toDD(card);
+            },
+        },
+        DD:{
+            toHAND:async(card: Card)=>{
+                await LocationSetting(card,"HAND")
+                await animationHandAdjust();
+            },
         },
     };
 
     /**
      * チェーンに乗る効果発動アニメーション
      */
-    const animationChainEffectActivate = (card: Card) => {
-        const effImg = new createjs.Bitmap(card.imageFileName);
+    const animationChainEffectActivate = async(eff: effect) => {
+        const effImg = new createjs.Bitmap(eff.card.imageFileName);
         effImg.regX = cardImgSize.x/2;
         effImg.regY = cardImgSize.y/2;
-        card.imgContainer.addChild(effImg);
-        return new Promise((resolve, reject) => {
+        eff.card.imgContainer.addChild(effImg);
+        const cardPromise =  new Promise((resolve, reject) => {
             createjs.Tween.get(effImg)
                 .to({scaleX:3,scaleY:3,alpha:0},500,createjs.Ease.cubicOut)
-                .call(()=>{card.imgContainer.removeChild(effImg)})
+                .call(()=>{eff.card.imgContainer.removeChild(effImg)})
                 .call(()=>{resolve()});
         });
+        const chainPromise =  new Promise(async(resolve, reject) => {
+            if(game.chain.length==1){
+                await new Promise(async(resolve, reject) => {
+                    game.chain[0].chainBrock = chainNumber(1);
+                    game.chain[0].card.imgContainer.addChild(game.chain[0].chainBrock);
+                    createjs.Tween.get(game.chain[0].chainBrock)
+                        .to({scaleX:1,scaleY:1,alpha:1},500,createjs.Ease.cubicIn)
+                        .call(()=>{resolve()});
+                });
+                await new Promise(async(resolve, reject) => {
+                    eff.chainBrock = chainNumber(2);
+                    eff.card.imgContainer.addChild(eff.chainBrock);
+                    createjs.Tween.get(eff.chainBrock)
+                        .to({scaleX:1,scaleY:1,alpha:1},500,createjs.Ease.cubicIn)
+                        .call(()=>{resolve()});
+                });
+            }else if(2<=game.chain.length){
+                await new Promise(async(resolve, reject) => {
+                    eff.chainBrock = chainNumber(game.chain.length+1);
+                    eff.card.imgContainer.addChild(eff.chainBrock);
+                    createjs.Tween.get(eff.chainBrock)
+                        .to({scaleX:1,scaleY:1,alpha:1},500,createjs.Ease.cubicIn)
+                        .call(()=>{resolve()});
+                });
+            };
+            resolve();
+        });
+
+        await cardPromise;
+        await chainPromise;
+        return
+
+    };
+
+    const chainResolveanimation = async(eff: effect)=>{
+        if(eff.chainBrock){
+            await new Promise(async(resolve, reject) => {
+                createjs.Tween.get(eff.chainBrock)
+                    .to({scaleX:3,scaleY:3,alpha:0},500,createjs.Ease.cubicOut)
+                    .call(()=>{
+                        eff.card.imgContainer.removeChild(eff.chainBrock)
+                        eff.chainBrock = void(0)
+                    })
+                    .call(()=>{resolve()});
+            });
+        };
+    };
+
+    const chainNumber = (chainNum:Number)=>{
+        const newText = new createjs.Text(chainNum.toString(), "50px serif", "DarkRed");
+        newText.textAlign = "center";
+        newText.textBaseline = "middle";
+        newText.scaleX = 3;
+        newText.scaleY = 3;
+        newText.alpha = 0;
+        return newText
     };
 
     /**
      * 対象をとるアニメーション
      */
     const animationEffectTarget = (cardArray: Card[]) => {
-        const twPromise : Promise<void>[] =[];
-        cardArray.forEach(card =>{
-            if(card.location=="GY"){
-                game.GY.splice(game.GY.lastIndexOf(card), 1);
-                game.GY.push(card);
-                game.GY.map((c, index, array) => {
-                    createjs.Tween.get(c.imgContainer)
-                    .to({x:game.displayOrder.gy[0][0]+index*1,y:game.displayOrder.gy[0][1]-index*2})
-                    .call(()=>{stage.setChildIndex(c.imgContainer,stage.numChildren - array.length + index)})             
-                });
-            };
-
+        const genAimImg = ()=>{
             const aimImg = new createjs.Bitmap("aimingMark.png");
             aimImg.setTransform(0, 0, 3, 3);
             aimImg.regX = 64;
             aimImg.regY = 64;
             aimImg.alpha = 0;
-            card.imgContainer.addChild(aimImg);
             createjs.Ticker.addEventListener("tick", handleTick);
             function handleTick(){
                 aimImg.rotation += 2;
             };
-
-            twPromise.push(
-                new Promise((resolve, reject) => {
-                    createjs.Tween.get(aimImg)
-                        .to({scaleX:0.8,scaleY:0.8,alpha:1},250,createjs.Ease.cubicIn)
-                        .wait(1000)
-                        .to({alpha:0},250)
-                        .call(()=>{card.imgContainer.removeChild(aimImg)})
-                        .call(()=>{resolve()});
-                })
-            );
+            return aimImg
+        };
+        
+        return new Promise<void>(async(resolve, reject) => {
+            await (async () => {
+                for(let card of cardArray){
+                    await new Promise(async(resolve, reject) => {
+                        if(card.location=="GY"){
+                            game.GY.splice(game.GY.lastIndexOf(card), 1);
+                            game.GY.push(card);
+                            game.GY.map((c, index, array) => {
+                                createjs.Tween.get(c.imgContainer)
+                                .to({x:game.displayOrder.gy[0][0]+index*1,y:game.displayOrder.gy[0][1]-index*2})
+                                .call(()=>{stage.setChildIndex(c.imgContainer,stage.numChildren - array.length + index)})             
+                            });
+                        };
+                        const aimImg = genAimImg();
+                        card.imgContainer.addChild(aimImg);
+                        createjs.Tween.get(aimImg)
+                            .to({scaleX:0.8,scaleY:0.8,alpha:1},250,createjs.Ease.cubicIn)
+                            .wait(1000)
+                            .to({alpha:0},250)
+                            .call(()=>{card.imgContainer.removeChild(aimImg)})
+                            .call(()=>{resolve()});
+                    });
+                };
+            })();
+            resolve();
         });
-        return Promise.all(twPromise);
     };
 
     /**
@@ -967,11 +1143,44 @@ window.onload = function() {
         const ActivedEffect = {...Effect,targetCard:[],costCard:[]}
         game.nowTime = new Time;
         await moveCard.HAND.toBOARD(card,"ATK");
-        await animationChainEffectActivate(card);
+        await animationChainEffectActivate(ActivedEffect);
         await ActivedEffect.whenActive(ActivedEffect);
         game.timeArray.push({...game.nowTime});
         game.chain.push(ActivedEffect);
         await TriggerQuickeEffect();
+        mainCanv.style.pointerEvents = "auto"
+        return
+    };
+
+    /**
+     * 墓地効果発動
+     */
+    const GyEffActivate = async() => {
+        mainCanv.style.pointerEvents = "none";
+        const AllGyIgnition = (()=>{
+            const tmpArray :effect[] = [];
+            game.GY.map((card,index,array)=>{
+                tmpArray.push(
+                    ...(
+                        card.effect.filter(eff => 
+                        eff.effType == "Ignition" &&
+                        eff.range.includes("GY") )
+                    )
+                );
+            });
+            return tmpArray
+        })();
+        const selectedCard = await selectActivateCard(AllGyIgnition,true);
+        if(selectedCard){
+            const Effect = canActiveEffects(selectedCard).pop();
+            const ActivedEffect = {...Effect,targetCard:[],costCard:[]}
+            game.nowTime = new Time;
+            await animationChainEffectActivate(ActivedEffect);
+            await ActivedEffect.whenActive(ActivedEffect);
+            game.timeArray.push({...game.nowTime});
+            game.chain.push(ActivedEffect);
+            await TriggerQuickeEffect();
+        };
         mainCanv.style.pointerEvents = "auto"
         return
     };
@@ -992,7 +1201,7 @@ window.onload = function() {
             card:ActivedEffect.card,
             eff:ActivedEffect
         });
-        await animationChainEffectActivate(card);
+        await animationChainEffectActivate(ActivedEffect);
         await ActivedEffect.whenActive(ActivedEffect);
         game.timeArray.push({...game.nowTime});
         game.chain.push(ActivedEffect);
@@ -1173,6 +1382,13 @@ window.onload = function() {
     };
 
     /**
+     * 魔法罠のカード発動場所判定
+     */
+    const JudgeSpellTrapActivateLoc = (card : SpellCard) => {
+        return card.location=="HAND"||(card.location=="ST"&&card.face=="DOWN")
+    };
+
+    /**
      * 捨てる
      */
     const discard = async(cardArray : Card[]) => {
@@ -1187,6 +1403,23 @@ window.onload = function() {
                     from:"HAND",
                     to:"GY"
                 });
+            };
+        })();
+        await ContinuousEffect(game.nowTime);
+    };
+
+    /**
+     * 除外する
+     */
+    const vanish = async(cardArray : Card[],by:"EFFECT"|"COST") => {
+        await (async () => {
+            for(let card of cardArray){
+                await moveCard.GY.toDD(card);
+                game.nowTime.vanish.push({
+                    card:card,
+                    by:by
+                });
+                console.log("vanish "+card.cardName+" by "+by);
             };
         })();
         await ContinuousEffect(game.nowTime);
@@ -1483,6 +1716,7 @@ window.onload = function() {
     AIRMAN.effect[0] = new effect(AIRMAN)
     AIRMAN.effect[0].effType = "Trigger"
     AIRMAN.effect[0].whetherToActivate = "Any"
+    AIRMAN.effect[0].range = ["MO"]
     AIRMAN.effect[0].actionPossible = (time:Time) =>{
         const timeCondition = (()=>{
             const timeBoolArray :boolean[] = [];
@@ -1500,26 +1734,30 @@ window.onload = function() {
 
         const boolarray = [
             timeCondition,
+            AIRMAN.effect[0].range.includes(AIRMAN.location),
             genCardArray({category:["HERO"],location:["DECK"]}).length > 0];
         return boolarray.every(value => value)
     };
 
     AIRMAN.effect[0].whenActive = (eff :effect) => {
         return new Promise((resolve, reject) => {
-            const cardlist = genCardArray({category:["HERO"],location:["DECK"]});
-            openCardListWindow.select(cardlist,1,1,eff,"手札に加えるHEROを選択してください");
-            SelectOkButton.addEventListener("click",clickOkButton);
-            function clickOkButton(e) {
-                divSelectMenuContainer.style.visibility = "hidden";
-                disprayStage.removeAllChildren();
-                SelectOkButton.removeEventListener("click", clickOkButton);
-                resolve();
-            };
+            resolve();
         });
     };
     AIRMAN.effect[0].whenResolve = (eff :effect) => {
         return new Promise<void>(async(resolve, reject) => {
             game.nowTime = new Time;
+            await new Promise((resolve, reject) => {
+                const cardlist = genCardArray({category:["HERO"],location:["DECK"]});
+                openCardListWindow.select(cardlist,1,1,eff,"手札に加えるHEROを選択してください");
+                SelectOkButton.addEventListener("click",clickOkButton);
+                function clickOkButton(e) {
+                    divSelectMenuContainer.style.visibility = "hidden";
+                    disprayStage.removeAllChildren();
+                    SelectOkButton.removeEventListener("click", clickOkButton);
+                    resolve();
+                };
+            });
             await search(eff.targetCard);
             game.timeArray.push({...game.nowTime});
             resolve();
@@ -1529,6 +1767,7 @@ window.onload = function() {
     DISK.effect[0] = new effect(DISK)
     DISK.effect[0].effType = "Trigger"
     DISK.effect[0].whetherToActivate = "Forced"
+    DISK.effect[0].range = ["MO"]
     DISK.effect[0].actionPossible = (time:Time) =>{
         const timeCondition = (()=>{
             const timeBoolArray :boolean[] = [];
@@ -1544,7 +1783,10 @@ window.onload = function() {
             });
             return timeBoolArray.some(value => value);
         })();
-        const boolarray = [timeCondition];
+        const boolarray = [
+            timeCondition,
+            DISK.effect[0].range.includes(DISK.location),
+        ];
         return boolarray.every(value => value)
     };
 
@@ -1565,6 +1807,7 @@ window.onload = function() {
     KURAZ.effect[0] = new effect(KURAZ);
     KURAZ.effect[0].effType = "Trigger";
     KURAZ.effect[0].whetherToActivate = "Any"
+    KURAZ.effect[0].range = ["MO"]
     KURAZ.effect[0].actionPossible = (time:Time) =>{
         const timeCondition = (()=>{
             const timeBoolArray :boolean[] = [];
@@ -1582,6 +1825,7 @@ window.onload = function() {
 
         const boolarray = [
             timeCondition,
+            KURAZ.effect[0].range.includes(KURAZ.location),
             genCardArray({location:["MO","ST"]}).length > 0];
         return boolarray.every(value => value)
     };
@@ -1623,13 +1867,13 @@ window.onload = function() {
         });
     };
 
-
     const potOfGreed = new SpellCard
     potOfGreed.spellType = "Normal"
     potOfGreed.imageFileName = "PotOfGreed.png"
     potOfGreed.cardName = "PotOfGreed"
     potOfGreed.effect[0] = new effect(potOfGreed);
     potOfGreed.effect[0].effType = "CardActived"
+    potOfGreed.effect[0].range = ["HAND","ST"]
     potOfGreed.effect[0].whenActive = (eff :effect) => {
         return new Promise<void>((resolve, reject) => {
             resolve();
@@ -1637,6 +1881,7 @@ window.onload = function() {
     };
     potOfGreed.effect[0].actionPossible = (time:Time) =>{
         const boolarray = [
+            JudgeSpellTrapActivateLoc(potOfGreed),
             genCardArray({location:["DECK"]}).length > 0
         ];
         return boolarray.every(value => value==true)
@@ -1654,8 +1899,10 @@ window.onload = function() {
     reinforcement.imageFileName = "Reinforcement.jpg";
     reinforcement.effect[0] = new effect(reinforcement);
     reinforcement.effect[0].effType = "CardActived"
+    reinforcement.effect[0].range = ["HAND","ST"]
     reinforcement.effect[0].actionPossible = (time:Time) =>{
         const boolarray = [
+            JudgeSpellTrapActivateLoc(reinforcement),
             genCardArray({race:["WARRIOR"],location:["DECK"]})
                                 .filter(card => card instanceof MonsterCard && card.level <= 4).length > 0
         ];
@@ -1690,8 +1937,10 @@ window.onload = function() {
     destinyDraw.imageFileName = "Ddraw.jpg"
     destinyDraw.effect[0] = new effect(destinyDraw);
     destinyDraw.effect[0].effType = "CardActived"
+    destinyDraw.effect[0].range = ["HAND","ST"]
     destinyDraw.effect[0].actionPossible = (time:Time) =>{
         const boolarray = [
+            JudgeSpellTrapActivateLoc(destinyDraw),
             genCardArray({category:["D-HERO"],location:["HAND"]}).length > 0
         ];
         return boolarray.every(value => value==true)
@@ -1726,8 +1975,10 @@ window.onload = function() {
     monsterReborn.imageFileName = "MonsterReborn.jpg"
     monsterReborn.effect[0] = new effect(monsterReborn);
     monsterReborn.effect[0].effType = "CardActived"
+    monsterReborn.effect[0].range = ["HAND","ST"]
     monsterReborn.effect[0].actionPossible = (time:Time) =>{
         const boolarray = [
+            JudgeSpellTrapActivateLoc(monsterReborn),
             genCardArray({cardType:["Monster"],location:["GY"]}).length > 0
         ];
         return boolarray.every(value => value==true)
@@ -1735,7 +1986,7 @@ window.onload = function() {
     monsterReborn.effect[0].whenActive = (eff :effect) => {
         return new Promise((resolve, reject) => {
             const cardlist = genCardArray({cardType:["Monster"],location:["GY"]});
-            openCardListWindow.select(cardlist,1,1,eff);
+            openCardListWindow.select(cardlist,1,2,eff);
             const clickOkButton = async (e) => {
                 divSelectMenuContainer.style.visibility = "hidden";
                 disprayStage.removeAllChildren();
@@ -1759,8 +2010,10 @@ window.onload = function() {
     prematureBrial.imageFileName = "prematureBrial.jpg";
     prematureBrial.effect[0] = new effect(prematureBrial);
     prematureBrial.effect[0].effType = "CardActived"
+    prematureBrial.effect[0].range = ["HAND","ST"]
     prematureBrial.effect[0].actionPossible = (time:Time) =>{
         const boolarray = [
+            JudgeSpellTrapActivateLoc(prematureBrial),
             genCardArray({cardType:["Monster"],location:["GY"]}).length > 0
         ];
         return boolarray.every(value => value==true)
@@ -1832,8 +2085,10 @@ window.onload = function() {
     monsterGate.imageFileName="monsterGate.jpg";
     monsterGate.effect[0] = new effect(monsterGate);
     monsterGate.effect[0].effType = "CardActived";
+    monsterGate.effect[0].range = ["HAND","ST"]
     monsterGate.effect[0].actionPossible = (time:Time) =>{
         const boolarray = [
+            JudgeSpellTrapActivateLoc(monsterGate),
             genCardArray({cardType:["Monster"],location:["DECK"]}).length > 0,
             genCardArray({location:["MO"]}).length > 0
         ];
@@ -1886,9 +2141,121 @@ window.onload = function() {
         });
     };
 
+    const phenixBlade = new SpellCard;
+    phenixBlade.cardName = "phenixBlade"
+    phenixBlade.spellType = "Equip";
+    phenixBlade.imageFileName = "phenixBlade.jpg";
+    phenixBlade.effect[0] = new effect(phenixBlade);
+    phenixBlade.effect[0].effType = "CardActived"
+    phenixBlade.effect[0].range = ["HAND","ST"]
+    phenixBlade.effect[0].actionPossible = (time:Time) =>{
+        const boolarray = [
+            JudgeSpellTrapActivateLoc(phenixBlade),
+            genCardArray({face:["UP"],location:["MO"]}).length > 0
+        ];
+        return boolarray.every(value => value==true)
+    };
+    phenixBlade.effect[0].whenActive = (eff :effect) => {
+        return new Promise((resolve, reject) => {
+            const cardlist = genCardArray({face:["UP"],location:["MO"]});
+            openCardListWindow.select(cardlist,1,1,eff);
+            const clickOkButton = async (e) => {
+                divSelectMenuContainer.style.visibility = "hidden";
+                disprayStage.removeAllChildren();
+                SelectOkButton.removeEventListener("click", clickOkButton);
+                await animationEffectTarget(eff.targetCard);
+                resolve();
+            };
+            SelectOkButton.addEventListener("click",clickOkButton);
+        });
+    };
+    phenixBlade.effect[0].whenResolve = (eff :effect) => {
+        return new Promise<void>(async(resolve, reject) => {
+            game.nowTime = new Time;
+            phenixBlade.peggingTarget = eff.targetCard;
+            const equiptarget = phenixBlade.peggingTarget[0];
+            if(equiptarget instanceof MonsterCard){
+                equiptarget.buff.push({eff:eff,atkBuff:300,defBuff:0})
+            };
+            game.timeArray.push({...game.nowTime});
+            resolve();
+        });
+    };
+    phenixBlade.effect[1] = new effect(phenixBlade);
+    phenixBlade.effect[1].effType = "Continuous";
+    phenixBlade.effect[1].actionPossible = (time:Time) =>{
+        const timeCondition = (()=>{
+            const timeBoolArray :boolean[] = [];
+            time.move.forEach(tMove=>{
+                timeBoolArray.push(tMove.card==phenixBlade && tMove.from=="BOARD");
+            });
+            return timeBoolArray.some(value => value);
+        })();
+        const boolarray = [
+           "peggingTarget" in phenixBlade,
+           timeCondition
+        ];
+        return boolarray.every(value => value==true)
+    };
+    phenixBlade.effect[1].apply = () => {
+        return new Promise<void>(async(resolve, reject) => {
+            if(phenixBlade.peggingTarget[0].location=="MO"){
+                const equiptarget = phenixBlade.peggingTarget[0];
+                if(equiptarget instanceof MonsterCard){
+                    equiptarget.buff.filter(b=>b.eff.card!==phenixBlade);
+                };
+            };
+            phenixBlade.peggingTarget = [];
+            resolve();
+        });
+    };
+    phenixBlade.effect[2] = new effect(phenixBlade);
+    phenixBlade.effect[2].effType = "Ignition";
+    phenixBlade.effect[2].range = ["GY"];
+    phenixBlade.effect[2].actionPossible = (time:Time) =>{
+        const boolarray = [
+            phenixBlade.effect[2].range.includes(phenixBlade.location),
+            genCardArray({race:["WARRIOR"],location:["GY"]}).length >= 2
+        ];
+        return boolarray.every(value => value==true)
+    };
+    phenixBlade.effect[2].whenActive = (eff :effect) => {
+        return new Promise((resolve, reject) => {
+            const cardlist = genCardArray({race:["WARRIOR"],location:["GY"]});
+            openCardListWindow.select(cardlist,2,2,eff);
+            const clickOkButton = async (e) => {
+                console.log("cost " + eff.targetCard.map(({ cardName }) => cardName))
+                divSelectMenuContainer.style.visibility = "hidden";
+                disprayStage.removeAllChildren();
+                await vanish(eff.targetCard,"COST");
+                SelectOkButton.removeEventListener("click", clickOkButton);
+                resolve();
+            };
+            SelectOkButton.addEventListener("click",clickOkButton);
+        });
+    };
+    phenixBlade.effect[2].whenResolve = (eff :effect) => {
+        return new Promise<void>(async(resolve, reject) => {
+            if(eff.card.location=="GY"){
+                game.nowTime = new Time;
+                await (async () => {
+                    await moveCard.DD.toHAND(eff.card);
+                    game.nowTime.move.push({
+                        card:eff.card,
+                        from:"DD",
+                        to:"HAND"
+                    });
+                })();
+                await ContinuousEffect(game.nowTime);
+            };
+            game.timeArray.push({...game.nowTime});
+            resolve();
+        });
+    };
+    phenixBlade.effect.push( equipDestroy(phenixBlade) );
 
     const myDeck : Card[]= [DOGMA,ALPHA,BETA,GAMMA,potOfGreed,
-        AIRMAN,KURAZ,prematureBrial,monsterReborn,destinyDraw,reinforcement,DISK,monsterGate];
+        prematureBrial,destinyDraw,reinforcement,monsterGate,phenixBlade,monsterReborn,AIRMAN,KURAZ,DISK];
     deckset(stage, Array.from(myDeck));
     console.log(game.DECK); 
 
