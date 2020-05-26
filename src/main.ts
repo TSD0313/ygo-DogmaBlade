@@ -463,27 +463,6 @@ window.onload = function() {
                 };
             })();
 
-            // const tmpCard = new Card
-            // const tmpEff = new effect(tmpCard)
-            // const selectCardPromise = (effArray:effect[],cancel?:boolean) => {
-            //     return new Promise<Card>((resolve, reject) => {
-            //         const cardlist = effArray.flatMap(eff => eff.card)
-            //         openCardListWindow.select(cardlist,1,1,tmpEff,"発動する効果を選択してください",cancel);
-            //         SelectOkButton.addEventListener("click",clickOkButton);
-            //         function clickOkButton(e) {
-            //             divSelectMenuContainer.style.visibility = "hidden";
-            //             disprayStage.removeAllChildren();
-            //             resolve(tmpEff.targetCard.pop());
-            //         };
-            //         SelectCancelButton.addEventListener("click",clickCancelButton);
-            //         function clickCancelButton(e) {
-            //             divSelectMenuContainer.style.visibility = "hidden";
-            //             disprayStage.removeAllChildren();
-            //             resolve();
-            //         };
-            //     });
-            // };
-
             const TriggerTime = [...game.timeArray];
             game.timeArray = [];
 
@@ -498,8 +477,8 @@ window.onload = function() {
                             card:result.card,
                             eff:result
                         });
-                    await animationChainEffectActivate(result);
                     await result.whenActive(result);
+                    await animationChainEffectActivate(result);
                     game.timeArray.push({...game.nowTime});
                     game.chain.push(result);
                     TriggerObj.PublicForced = TriggerObj.PublicForced.filter(eff => 
@@ -512,8 +491,8 @@ window.onload = function() {
                             card:result.card,
                             eff:result
                         });
-                    await animationChainEffectActivate(result);
                     await result.whenActive(result);
+                    await animationChainEffectActivate(result);
                     game.timeArray.push({...game.nowTime});
                     game.chain.push(result);
                     TriggerObj.PublicForced = TriggerObj.PublicForced.filter(eff => 
@@ -535,8 +514,8 @@ window.onload = function() {
                             card:result.card,
                             eff:result
                         });
-                        await animationChainEffectActivate(result);
                         await result.whenActive(result);
+                        await animationChainEffectActivate(result);
                         game.timeArray.push({...game.nowTime});
                         console.log(result.card.cardName + " Effect")
                         game.chain.push(result);
@@ -554,8 +533,8 @@ window.onload = function() {
                             card:result.card,
                             eff:result
                         });
-                        await animationChainEffectActivate(result);
                         await result.whenActive(result);
+                        await animationChainEffectActivate(result);
                         game.timeArray.push({...game.nowTime});
                         console.log(result.card.cardName + " Effect")
                         game.chain.push(result);
@@ -569,6 +548,7 @@ window.onload = function() {
             if(game.chain.length==0){
             console.log("NO TriggerEffect")
             }else{
+                await timeout(500);
                 await (async () => {
                     console.log("Chain resolve")
                     for(let eff of game.chain.reverse()) {
@@ -1006,7 +986,7 @@ window.onload = function() {
             },
             toDD:async(card: Card) => {
                 await LocationSetting(card,"DD");
-                await Animation.toDD(card);
+                await Promise.all([Animation.toDD(card),Animation.fromGY(card)]);
             },
         },
         DD:{
@@ -1024,33 +1004,35 @@ window.onload = function() {
         const effImg = new createjs.Bitmap(eff.card.imageFileName);
         effImg.regX = cardImgSize.x/2;
         effImg.regY = cardImgSize.y/2;
-        eff.card.imgContainer.addChild(effImg);
+        effImg.x = eff.card.imgContainer.x;
+        effImg.y = eff.card.imgContainer.y;
+        stage.addChild(effImg);
         const cardPromise =  new Promise((resolve, reject) => {
             createjs.Tween.get(effImg)
                 .to({scaleX:3,scaleY:3,alpha:0},500,createjs.Ease.cubicOut)
-                .call(()=>{eff.card.imgContainer.removeChild(effImg)})
+                .call(()=>{stage.removeChild(effImg)})
                 .call(()=>{resolve()});
         });
         const chainPromise =  new Promise(async(resolve, reject) => {
             if(game.chain.length==1){
                 await new Promise(async(resolve, reject) => {
-                    game.chain[0].chainBrock = chainNumber(1);
-                    game.chain[0].card.imgContainer.addChild(game.chain[0].chainBrock);
+                    game.chain[0].chainBrock = chainNumber(1,game.chain[0])
+                    stage.addChild(game.chain[0].chainBrock);
                     createjs.Tween.get(game.chain[0].chainBrock)
                         .to({scaleX:1,scaleY:1,alpha:1},500,createjs.Ease.cubicIn)
                         .call(()=>{resolve()});
                 });
                 await new Promise(async(resolve, reject) => {
-                    eff.chainBrock = chainNumber(2);
-                    eff.card.imgContainer.addChild(eff.chainBrock);
+                    eff.chainBrock = chainNumber(2,eff);
+                    stage.addChild(eff.chainBrock);
                     createjs.Tween.get(eff.chainBrock)
                         .to({scaleX:1,scaleY:1,alpha:1},500,createjs.Ease.cubicIn)
                         .call(()=>{resolve()});
                 });
             }else if(2<=game.chain.length){
                 await new Promise(async(resolve, reject) => {
-                    eff.chainBrock = chainNumber(game.chain.length+1);
-                    eff.card.imgContainer.addChild(eff.chainBrock);
+                    eff.chainBrock = chainNumber(game.chain.length+1,eff);
+                    stage.addChild(eff.chainBrock);
                     createjs.Tween.get(eff.chainBrock)
                         .to({scaleX:1,scaleY:1,alpha:1},500,createjs.Ease.cubicIn)
                         .call(()=>{resolve()});
@@ -1061,6 +1043,7 @@ window.onload = function() {
 
         await cardPromise;
         await chainPromise;
+
         return
 
     };
@@ -1071,7 +1054,7 @@ window.onload = function() {
                 createjs.Tween.get(eff.chainBrock)
                     .to({scaleX:3,scaleY:3,alpha:0},500,createjs.Ease.cubicOut)
                     .call(()=>{
-                        eff.card.imgContainer.removeChild(eff.chainBrock)
+                        stage.removeChild(eff.chainBrock)
                         eff.chainBrock = void(0)
                     })
                     .call(()=>{resolve()});
@@ -1079,12 +1062,14 @@ window.onload = function() {
         };
     };
 
-    const chainNumber = (chainNum:Number)=>{
-        const newText = new createjs.Text(chainNum.toString(), "50px serif", "DarkRed");
+    const chainNumber = (chainNum:Number,eff: effect)=>{
+        const newText = new createjs.Text(chainNum.toString(), "100px serif", "DarkRed");
         newText.textAlign = "center";
         newText.textBaseline = "middle";
         newText.scaleX = 3;
         newText.scaleY = 3;
+        newText.x = eff.card.imgContainer.x;
+        newText.y = eff.card.imgContainer.y;
         newText.alpha = 0;
         return newText
     };
@@ -1986,7 +1971,7 @@ window.onload = function() {
     monsterReborn.effect[0].whenActive = (eff :effect) => {
         return new Promise((resolve, reject) => {
             const cardlist = genCardArray({cardType:["Monster"],location:["GY"]});
-            openCardListWindow.select(cardlist,1,2,eff);
+            openCardListWindow.select(cardlist,1,3,eff);
             const clickOkButton = async (e) => {
                 divSelectMenuContainer.style.visibility = "hidden";
                 disprayStage.removeAllChildren();
@@ -2131,7 +2116,9 @@ window.onload = function() {
                 }while(decktop().cardType!=="Monster");
                 })();
                 if( decktop() instanceof MonsterCard){
-                    await cardFlip(decktop());
+                    if(decktop().face=="DOWN"){
+                        await cardFlip(decktop());
+                    };
                     await timeout(250);
                     await SpecialSummon.fromDECK([decktop()],true);
                 };
