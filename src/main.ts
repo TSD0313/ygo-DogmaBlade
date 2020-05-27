@@ -551,7 +551,7 @@ window.onload = function() {
             if(game.chain.length==0){
             console.log("NO TriggerEffect")
             }else{
-                await timeout(500);
+                await timeout(250);
                 await (async () => {
                     console.log("Chain resolve")
                     for(let eff of game.chain.reverse()) {
@@ -674,6 +674,13 @@ window.onload = function() {
 
             card.button.NS.buttonContainer.addEventListener("click",handleNSbuttonClick);
             function handleNSbuttonClick(event) {
+                if(card instanceof MonsterCard){
+                    normalSummon(card,"ATK");
+                };
+            };
+
+            card.button.SS.buttonContainer.addEventListener("click",handleSSbuttonClick);
+            function handleSSbuttonClick(event) {
                 if(card instanceof MonsterCard){
                     normalSummon(card,"ATK");
                 };
@@ -1239,11 +1246,6 @@ window.onload = function() {
                             face: card.face,
                             from: "GY"
                         });
-                        game.nowTime.move.push({
-                            card:card,
-                            from:"GY",
-                            to:"MO"
-                        });
                     };
                 };
             })();          
@@ -1279,18 +1281,13 @@ window.onload = function() {
                             face: card.face,
                             from: "DECK"
                         });
-                        game.nowTime.move.push({
-                            card:card,
-                            from:"DECK",
-                            to:"MO"
-                        });
                     };
                 };
             })();          
     
             console.log(game.nowTime);
             await ContinuousEffect(game.nowTime);
-            // game.timeArray.push(game.nowTime)
+            game.timeArray.push(game.nowTime)
             if(game.chain.length==0){
                 await TriggerQuickeEffect()
                 game.timeArray.map(time=>console.log(time))
@@ -1328,13 +1325,12 @@ window.onload = function() {
             })();
             console.log(game.nowTime);
             await ContinuousEffect(game.nowTime);
-            // game.timeArray.push(game.nowTime)
+            game.timeArray.push(game.nowTime)
             if(game.chain.length==0){
                 await TriggerQuickeEffect()
                 game.timeArray.map(time=>console.log(time))
             };
         },
-        
     };
 
     /**
@@ -1723,7 +1719,7 @@ window.onload = function() {
         };
         return EDeff;
     };
-
+    
     const effectSetting = {
         AIRMAN:(card:Card)=>{
             const eff1 = new effect(card);
@@ -1895,7 +1891,6 @@ window.onload = function() {
         },
     };
     
-    
     const game = new Game;
 
     const mainCanv =<HTMLCanvasElement>document.getElementById("canv") ;
@@ -1931,9 +1926,164 @@ window.onload = function() {
         ];
         return boolarray.every(value => value==true)
     };
+
     AIRMAN.effect = effectSetting.AIRMAN(AIRMAN)
     DISK.effect = effectSetting.DISK(DISK)
     KURAZ.effect = effectSetting.KURAZ(KURAZ)
+
+    // AIRMAN.effect[0] = new effect(AIRMAN)
+    // AIRMAN.effect[0].effType = "Trigger"
+    // AIRMAN.effect[0].whetherToActivate = "Any"
+    // AIRMAN.effect[0].range = ["MO"]
+    // AIRMAN.effect[0].actionPossible = (time:Time) =>{
+    //     const timeCondition = (()=>{
+    //         const timeBoolArray :boolean[] = [];
+    //         time.summon.forEach(ts=>{
+    //             timeBoolArray.push(
+    //                 [
+    //                 ts.type=="NS"||ts.type=="SS",
+    //                 ts.card== AIRMAN,
+    //                 ts.face== "UP",
+    //                 ].every(value => value)
+    //             );
+    //         });
+    //         return timeBoolArray.some(value => value);
+    //     })();
+
+    //     const boolarray = [
+    //         timeCondition,
+    //         AIRMAN.effect[0].range.includes(AIRMAN.location),
+    //         genCardArray({category:["HERO"],location:["DECK"]}).length > 0];
+    //     return boolarray.every(value => value)
+    // };
+
+    // AIRMAN.effect[0].whenActive = (eff :effect) => {
+    //     return new Promise((resolve, reject) => {
+    //         resolve();
+    //     });
+    // };
+    // AIRMAN.effect[0].whenResolve = (eff :effect) => {
+    //     return new Promise<void>(async(resolve, reject) => {
+    //         game.nowTime = new Time;
+    //         await new Promise((resolve, reject) => {
+    //             const cardlist = genCardArray({category:["HERO"],location:["DECK"]});
+    //             openCardListWindow.select(cardlist,1,1,eff,"手札に加えるHEROを選択してください");
+    //             SelectOkButton.addEventListener("click",clickOkButton);
+    //             function clickOkButton(e) {
+    //                 divSelectMenuContainer.style.visibility = "hidden";
+    //                 disprayStage.removeAllChildren();
+    //                 SelectOkButton.removeEventListener("click", clickOkButton);
+    //                 resolve();
+    //             };
+    //         });
+    //         await search(eff.targetCard);
+    //         game.timeArray.push({...game.nowTime});
+    //         resolve();
+    //     });
+    // };
+
+    // DISK.effect[0] = new effect(DISK)
+    // DISK.effect[0].effType = "Trigger"
+    // DISK.effect[0].whetherToActivate = "Forced"
+    // DISK.effect[0].range = ["MO"]
+    // DISK.effect[0].actionPossible = (time:Time) =>{
+    //     const timeCondition = (()=>{
+    //         const timeBoolArray :boolean[] = [];
+    //         time.summon.forEach(ts=>{
+    //             timeBoolArray.push(
+    //                 [
+    //                 ts.type=="SS",
+    //                 ts.from== "GY",
+    //                 ts.card== DISK,
+    //                 ts.face== "UP",
+    //                 ].every(value => value)
+    //             );
+    //         });
+    //         return timeBoolArray.some(value => value);
+    //     })();
+    //     const boolarray = [
+    //         timeCondition,
+    //         DISK.effect[0].range.includes(DISK.location),
+    //     ];
+    //     return boolarray.every(value => value)
+    // };
+
+    // DISK.effect[0].whenActive = (eff :effect) => {
+    //     return new Promise((resolve, reject) => {
+    //         resolve();
+    //     });
+    // };
+    // DISK.effect[0].whenResolve = (eff :effect) => {
+    //     return new Promise<void>(async(resolve, reject) => {
+    //         game.nowTime = new Time;
+    //         await draw(2);
+    //         game.timeArray.push({...game.nowTime});
+    //         resolve();
+    //     });
+    // };
+
+    // KURAZ.effect[0] = new effect(KURAZ);
+    // KURAZ.effect[0].effType = "Trigger";
+    // KURAZ.effect[0].whetherToActivate = "Any"
+    // KURAZ.effect[0].range = ["MO"]
+    // KURAZ.effect[0].actionPossible = (time:Time) =>{
+    //     const timeCondition = (()=>{
+    //         const timeBoolArray :boolean[] = [];
+    //         time.summon.forEach(ts=>{
+    //             timeBoolArray.push(
+    //                 [
+    //                 ts.type=="NS"||ts.type=="SS",
+    //                 ts.card== KURAZ,
+    //                 ts.face== "UP",
+    //                 ].every(value => value)
+    //             );
+    //         });
+    //         return timeBoolArray.some(value => value);
+    //     })();
+
+    //     const boolarray = [
+    //         timeCondition,
+    //         KURAZ.effect[0].range.includes(KURAZ.location),
+    //         genCardArray({location:["MO","ST"]}).length > 0];
+    //     return boolarray.every(value => value)
+    // };
+    // KURAZ.effect[0].whenActive = (eff :effect) => {
+    //     return new Promise((resolve, reject) => {
+    //         const cardlist = genCardArray({location:["MO","ST"]});
+    //         openCardListWindow.select(cardlist,1,2,eff,"破壊するカードを選択してください");
+    //         SelectOkButton.addEventListener("click",clickOkButton);
+    //         async function clickOkButton(e) {
+    //             divSelectMenuContainer.style.visibility = "hidden";
+    //             disprayStage.removeAllChildren();
+    //             SelectOkButton.removeEventListener("click", clickOkButton);
+    //             await animationEffectTarget(eff.targetCard)
+    //             resolve();
+    //         };
+    //     });
+    // };
+    // KURAZ.effect[0].whenResolve = (eff :effect) => {
+    //     return new Promise<void>(async(resolve, reject) => {
+    //         game.nowTime = new Time;
+    //         const targetLocation = ["ST","MO","FIELD"]
+    //         const target = eff.targetCard.filter(card=>targetLocation.includes(card.location))
+    //         await destroy(target,"EFFECT");
+    //         await (async () => {
+    //             for(let tCard of target){
+    //                 await moveCard.BOARD.toGY(tCard);
+    //                 game.nowTime.move.push({
+    //                     card:tCard,
+    //                     from:"BOARD",
+    //                     to:"GY"
+    //                 });
+    //             };
+    //         })();
+    //         await ContinuousEffect(game.nowTime);
+    //         await draw(target.length);
+
+    //         game.timeArray.push({...game.nowTime});
+    //         resolve();
+    //     });
+    // };
 
     const potOfGreed = new SpellCard
     potOfGreed.spellType = "Normal"
@@ -2340,9 +2490,8 @@ window.onload = function() {
     };
     phenixBlade.effect.push( equipDestroy(phenixBlade) );
 
-    const myDeck : Card[]= 
-        [ALPHA,BETA,GAMMA,potOfGreed,
-        AIRMAN,KURAZ,prematureBrial,destinyDraw,reinforcement,monsterGate,phenixBlade,DOGMA,DISK,AIRMAN,KURAZ,monsterReborn];
+    const myDeck : Card[]= [DOGMA,ALPHA,BETA,GAMMA,potOfGreed,
+        prematureBrial,destinyDraw,reinforcement,monsterGate,phenixBlade,monsterReborn,AIRMAN,KURAZ,DISK];
     deckset(stage, Array.from(myDeck));
     console.log(game.DECK); 
 
@@ -2421,12 +2570,12 @@ window.onload = function() {
 
     const SelectOkButton = createButton("OK", 150, 40, "#0275d8");
     SelectOkButton.x = windowBackCanv.width/2 - 75;
-    SelectOkButton.y = 650;
+    SelectOkButton.y = 600;
     windowBackStage.addChild(SelectOkButton);
 
     const SelectCancelButton = createButton("CANCEL", 150, 40, "#0275d8");
     SelectCancelButton.x = windowBackCanv.width/2 + 75;
-    SelectCancelButton.y = 650;
+    SelectCancelButton.y = 600;
     SelectCancelButton.visible = false
     windowBackStage.addChild(SelectCancelButton);
 
@@ -2449,7 +2598,6 @@ window.onload = function() {
                 SelectOkButton.x = windowBackCanv.width/2 - 225;
                 SelectCancelButton.x = windowBackCanv.width/2 + 75;
             }else{
-                SelectCancelButton.visible = false;
                 SelectOkButton.x = windowBackCanv.width/2 - 75;
             };
 
@@ -2632,8 +2780,8 @@ window.onload = function() {
     };
 
     const OpenYesNoWindow = (message :string) => {
-        SelectCancelButton.visible = false;
         divSelectMenuContainer.style.visibility = "visible";
+        SelectCancelButton.visible = false;
         SelectOkButton.visible = false;
 
         const YesNoContainer = new createjs.Container();
@@ -2677,7 +2825,6 @@ window.onload = function() {
     };
 
     const OpenPositionWindow = (card :Card) => {
-        SelectCancelButton.visible = false;
         SelectOkButton.visible = false;
         divSelectMenuContainer.style.visibility = "visible";
         messageText.innerText = "表示形式を選択";
