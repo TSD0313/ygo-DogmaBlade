@@ -555,7 +555,7 @@ window.onload = function() {
                 await (async () => {
                     console.log("Chain resolve")
                     for(let eff of game.chain.reverse()) {
-                        await chainResolveanimation(eff);
+                        await animationchainResolve(eff);
                         await eff.whenResolve(eff);
                     };
                 })();
@@ -847,20 +847,20 @@ window.onload = function() {
                 if(position=="ATK"){
                     if(card instanceof MonsterCard){
                         return createjs.Tween.get(card.imgContainer)
-                            .call(()=>{stage.setChildIndex(card.imgContainer,stage.numChildren-1)})
+                            .call(()=>{mainstage.setChildIndex(card.imgContainer,mainstage.numChildren-1)})
                             .to({x:toX,y:toY,scaleX:1.5,scaleY:1.5},400,createjs.Ease.cubicOut)
                             .to({scaleX:1,scaleY:1},400,createjs.Ease.cubicIn)
                             .wait(200)
                     }else{
                         return createjs.Tween.get(card.imgContainer)
-                            .call(()=>{stage.setChildIndex(card.imgContainer,stage.numChildren-1)})
+                            .call(()=>{mainstage.setChildIndex(card.imgContainer,mainstage.numChildren-1)})
                             .to({x:toX,y:toY},500,createjs.Ease.cubicOut)
                     };
                 };
                 if(position=="DEF"){
                     if(card instanceof MonsterCard){
                         return createjs.Tween.get(card.imgContainer)
-                            .call(()=>{stage.setChildIndex(card.imgContainer,stage.numChildren-1)}) 
+                            .call(()=>{mainstage.setChildIndex(card.imgContainer,mainstage.numChildren-1)}) 
                             .to({x:toX,y:toY,rotation:-90,scaleX:1.5,scaleY:1.5},400,createjs.Ease.cubicOut)
                             .to({scaleX:1,scaleY:1},400,createjs.Ease.cubicIn)
                     };
@@ -868,13 +868,13 @@ window.onload = function() {
                 if(position=="SET"){
                     if(card instanceof MonsterCard){
                         return createjs.Tween.get(card.imgContainer)
-                                .call(()=>{stage.setChildIndex(card.imgContainer,stage.numChildren-1)})
+                                .call(()=>{mainstage.setChildIndex(card.imgContainer,mainstage.numChildren-1)})
                                 .call(()=>{cardFlip(card)})
                                 .to({x:toX,y:toY,rotation:-90},500,createjs.Ease.cubicOut);
                     };
                     if(card instanceof SpellCard){
                         return createjs.Tween.get(card.imgContainer)
-                                .call(()=>{stage.setChildIndex(card.imgContainer,stage.numChildren-1)})
+                                .call(()=>{mainstage.setChildIndex(card.imgContainer,mainstage.numChildren-1)})
                                 .call(()=>{cardFlip(card)})
                                 .to({x:toX,y:toY},500,createjs.Ease.cubicOut);
                     };
@@ -892,20 +892,20 @@ window.onload = function() {
                         cardFlip(card);
                     };
                     createjs.Tween.get(card.imgContainer)
-                        .call(()=>{stage.setChildIndex(card.imgContainer,stage.numChildren-1)})
+                        .call(()=>{mainstage.setChildIndex(card.imgContainer,mainstage.numChildren-1)})
                         .to({x:toX,y:toY,rotation:0},500,createjs.Ease.cubicOut)
                         .call(()=>{resolve()});
                 }); 
         },
         fromGY:(card: Card)=>{
-            stage.setChildIndex(card.imgContainer,stage.numChildren-1);
+            mainstage.setChildIndex(card.imgContainer,mainstage.numChildren-1);
             const PromiseArray :Promise<unknown>[] = [];
             game.GY.map((card, index, array) => {
                 const twPromise = () => {
                     return new Promise((resolve, reject) => {
                     createjs.Tween.get(card.imgContainer)
                         .to({x:game.displayOrder.gy[0][0]+index*1,y:game.displayOrder.gy[0][1]-index*1})
-                        .call(()=>{stage.setChildIndex(card.imgContainer,stage.numChildren - array.length + index)})
+                        .call(()=>{mainstage.setChildIndex(card.imgContainer,mainstage.numChildren - array.length + index)})
                         .call(()=>{resolve()});                
                     });
                 };
@@ -921,20 +921,20 @@ window.onload = function() {
                         cardFlip(card);
                     };
                     createjs.Tween.get(card.imgContainer)
-                        .call(()=>{stage.setChildIndex(card.imgContainer,stage.numChildren-1)})
+                        .call(()=>{mainstage.setChildIndex(card.imgContainer,mainstage.numChildren-1)})
                         .to({x:toX,y:toY,rotation:0},500,createjs.Ease.cubicOut)
                         .call(()=>{resolve()});
                 }); 
         },
         fromDD:(card: Card)=>{
-            stage.setChildIndex(card.imgContainer,stage.numChildren-1);
+            mainstage.setChildIndex(card.imgContainer,mainstage.numChildren-1);
             const PromiseArray :Promise<unknown>[] = [];
             game.DD.map((card, index, array) => {
                 const twPromise = () => {
                     return new Promise((resolve, reject) => {
                     createjs.Tween.get(card.imgContainer)
                         .to({x:game.displayOrder.dd[0][0]+index*1,y:game.displayOrder.dd[0][1]-index*1})
-                        .call(()=>{stage.setChildIndex(card.imgContainer,stage.numChildren - array.length + index)})
+                        .call(()=>{mainstage.setChildIndex(card.imgContainer,mainstage.numChildren - array.length + index)})
                         .call(()=>{resolve()});                
                     });
                 };
@@ -980,8 +980,10 @@ window.onload = function() {
         },
         BOARD:{
             toGY:async(card: Card) => {
-                await LocationSetting(card,"GY")
-                await Animation.toGY(card);
+                if(["ST","MO","FIELD"].includes(card.location)){
+                    await LocationSetting(card,"GY")
+                    await Animation.toGY(card); 
+                };
             },
             toHAND:async(card: Card)=>{
                 await LocationSetting(card,"HAND")
@@ -1014,30 +1016,42 @@ window.onload = function() {
      * チェーンに乗る効果発動アニメーション
      */
     const animationChainEffectActivate = async(eff: effect) => {
+        const chainNumber = (chainNum:Number,eff: effect)=>{
+            const newText = new createjs.Text(chainNum.toString(), "100px serif", "DarkRed");
+            newText.textAlign = "center";
+            newText.textBaseline = "middle";
+            newText.scaleX = 3;
+            newText.scaleY = 3;
+            newText.x = eff.card.imgContainer.x;
+            newText.y = eff.card.imgContainer.y;
+            newText.alpha = 0;
+            return newText
+        };
+
         const effImg = new createjs.Bitmap(eff.card.imageFileName);
         effImg.regX = cardImgSize.x/2;
         effImg.regY = cardImgSize.y/2;
         effImg.x = eff.card.imgContainer.x;
         effImg.y = eff.card.imgContainer.y;
-        stage.addChild(effImg);
+        mainstage.addChild(effImg);
         const cardPromise =  new Promise((resolve, reject) => {
             createjs.Tween.get(effImg)
                 .to({scaleX:3,scaleY:3,alpha:0},500,createjs.Ease.cubicOut)
-                .call(()=>{stage.removeChild(effImg)})
+                .call(()=>{mainstage.removeChild(effImg)})
                 .call(()=>{resolve()});
         });
         const chainPromise =  new Promise(async(resolve, reject) => {
             if(game.chain.length==1){
                 await new Promise(async(resolve, reject) => {
                     game.chain[0].chainBrock = chainNumber(1,game.chain[0])
-                    stage.addChild(game.chain[0].chainBrock);
+                    mainstage.addChild(game.chain[0].chainBrock);
                     createjs.Tween.get(game.chain[0].chainBrock)
                         .to({scaleX:1,scaleY:1,alpha:1},500,createjs.Ease.cubicIn)
                         .call(()=>{resolve()});
                 });
                 await new Promise(async(resolve, reject) => {
                     eff.chainBrock = chainNumber(2,eff);
-                    stage.addChild(eff.chainBrock);
+                    mainstage.addChild(eff.chainBrock);
                     createjs.Tween.get(eff.chainBrock)
                         .to({scaleX:1,scaleY:1,alpha:1},500,createjs.Ease.cubicIn)
                         .call(()=>{resolve()});
@@ -1045,7 +1059,7 @@ window.onload = function() {
             }else if(2<=game.chain.length){
                 await new Promise(async(resolve, reject) => {
                     eff.chainBrock = chainNumber(game.chain.length+1,eff);
-                    stage.addChild(eff.chainBrock);
+                    mainstage.addChild(eff.chainBrock);
                     createjs.Tween.get(eff.chainBrock)
                         .to({scaleX:1,scaleY:1,alpha:1},500,createjs.Ease.cubicIn)
                         .call(()=>{resolve()});
@@ -1056,35 +1070,24 @@ window.onload = function() {
 
         await cardPromise;
         await chainPromise;
-
         return
-
     };
 
-    const chainResolveanimation = async(eff: effect)=>{
+    /**
+     * チェーンブロック解決アニメーション
+     */
+    const animationchainResolve = async(eff: effect)=>{
         if(eff.chainBrock){
             await new Promise(async(resolve, reject) => {
                 createjs.Tween.get(eff.chainBrock)
                     .to({scaleX:3,scaleY:3,alpha:0},500,createjs.Ease.cubicOut)
                     .call(()=>{
-                        stage.removeChild(eff.chainBrock)
+                        mainstage.removeChild(eff.chainBrock)
                         eff.chainBrock = void(0)
                     })
                     .call(()=>{resolve()});
             });
         };
-    };
-
-    const chainNumber = (chainNum:Number,eff: effect)=>{
-        const newText = new createjs.Text(chainNum.toString(), "100px serif", "DarkRed");
-        newText.textAlign = "center";
-        newText.textBaseline = "middle";
-        newText.scaleX = 3;
-        newText.scaleY = 3;
-        newText.x = eff.card.imgContainer.x;
-        newText.y = eff.card.imgContainer.y;
-        newText.alpha = 0;
-        return newText
     };
 
     /**
@@ -1114,7 +1117,7 @@ window.onload = function() {
                             game.GY.map((c, index, array) => {
                                 createjs.Tween.get(c.imgContainer)
                                 .to({x:game.displayOrder.gy[0][0]+index*1,y:game.displayOrder.gy[0][1]-index*2})
-                                .call(()=>{stage.setChildIndex(c.imgContainer,stage.numChildren - array.length + index)})             
+                                .call(()=>{mainstage.setChildIndex(c.imgContainer,mainstage.numChildren - array.length + index)})             
                             });
                         };
                         const aimImg = genAimImg();
@@ -1467,16 +1470,21 @@ window.onload = function() {
     const release = async(cardArray : Card[],by:"ADVANCE"|"EFFECT"|"RULE"|"COST") => {
         await (async () => {
             for(let card of cardArray){
-                await moveCard.BOARD.toGY(card);
                 game.nowTime.release.push({
                     card:card,
                     by:by
                 });
-                game.nowTime.move.push({
-                    card:card,
-                    from:"BOARD",
-                    to:"GY"
-                });
+                await ContinuousEffect(game.nowTime);
+
+                if(["ST","MO","FIELD"].includes(card.location)){
+                    await moveCard.BOARD.toGY(card);
+                    game.nowTime.move.push({
+                        card:card,
+                        from:"BOARD",
+                        to:"GY"
+                    });
+                    await ContinuousEffect(game.nowTime);
+                };
             };
         })();
         await ContinuousEffect(game.nowTime);
@@ -1506,6 +1514,63 @@ window.onload = function() {
         });
     };
 
+    /**
+     * 装備する
+     */
+    const Equip = async(card:SpellCard,eff: effect)=>{
+        card.peggingTarget = eff.targetCard;
+        const targetCard = card.peggingTarget[0];
+        const genEquipImg = ()=>{
+            const equipImg = new createjs.Bitmap("equip.png");
+            equipImg.setTransform(card.imgContainer.x, card.imgContainer.y, 0.5, 0.5);
+            equipImg.regX = 64;
+            equipImg.regY = 64;
+            equipImg.mouseEnabled = false;
+            return equipImg
+        };
+        return new Promise<void>(async(resolve, reject) => {
+            await new Promise(async(resolve, reject) => {
+                const equipImg = genEquipImg();
+                equipImg.alpha = 0;
+                mainstage.addChild(equipImg);
+                createjs.Tween.get(equipImg)
+                    .to({alpha:1,scaleX:1,scaleY:1},250)
+                    .to({x:targetCard.imgContainer.x,y:targetCard.imgContainer.y},500)
+                    .to({scaleX:0,scaleY:0},250)
+                    .wait(250)
+                    .call(()=>{mainstage.removeChild(equipImg)})
+                    .call(()=>{resolve()});
+            });
+
+            const equipMarkSPELL = genEquipImg();
+            const equipMarkMON = genEquipImg();
+
+            card.imgContainer.addEventListener("mouseover", handleEquipMover);
+            targetCard.imgContainer.addEventListener("mouseover", handleEquipMover);
+            function handleEquipMover(event) {
+                if(card.peggingTarget.length>0){
+                    equipMarkSPELL.setTransform(card.imgContainer.x, card.imgContainer.y,0.5,0.5);
+                    equipMarkSPELL.regX = 64;
+                    equipMarkSPELL.regY = 64;
+                    mainstage.addChild(equipMarkSPELL);
+                    equipMarkMON.setTransform(targetCard.imgContainer.x, targetCard.imgContainer.y,0.5,0.5);
+                    equipMarkMON.regX = 64;
+                    equipMarkMON.regY = 64;
+                    mainstage.addChild(equipMarkMON);
+                }; 
+            };
+            card.imgContainer.addEventListener("mouseout", handleEquipMout);
+            targetCard.imgContainer.addEventListener("mouseout", handleEquipMout);
+            function handleEquipMout(event) {
+                if(card.peggingTarget.length>0){
+                    mainstage.removeChild(equipMarkSPELL);
+                    mainstage.removeChild(equipMarkMON);                    
+                };
+            };
+            resolve();
+        });
+
+    };
 
 
     /**
@@ -1526,7 +1591,7 @@ window.onload = function() {
                     .to({x:orgX+100-(200*(index%2))},100)
                     .to({x:orgX-100+(200*(index%2))},200)
                     .to({x:game.displayOrder.deck[0][0]+index*1,y:game.displayOrder.deck[0][1]-index*2},100)
-                    .call(()=>{stage.setChildIndex(card.imgContainer,stage.numChildren - array.length + index)})
+                    .call(()=>{mainstage.setChildIndex(card.imgContainer,mainstage.numChildren - array.length + index)})
                     .call(()=>{resolve()});                
                 });
             };
@@ -1675,6 +1740,41 @@ window.onload = function() {
             (eff.effType=="CardActived"||eff.effType=="Quick"||eff.effType=="Ignition") &&
             eff.actionPossible({}));
     };
+
+    /**
+     * 装備魔法が場から離れたとき装備解除する効果
+     */
+    const equipDisEnchant = (card:SpellCard) =>{
+        const disEnchant = new effect(card);
+        disEnchant.effType = "Rule";
+        disEnchant.actionPossible = (time:Time) =>{
+            const timeCondition = (()=>{
+                const timeBoolArray :boolean[] = [];
+                time.move.forEach(tMove=>{
+                    timeBoolArray.push(tMove.card==card && tMove.from=="BOARD");
+                });
+                return timeBoolArray.some(value => value);
+            })();
+            const boolarray = [
+                card.peggingTarget.length>0,
+                timeCondition
+            ];
+            return boolarray.every(value => value==true)
+        };
+        disEnchant.apply = () => {
+            return new Promise<void>(async(resolve, reject) => {
+                const equiptarget = card.peggingTarget[0];
+                if(equiptarget instanceof MonsterCard){
+                    equiptarget.buff = equiptarget.buff.filter(b=>b.eff.card!==card);
+                };
+                card.peggingTarget = [];
+                console.log("disenchant");
+                resolve();
+            });
+        };
+        return disEnchant;
+    };
+
     /**
      * 装備魔法の対象が消えたとき自身を破壊する効果
      */
@@ -1894,22 +1994,35 @@ window.onload = function() {
     const game = new Game;
 
     const mainCanv =<HTMLCanvasElement>document.getElementById("canv") ;
-    const stage = new createjs.Stage(mainCanv);
-    stage.enableMouseOver();
+    const mainstage = new createjs.Stage(mainCanv);
+    mainstage.enableMouseOver();
 
     const divSelectMenuContainer =<HTMLElement>document.getElementById("selectMenuContainer") ;
 
     const windowBackCanv =<HTMLCanvasElement>document.getElementById("selectMenuBack") ;
     const windowBackStage = new createjs.Stage(windowBackCanv);
-    windowBackStage.enableMouseOver();
+    windowBackStage.enableMouseOver();  
+
+    const selectButtonCanv =<HTMLCanvasElement>document.getElementById("selectButtonCanv") ;
+    selectButtonCanv.style.width = String(windowSize.w)+"px";
+    selectButtonCanv.width = windowSize.w;
+    selectButtonCanv.style.height = String(60)+"px";
+    selectButtonCanv.height = 60
+    const selectButtonStage = new createjs.Stage(selectButtonCanv);
+    selectButtonStage.enableMouseOver();
+
     const messageText = <HTMLElement>document.getElementById("selectMessageText")
+
     const scrollAreaContainer =<HTMLElement>document.getElementById("scrollAreaContainer") ;
+    scrollAreaContainer.style.width = String(windowSize.w)+"px";
+    scrollAreaContainer.style.height = String(windowSize.h)+"px";
+
 
     const disprayCanv =<HTMLCanvasElement>document.getElementById("displayCanv") ;
     const disprayStage = new createjs.Stage(disprayCanv);
     disprayStage.enableMouseOver();
 
-    setBoard(stage);
+    setBoard(mainstage);
 
     const ALPHA = genMonsterCard(Alpha);
     const BETA = genMonsterCard(Beta);
@@ -1931,159 +2044,6 @@ window.onload = function() {
     DISK.effect = effectSetting.DISK(DISK)
     KURAZ.effect = effectSetting.KURAZ(KURAZ)
 
-    // AIRMAN.effect[0] = new effect(AIRMAN)
-    // AIRMAN.effect[0].effType = "Trigger"
-    // AIRMAN.effect[0].whetherToActivate = "Any"
-    // AIRMAN.effect[0].range = ["MO"]
-    // AIRMAN.effect[0].actionPossible = (time:Time) =>{
-    //     const timeCondition = (()=>{
-    //         const timeBoolArray :boolean[] = [];
-    //         time.summon.forEach(ts=>{
-    //             timeBoolArray.push(
-    //                 [
-    //                 ts.type=="NS"||ts.type=="SS",
-    //                 ts.card== AIRMAN,
-    //                 ts.face== "UP",
-    //                 ].every(value => value)
-    //             );
-    //         });
-    //         return timeBoolArray.some(value => value);
-    //     })();
-
-    //     const boolarray = [
-    //         timeCondition,
-    //         AIRMAN.effect[0].range.includes(AIRMAN.location),
-    //         genCardArray({category:["HERO"],location:["DECK"]}).length > 0];
-    //     return boolarray.every(value => value)
-    // };
-
-    // AIRMAN.effect[0].whenActive = (eff :effect) => {
-    //     return new Promise((resolve, reject) => {
-    //         resolve();
-    //     });
-    // };
-    // AIRMAN.effect[0].whenResolve = (eff :effect) => {
-    //     return new Promise<void>(async(resolve, reject) => {
-    //         game.nowTime = new Time;
-    //         await new Promise((resolve, reject) => {
-    //             const cardlist = genCardArray({category:["HERO"],location:["DECK"]});
-    //             openCardListWindow.select(cardlist,1,1,eff,"手札に加えるHEROを選択してください");
-    //             SelectOkButton.addEventListener("click",clickOkButton);
-    //             function clickOkButton(e) {
-    //                 divSelectMenuContainer.style.visibility = "hidden";
-    //                 disprayStage.removeAllChildren();
-    //                 SelectOkButton.removeEventListener("click", clickOkButton);
-    //                 resolve();
-    //             };
-    //         });
-    //         await search(eff.targetCard);
-    //         game.timeArray.push({...game.nowTime});
-    //         resolve();
-    //     });
-    // };
-
-    // DISK.effect[0] = new effect(DISK)
-    // DISK.effect[0].effType = "Trigger"
-    // DISK.effect[0].whetherToActivate = "Forced"
-    // DISK.effect[0].range = ["MO"]
-    // DISK.effect[0].actionPossible = (time:Time) =>{
-    //     const timeCondition = (()=>{
-    //         const timeBoolArray :boolean[] = [];
-    //         time.summon.forEach(ts=>{
-    //             timeBoolArray.push(
-    //                 [
-    //                 ts.type=="SS",
-    //                 ts.from== "GY",
-    //                 ts.card== DISK,
-    //                 ts.face== "UP",
-    //                 ].every(value => value)
-    //             );
-    //         });
-    //         return timeBoolArray.some(value => value);
-    //     })();
-    //     const boolarray = [
-    //         timeCondition,
-    //         DISK.effect[0].range.includes(DISK.location),
-    //     ];
-    //     return boolarray.every(value => value)
-    // };
-
-    // DISK.effect[0].whenActive = (eff :effect) => {
-    //     return new Promise((resolve, reject) => {
-    //         resolve();
-    //     });
-    // };
-    // DISK.effect[0].whenResolve = (eff :effect) => {
-    //     return new Promise<void>(async(resolve, reject) => {
-    //         game.nowTime = new Time;
-    //         await draw(2);
-    //         game.timeArray.push({...game.nowTime});
-    //         resolve();
-    //     });
-    // };
-
-    // KURAZ.effect[0] = new effect(KURAZ);
-    // KURAZ.effect[0].effType = "Trigger";
-    // KURAZ.effect[0].whetherToActivate = "Any"
-    // KURAZ.effect[0].range = ["MO"]
-    // KURAZ.effect[0].actionPossible = (time:Time) =>{
-    //     const timeCondition = (()=>{
-    //         const timeBoolArray :boolean[] = [];
-    //         time.summon.forEach(ts=>{
-    //             timeBoolArray.push(
-    //                 [
-    //                 ts.type=="NS"||ts.type=="SS",
-    //                 ts.card== KURAZ,
-    //                 ts.face== "UP",
-    //                 ].every(value => value)
-    //             );
-    //         });
-    //         return timeBoolArray.some(value => value);
-    //     })();
-
-    //     const boolarray = [
-    //         timeCondition,
-    //         KURAZ.effect[0].range.includes(KURAZ.location),
-    //         genCardArray({location:["MO","ST"]}).length > 0];
-    //     return boolarray.every(value => value)
-    // };
-    // KURAZ.effect[0].whenActive = (eff :effect) => {
-    //     return new Promise((resolve, reject) => {
-    //         const cardlist = genCardArray({location:["MO","ST"]});
-    //         openCardListWindow.select(cardlist,1,2,eff,"破壊するカードを選択してください");
-    //         SelectOkButton.addEventListener("click",clickOkButton);
-    //         async function clickOkButton(e) {
-    //             divSelectMenuContainer.style.visibility = "hidden";
-    //             disprayStage.removeAllChildren();
-    //             SelectOkButton.removeEventListener("click", clickOkButton);
-    //             await animationEffectTarget(eff.targetCard)
-    //             resolve();
-    //         };
-    //     });
-    // };
-    // KURAZ.effect[0].whenResolve = (eff :effect) => {
-    //     return new Promise<void>(async(resolve, reject) => {
-    //         game.nowTime = new Time;
-    //         const targetLocation = ["ST","MO","FIELD"]
-    //         const target = eff.targetCard.filter(card=>targetLocation.includes(card.location))
-    //         await destroy(target,"EFFECT");
-    //         await (async () => {
-    //             for(let tCard of target){
-    //                 await moveCard.BOARD.toGY(tCard);
-    //                 game.nowTime.move.push({
-    //                     card:tCard,
-    //                     from:"BOARD",
-    //                     to:"GY"
-    //                 });
-    //             };
-    //         })();
-    //         await ContinuousEffect(game.nowTime);
-    //         await draw(target.length);
-
-    //         game.timeArray.push({...game.nowTime});
-    //         resolve();
-    //     });
-    // };
 
     const potOfGreed = new SpellCard
     potOfGreed.spellType = "Normal"
@@ -2199,14 +2159,12 @@ window.onload = function() {
     monsterReborn.effect[0].actionPossible = (time:Time) =>{
         const boolarray = [
             JudgeSpellTrapActivateLoc(monsterReborn),
-            // genCardArray({cardType:["Monster"],location:["GY"]}).length > 0,
             game.GY.filter(card=>card instanceof MonsterCard && card.canNS).length>0
         ];
         return boolarray.every(value => value==true)
     };
     monsterReborn.effect[0].whenActive = (eff :effect) => {
         return new Promise((resolve, reject) => {
-            // const cardlist = genCardArray({cardType:["Monster"],location:["GY"]});
             const cardlist = game.GY.filter(card=>card instanceof MonsterCard && card.canNS);
             openCardListWindow.select(cardlist,1,3,eff);
             const clickOkButton = async (e) => {
@@ -2225,7 +2183,6 @@ window.onload = function() {
             // game.nowTime = new Time;
             await SpecialSummon.fromGY(targetarray.reverse(),true);
             // game.timeArray.push({...game.nowTime});
-            console.log(game.timeArray)
             resolve();
         });
     };
@@ -2265,7 +2222,8 @@ window.onload = function() {
             game.nowTime = new Time;
             if(eff.targetCard[0].location=="GY" && eff.card.location=="ST" && eff.card.face=="UP"){
                 await SpecialSummon.fromGY(eff.targetCard,false,"ATK");
-                prematureBrial.peggingTarget = eff.targetCard;
+                Equip(prematureBrial,eff);
+                // prematureBrial.peggingTarget = eff.targetCard;
             };
             game.timeArray.push({...game.nowTime});
             resolve();
@@ -2282,7 +2240,6 @@ window.onload = function() {
             return timeBoolArray.some(value => value);
         })();
         const boolarray = [
-           "peggingTarget" in prematureBrial,
            prematureBrial.peggingTarget.filter(card=>card.canDestroy).length>0,
            timeCondition
         ];
@@ -2308,6 +2265,7 @@ window.onload = function() {
         });
     };
     prematureBrial.effect.push( equipDestroy(prematureBrial) );
+    prematureBrial.effect.push( equipDisEnchant(prematureBrial) );
 
     const monsterGate = new SpellCard
     monsterGate.cardName="prematureBrial";
@@ -2391,7 +2349,7 @@ window.onload = function() {
     };
     phenixBlade.effect[0].whenActive = (eff :effect) => {
         return new Promise((resolve, reject) => {
-            const cardlist = genCardArray({face:["UP"],location:["MO"]});
+            const cardlist = genCardArray({face:["UP"],location:["MO"],race:["WARRIOR"]});
             openCardListWindow.select(cardlist,1,1,eff);
             const clickOkButton = async (e) => {
                 divSelectMenuContainer.style.visibility = "hidden";
@@ -2407,7 +2365,7 @@ window.onload = function() {
         return new Promise<void>(async(resolve, reject) => {
             game.nowTime = new Time;
             if(eff.targetCard[0].location=="MO" && eff.targetCard[0].face=="UP" && eff.card.location=="ST" && eff.card.face=="UP"){
-                phenixBlade.peggingTarget = eff.targetCard;
+                await Equip(phenixBlade,eff);
                 const equiptarget = phenixBlade.peggingTarget[0];
                 if(equiptarget instanceof MonsterCard){
                     equiptarget.buff.push({eff:eff,atkBuff:300,defBuff:0})
@@ -2417,45 +2375,18 @@ window.onload = function() {
             resolve();
         });
     };
+
     phenixBlade.effect[1] = new effect(phenixBlade);
-    phenixBlade.effect[1].effType = "Continuous";
+    phenixBlade.effect[1].effType = "Ignition";
+    phenixBlade.effect[1].range = ["GY"];
     phenixBlade.effect[1].actionPossible = (time:Time) =>{
-        const timeCondition = (()=>{
-            const timeBoolArray :boolean[] = [];
-            time.move.forEach(tMove=>{
-                timeBoolArray.push(tMove.card==phenixBlade && tMove.from=="BOARD");
-            });
-            return timeBoolArray.some(value => value);
-        })();
         const boolarray = [
-           "peggingTarget" in phenixBlade,
-           timeCondition
-        ];
-        return boolarray.every(value => value==true)
-    };
-    phenixBlade.effect[1].apply = () => {
-        return new Promise<void>(async(resolve, reject) => {
-            if(phenixBlade.peggingTarget[0].location=="MO"){
-                const equiptarget = phenixBlade.peggingTarget[0];
-                if(equiptarget instanceof MonsterCard){
-                    equiptarget.buff.filter(b=>b.eff.card!==phenixBlade);
-                };
-            };
-            phenixBlade.peggingTarget = [];
-            resolve();
-        });
-    };
-    phenixBlade.effect[2] = new effect(phenixBlade);
-    phenixBlade.effect[2].effType = "Ignition";
-    phenixBlade.effect[2].range = ["GY"];
-    phenixBlade.effect[2].actionPossible = (time:Time) =>{
-        const boolarray = [
-            phenixBlade.effect[2].range.includes(phenixBlade.location),
+            phenixBlade.effect[1].range.includes(phenixBlade.location),
             genCardArray({race:["WARRIOR"],location:["GY"]}).length >= 2
         ];
         return boolarray.every(value => value==true)
     };
-    phenixBlade.effect[2].whenActive = (eff :effect) => {
+    phenixBlade.effect[1].whenActive = (eff :effect) => {
         return new Promise((resolve, reject) => {
             const cardlist = genCardArray({race:["WARRIOR"],location:["GY"]});
             openCardListWindow.select(cardlist,2,2,eff);
@@ -2470,7 +2401,7 @@ window.onload = function() {
             SelectOkButton.addEventListener("click",clickOkButton);
         });
     };
-    phenixBlade.effect[2].whenResolve = (eff :effect) => {
+    phenixBlade.effect[1].whenResolve = (eff :effect) => {
         return new Promise<void>(async(resolve, reject) => {
             if(eff.card.location=="GY"){
                 game.nowTime = new Time;
@@ -2488,17 +2419,21 @@ window.onload = function() {
             resolve();
         });
     };
+
     phenixBlade.effect.push( equipDestroy(phenixBlade) );
+    phenixBlade.effect.push( equipDisEnchant(phenixBlade) ) ;
+
+
 
     const myDeck : Card[]= [DOGMA,ALPHA,BETA,GAMMA,potOfGreed,
-        prematureBrial,destinyDraw,reinforcement,monsterGate,phenixBlade,monsterReborn,AIRMAN,KURAZ,DISK];
-    deckset(stage, Array.from(myDeck));
+        prematureBrial,destinyDraw,reinforcement,monsterGate,monsterReborn,AIRMAN,KURAZ,DISK,phenixBlade];
+    deckset(mainstage, Array.from(myDeck));
     console.log(game.DECK); 
 
     const drawButton = createButton("draw", 150, 40, "#0275d8");
     drawButton.x = 1200;
     drawButton.y = 450;
-    stage.addChild(drawButton);
+    mainstage.addChild(drawButton);
 
     drawButton.on("click", function(e){
         draw(1);
@@ -2507,7 +2442,7 @@ window.onload = function() {
     const shuffleButton = createButton("shuffle", 150, 40, "#0275d8");
     shuffleButton.x = 1200;
     shuffleButton.y = 500;
-    stage.addChild(shuffleButton);
+    mainstage.addChild(shuffleButton);
 
     shuffleButton.on("click", function(e){
         deckShuffle();
@@ -2516,7 +2451,7 @@ window.onload = function() {
     const DeckViewButton = createButton("DECK View", 150, 40, "#0275d8");
     DeckViewButton.x = 1200;
     DeckViewButton.y = 600;
-    stage.addChild(DeckViewButton);
+    mainstage.addChild(DeckViewButton);
 
     DeckViewButton.on("click", function(e){
         openCardListWindow.view(game.DECK,"DECK");
@@ -2532,7 +2467,7 @@ window.onload = function() {
     const GyViewButton = createButton("GY View", 150, 40, "#0275d8");
     GyViewButton.x = 1200;
     GyViewButton.y = 550;
-    stage.addChild(GyViewButton);
+    mainstage.addChild(GyViewButton);
 
     GyViewButton.on("click", function(e){
         openCardListWindow.view(game.GY,"GY");
@@ -2548,7 +2483,7 @@ window.onload = function() {
     const testButton = createButton("test", 150, 40, "#0275d8");
     testButton.x = 1200;
     testButton.y = 650;
-    stage.addChild(testButton);
+    mainstage.addChild(testButton);
 
     testButton.on("click", function async(e){
          discard(game.HAND);
@@ -2556,9 +2491,10 @@ window.onload = function() {
 
     createjs.Ticker.addEventListener("tick", handleTick);
     function handleTick() {
-        stage.update();
+        mainstage.update();
         windowBackStage.update();
         disprayStage.update();
+        selectButtonStage.update();
 
     };
 
@@ -2569,18 +2505,15 @@ window.onload = function() {
     windowBackStage.addChild(selectMenuBack);
 
     const SelectOkButton = createButton("OK", 150, 40, "#0275d8");
-    SelectOkButton.x = windowBackCanv.width/2 - 75;
-    SelectOkButton.y = 600;
-    windowBackStage.addChild(SelectOkButton);
+    SelectOkButton.x = selectButtonCanv.width/2 - 75;
+    SelectOkButton.y = 10;
+    selectButtonStage.addChild(SelectOkButton);
 
     const SelectCancelButton = createButton("CANCEL", 150, 40, "#0275d8");
-    SelectCancelButton.x = windowBackCanv.width/2 + 75;
-    SelectCancelButton.y = 600;
+    SelectCancelButton.x = selectButtonCanv.width/2 - 75;
+    SelectCancelButton.y = 10;
     SelectCancelButton.visible = false
-    windowBackStage.addChild(SelectCancelButton);
-
-    scrollAreaContainer.style.width = String(windowSize.w)+"px";
-    scrollAreaContainer.style.height = String(windowSize.h)+"px";
+    selectButtonStage.addChild(SelectCancelButton);
 
 
     const openCardListWindow = {
@@ -2595,10 +2528,10 @@ window.onload = function() {
 
             if(cansel){
                 SelectCancelButton.visible = true;
-                SelectOkButton.x = windowBackCanv.width/2 - 225;
-                SelectCancelButton.x = windowBackCanv.width/2 + 75;
+                SelectOkButton.x = selectButtonCanv.width/2 - 200;
+                SelectCancelButton.x = selectButtonCanv.width/2 + 50;
             }else{
-                SelectOkButton.x = windowBackCanv.width/2 - 75;
+                SelectOkButton.x = selectButtonCanv.width/2 - 75;
             };
 
             activeEff.targetCard = [];
@@ -2607,8 +2540,8 @@ window.onload = function() {
 
             disprayCanv.style.width = String((10+cardImgSize.x)*disprayCards.length+10)+"px";
             disprayCanv.width = (10+cardImgSize.x)*disprayCards.length+10;
-            disprayCanv.style.height = String(100+cardImgSize.y)+"px";
-            disprayCanv.height = 100+cardImgSize.y;
+            disprayCanv.style.height = String(50+cardImgSize.y)+"px";
+            disprayCanv.height = 50+cardImgSize.y;
 
             const createLocLabelBox = (card :Card) => {
                 const labelBox = new createjs.Container();
@@ -2713,7 +2646,7 @@ window.onload = function() {
         view:(disprayCards :Card[], message? :string) => {
             divSelectMenuContainer.style.visibility = "visible";
             SelectCancelButton.visible = false;
-            SelectOkButton.x = windowBackCanv.width/2 - 75;
+            SelectOkButton.x = selectButtonCanv.width/2 - 75;
             if(message == undefined){
                 messageText.innerText = "select"
             }else{
@@ -2723,8 +2656,8 @@ window.onload = function() {
 
             disprayCanv.style.width = String((10+cardImgSize.x)*disprayCards.length+10)+"px";
             disprayCanv.width = (10+cardImgSize.x)*disprayCards.length+10;
-            disprayCanv.style.height = String(100+cardImgSize.y)+"px";
-            disprayCanv.height = 100+cardImgSize.y;
+            disprayCanv.style.height = String(50+cardImgSize.y)+"px";
+            disprayCanv.height = 50+cardImgSize.y;
 
             const createLocLabelBox = (card :Card) => {
                 const labelBox = new createjs.Container();
