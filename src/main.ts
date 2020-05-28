@@ -1494,6 +1494,28 @@ window.onload = function() {
      * 破壊する
      */
     const destroy = async(cardArray : Card[],by:"BATTLE"|"EFFECT"|"RULE") => {
+        const destroyAnimation = (card:Card)=>{
+            return new Promise<void>(async(resolve, reject) => {
+                const destroyImg = new createjs.Bitmap("destroy.png");
+                destroyImg.setTransform(card.imgContainer.x, card.imgContainer.y,0,0);
+                destroyImg.regX = 64;
+                destroyImg.regY = 64;
+                destroyImg.mouseEnabled = false;
+                destroyImg.alpha = 0;
+                mainstage.addChild(destroyImg);
+
+                await new Promise(async(resolve, reject) => {
+                    createjs.Tween.get(destroyImg)
+                        .to({alpha:1,scaleX:2,scaleY:2},250)
+                        .to({alpha:0},250)
+                        .wait(250)
+                        .call(()=>{mainstage.removeChild(destroyImg)})
+                        .call(()=>{resolve()});
+                });
+                resolve();
+            });
+        };
+
         await (async () => {
             for(let card of cardArray){
                 card.canDestroy = false ;
@@ -1505,6 +1527,18 @@ window.onload = function() {
                     console.log("destroy "+card.cardName+" by "+by);
                 }else if(by=="RULE"){
                     console.log("destroy "+card.cardName+" lost equip target");
+                };
+                await destroyAnimation(card);
+                await ContinuousEffect(game.nowTime);
+
+                if(["ST","MO","FIELD"].includes(card.location)){
+                    await moveCard.BOARD.toGY(card);
+                    game.nowTime.move.push({
+                        card:card,
+                        from:"BOARD",
+                        to:"GY"
+                    });
+                    await ContinuousEffect(game.nowTime);
                 };
             };
         })();
@@ -1536,7 +1570,7 @@ window.onload = function() {
                 createjs.Tween.get(equipImg)
                     .to({alpha:1,scaleX:1,scaleY:1},250)
                     .to({x:targetCard.imgContainer.x,y:targetCard.imgContainer.y},500)
-                    .to({scaleX:0,scaleY:0},250)
+                    .to({scaleX:0.7,scaleY:0.7},250)
                     .wait(250)
                     .call(()=>{mainstage.removeChild(equipImg)})
                     .call(()=>{resolve()});
@@ -1802,16 +1836,6 @@ window.onload = function() {
             return new Promise<void>(async(resolve, reject) => {
                 if(card.location=="ST"){
                     await destroy([card],"RULE");
-                    await (async () => {
-                        for(let tCard of [card]){
-                            await moveCard.BOARD.toGY(tCard);
-                            game.nowTime.move.push({
-                                card:tCard,
-                                from:"BOARD",
-                                to:"GY"
-                            });
-                        };
-                    })();
                 };
                 card.peggingTarget = [];
                 resolve();
@@ -1971,17 +1995,6 @@ window.onload = function() {
                     const targetLocation = ["ST","MO","FIELD"]
                     const target = eff.targetCard.filter(card=>targetLocation.includes(card.location))
                     await destroy(target,"EFFECT");
-                    await (async () => {
-                        for(let tCard of target){
-                            await moveCard.BOARD.toGY(tCard);
-                            game.nowTime.move.push({
-                                card:tCard,
-                                from:"BOARD",
-                                to:"GY"
-                            });
-                        };
-                    })();
-                    await ContinuousEffect(game.nowTime);
                     await draw(target.length);
                     game.timeArray.push({...game.nowTime});
                     resolve();
@@ -2180,9 +2193,9 @@ window.onload = function() {
     monsterReborn.effect[0].whenResolve = (eff :effect) => {
         return new Promise<void>(async(resolve, reject) => {
             const targetarray = eff.targetCard.filter(card=>card.location=="GY");
-            // game.nowTime = new Time;
+            game.nowTime = new Time;
             await SpecialSummon.fromGY(targetarray.reverse(),true);
-            // game.timeArray.push({...game.nowTime});
+            game.timeArray.push({...game.nowTime});
             resolve();
         });
     };
@@ -2198,13 +2211,11 @@ window.onload = function() {
         const boolarray = [
             JudgeSpellTrapActivateLoc(prematureBrial),
             game.GY.filter(card=>card instanceof MonsterCard && card.canNS).length>0
-            // genCardArray({cardType:["Monster"],location:["GY"]}).length > 0
         ];
         return boolarray.every(value => value==true)
     };
     prematureBrial.effect[0].whenActive = (eff :effect) => {
         return new Promise((resolve, reject) => {
-            // const cardlist = genCardArray({cardType:["Monster"],location:["GY"]});
             const cardlist = game.GY.filter(card=>card instanceof MonsterCard && card.canNS)
             openCardListWindow.select(cardlist,1,1,eff);
             const clickOkButton = async (e) => {
@@ -2222,8 +2233,7 @@ window.onload = function() {
             game.nowTime = new Time;
             if(eff.targetCard[0].location=="GY" && eff.card.location=="ST" && eff.card.face=="UP"){
                 await SpecialSummon.fromGY(eff.targetCard,false,"ATK");
-                Equip(prematureBrial,eff);
-                // prematureBrial.peggingTarget = eff.targetCard;
+                await Equip(prematureBrial,eff);
             };
             game.timeArray.push({...game.nowTime});
             resolve();
@@ -2249,16 +2259,6 @@ window.onload = function() {
         return new Promise<void>(async(resolve, reject) => {
             if(prematureBrial.peggingTarget[0].location=="MO"){
                 await destroy(prematureBrial.peggingTarget,"EFFECT");
-                await (async () => {
-                    for(let tCard of prematureBrial.peggingTarget){
-                        await moveCard.BOARD.toGY(tCard);
-                        game.nowTime.move.push({
-                            card:tCard,
-                            from:"BOARD",
-                            to:"GY"
-                        });
-                    };
-                })();
             };
             prematureBrial.peggingTarget = [];
             resolve();
@@ -2517,7 +2517,8 @@ window.onload = function() {
 
 
     const openCardListWindow = {
-        select: (disprayCards :Card[], moreThan :Number, lessThan :Number, activeEff :effect,message? :string,cansel? :boolean) => {
+        select: (cardArray  :Card[], moreThan :Number, lessThan :Number, activeEff :effect,message? :string,cansel? :boolean) => {
+            const disprayCards = [...cardArray].reverse();
             divSelectMenuContainer.style.visibility = "visible";
             SelectCancelButton.visible = false;
             if(message == undefined){
@@ -2643,7 +2644,8 @@ window.onload = function() {
             return Promise.all(PromiseArray);
         },
 
-        view:(disprayCards :Card[], message? :string) => {
+        view:(cardArray :Card[], message? :string) => {
+            const disprayCards = [...cardArray].reverse();
             divSelectMenuContainer.style.visibility = "visible";
             SelectCancelButton.visible = false;
             SelectOkButton.x = selectButtonCanv.width/2 - 75;
