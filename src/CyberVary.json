@@ -1,0 +1,14 @@
+{
+    "imageFileName": "CyberVary.jpg",
+    "bar": 123,
+    "ID": 111,
+    "cardName": "CyberVary",
+    "category" : [] ,
+    "cardType": "Monster",
+    "monsterType": "Effect",
+    "level": 1,
+    "race": "MACHINE",
+    "attribute": "LIGHT",
+    "atkPoint" : 0,
+    "defPoint" : 0
+  }
