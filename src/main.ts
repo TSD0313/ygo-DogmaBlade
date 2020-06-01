@@ -23,7 +23,7 @@ class Grid {
         this.front = front;
         this.back = back;
     }
-}
+};
 class Game{
     FIELD : Card[];
     MO : Card[];
@@ -57,24 +57,21 @@ class Game{
         this.chain = [];
         this.nowTime = new Time;
         this.timeArray = [];
-
-
         const front_position: number[][] = (() => {
             const array: number[][] = [];
             for(let i = 0; i < 8 ; i++){
                 if(i<7){
-                  array.push([cardImgSize.x/2+20+(cardImgSize.y+cardImgSize.margin)*i,cardImgSize.y/2+20]);  
+                  array.push([cardImgSize.x/2+20+(cardImgSize.y+cardImgSize.margin)*i,cardImgSize.y/2+20+100]);  
                 }else if(i==7){
-                    array.push([cardImgSize.x/2-20+(cardImgSize.y+cardImgSize.margin)*i,cardImgSize.y/2+20]);
+                    array.push([cardImgSize.x/2-20+(cardImgSize.y+cardImgSize.margin)*i,cardImgSize.y/2+20+100]);
                 };
             };
             return array
         })();
-
         const back_position = (() => {
             const array: number[][] = [];
             for(let i = 8; i < 15 ; i++){
-                array.push([cardImgSize.x/2+20+(cardImgSize.y+cardImgSize.margin)*(i-8),cardImgSize.y*1.5+40]);
+                array.push([cardImgSize.x/2+20+(cardImgSize.y+cardImgSize.margin)*(i-8),cardImgSize.y*1.5+40+100]);
             };
             return array
         })();
@@ -89,8 +86,8 @@ class Game{
                 ex:[this.grid.back[0]],
                 st:[this.grid.back[3],this.grid.back[2],this.grid.back[4],this.grid.back[1],this.grid.back[5]],
                 deck:[this.grid.back[6]],
-                hand:[this.grid.front[3][0],this.grid.front[3][1]*5]
-                    };
+                hand:[this.grid.front[3][0],this.grid.front[3][1]*3]
+        };
     };
 };
 
@@ -1726,7 +1723,7 @@ window.onload = function() {
                     .wait(index*(100/array.length))
                     .to({x:orgX+100-(200*(index%2))},100)
                     .to({x:orgX-100+(200*(index%2))},200)
-                    .to({x:game.displayOrder.deck[0][0]+index*1,y:game.displayOrder.deck[0][1]-index*2},100)
+                    .to({x:game.displayOrder.deck[0][0]+index*1,y:game.displayOrder.deck[0][1]-index*1},100)
                     .call(()=>{mainstage.setChildIndex(card.imgContainer,mainstage.numChildren - array.length + index)})
                     .call(()=>{resolve()});                
                 });
@@ -2273,7 +2270,7 @@ window.onload = function() {
             eff1.whenActive = (eff :effect) => {
                 return new Promise((resolve, reject) => {
                     const cardlist = game.GY.filter(card=>card instanceof SpellCard);
-                    openCardListWindow.select(cardlist,1,3,eff);
+                    openCardListWindow.select(cardlist,1,1,eff);
                     const clickOkButton = async (e) => {
                         divSelectMenuContainer.style.visibility = "hidden";
                         disprayStage.removeAllChildren();
@@ -2572,7 +2569,7 @@ window.onload = function() {
             eff1.actionPossible = (time:Time) =>{
                 const boolarray = [
                     JudgeSpellTrapActivateLoc(card),
-                    genCardArray({face:["UP"],location:["MO"]}).length > 0
+                    genCardArray({face:["UP"],location:["MO"],race:["WARRIOR"]}).length > 0
                 ];
                 return boolarray.every(value => value==true)
             };
@@ -2685,6 +2682,15 @@ window.onload = function() {
 
     setBoard(mainstage);
 
+    const myLP = new createjs.Text(game.myLifePoint.toString(), "80px serif", "#4169e1");
+    myLP.textBaseline = "bottom";
+    myLP.y = 800;
+    mainstage.addChild(myLP);
+    const EnemyLP = new createjs.Text(game.enemyLifePoint.toString(), "80px serif", "#cd5c5c");
+    EnemyLP.textAlign = "right";
+    EnemyLP.x = 1450;
+    mainstage.addChild(EnemyLP);
+
     const ALPHA = genMonsterCard(Alpha);
     const BETA = genMonsterCard(Beta);
     const GAMMA = genMonsterCard(Gamma);
@@ -2774,7 +2780,7 @@ window.onload = function() {
 
     const drawButton = createButton("draw", 150, 40, "#0275d8");
     drawButton.x = 1200;
-    drawButton.y = 450;
+    drawButton.y = 550;
     mainstage.addChild(drawButton);
 
     drawButton.on("click", function(e){
@@ -2783,7 +2789,7 @@ window.onload = function() {
 
     const shuffleButton = createButton("shuffle", 150, 40, "#0275d8");
     shuffleButton.x = 1200;
-    shuffleButton.y = 500;
+    shuffleButton.y = 600;
     mainstage.addChild(shuffleButton);
 
     shuffleButton.on("click", function(e){
@@ -2792,7 +2798,7 @@ window.onload = function() {
 
     const DeckViewButton = createButton("DECK View", 150, 40, "#0275d8");
     DeckViewButton.x = 1200;
-    DeckViewButton.y = 550;
+    DeckViewButton.y = 650;
     mainstage.addChild(DeckViewButton);
 
     DeckViewButton.on("click", function(e){
@@ -2808,12 +2814,14 @@ window.onload = function() {
 
     const testButton = createButton("test", 150, 40, "#0275d8");
     testButton.x = 1200;
-    testButton.y = 600;
+    testButton.y = 700;
     mainstage.addChild(testButton);
 
     testButton.on("click", function async(e){
         // discard(game.HAND);
-        OpenSelectEffectWindow(new Card,"tttttA","tttttB");
+        // OpenSelectEffectWindow(new Card,"tttttA","tttttB");
+        createjs.Tween.get(game)
+            .to({myLifePoint:game.myLifePoint-3000},1000,createjs.Ease.cubicOut)
     }, null, false);
 
     createjs.Ticker.addEventListener("tick", handleTick);
@@ -2822,7 +2830,8 @@ window.onload = function() {
         windowBackStage.update();
         disprayStage.update();
         selectButtonStage.update();
-
+        myLP.text = game.myLifePoint.toFixed().toString();
+        EnemyLP.text = game.enemyLifePoint.toFixed().toString();
     };
 
     const selectMenuBack = new createjs.Shape();
