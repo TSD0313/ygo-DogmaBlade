@@ -2823,6 +2823,7 @@ window.onload = function() {
             eff1.whenActive = (eff :effect) => {
                 return new Promise(async(resolve, reject) => {
                     await payLife(eff.lifeCost);
+                    resolve();
                 });
             };
             eff1.whenResolve = (eff :effect) => {
@@ -2838,7 +2839,6 @@ window.onload = function() {
                                     divSelectMenuContainer.style.visibility = "hidden";
                                     disprayStage.removeAllChildren();
                                     SelectOkButton.removeEventListener("click", clickOkButton);
-                                    await animationEffectTarget(eff.targetCard);
                                     resolve();
                                 };
                                 SelectOkButton.addEventListener("click",clickOkButton);
@@ -3243,7 +3243,7 @@ window.onload = function() {
     messageWindowtext.textBaseline = "middle";
     messageWindowtext.textAlign = "center";
     const messageBack = new createjs.Shape();
-    messageBack.graphics.beginFill("gray"); 
+    messageBack.graphics.beginFill("white"); 
     messageBack.graphics.drawRect(0, 0, cardImgSize.x*4, cardImgSize.y);
     messageBack.alpha = 0.5;
     messageWindowContainer.addChild(messageBack,messageWindowtext);
@@ -3367,8 +3367,9 @@ window.onload = function() {
 
     const myDeck : Card[] = [
         BETA,GAMMA,potOfGreed,prematureBrial,
-        monsterReborn,ALPHA,KURAZ,phenixBlade,AIRMAN,DDR,
-        CHAOS,VARY,DOGMA,destinyDraw,reinforcement,monsterGate,DISK,reasoning
+        monsterReborn,ALPHA,KURAZ,phenixBlade,AIRMAN,DDR,CHAOS,
+        VARY,DOGMA,destinyDraw,reinforcement,monsterGate,DISK,reasoning,
+        dimensionFusion
     ];
     deckset(mainstage, Array.from(myDeck));
     console.log(game.DECK); 
@@ -3763,7 +3764,6 @@ window.onload = function() {
         disprayCanv.style.height = String(windowSize.h)+"px";
         disprayCanv.height = windowSize.h;
 
-        // ChoiceContainer.regX = ChoiceContainer.getBounds().width/2
         ChoiceContainer.regY = ChoiceContainer.getBounds().height/2
         ChoiceContainer.x = 80
         ChoiceContainer.y = (disprayCanv.height-selectButtonCanv.height)/2
