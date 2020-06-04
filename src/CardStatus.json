@@ -1,259 +1,260 @@
 {
-    "Airman":{
-      "imageFileName": "Air.jpg",
-      "ID": "40044918",
-      "cardName": "Airman",
-      "category" : ["HERO"] ,
-      "cardType": "Monster",
-      "monsterType": "Effect",
-      "level": 4,
-      "race": "WARRIOR",
-      "attribute": "WIND",
-      "atkPoint" : 1800,
-      "defPoint" : 300,
-      "effectKey" : "AIRMAN"
-    },
-    "Alpha":{
-      "imageFileName": "Alpha.jpg",
-      "ID": "99785935",
-      "cardName": "Alpha",
-      "cardType": "Monster",
-      "monsterType": "Normal",
-      "level": 4,
-      "race": "ROCK",
-      "attribute": "EARTH",
-      "atkPoint" : 1400,
-      "defPoint" : 1700
-    },
-    "Beta":{
-      "imageFileName": "Beta.jpg",
-      "ID": "39256679",
-      "cardName": "Beta",
-      "cardType": "Monster",
-      "monsterType": "Normal",
-      "level": 4,
-      "race": "ROCK",
-      "attribute": "EARTH",
-      "atkPoint" : 1400,
-      "defPoint" : 1700
-    },
-    "Gamma":{
-      "imageFileName": "Gamma.jpg",
-      "ID": "11549357",
-      "cardName": "Gamma",
-      "cardType": "Monster",
-      "monsterType": "Normal",
-      "level": 4,
-      "race": "ROCK",
-      "attribute": "EARTH",
-      "atkPoint" : 1400,
-      "defPoint" : 1700
-    },
-    "MagicianOfChaos":{
-      "imageFileName": "magicianOfChaos.jpg",
-      "ID": "40737112",
-      "cardName": "magicianOfChaos",
-      "cardType": "Monster",
-      "monsterType": "Effect",
-      "level": 8,
-      "race": "SPELLCASTER",
-      "attribute": "DARK",
-      "atkPoint" : 2800,
-      "defPoint" : 2600,
-      "effectKey" : "MAGICIANOFCHAOS"
-    },
-    "CyberVary":{
-      "imageFileName": "CyberVary.jpg",
-      "ID": "03657444",
-      "cardName": "CyberVary",
-      "category" : [] ,
-      "cardType": "Monster",
-      "monsterType": "Effect",
-      "level": 1,
-      "race": "MACHINE",
-      "attribute": "LIGHT",
-      "atkPoint" : 0,
-      "defPoint" : 0,
-      "effectKey" : "CYBERVARY"
-    },
-    "Disk":{
-      "imageFileName": "Disk.jpg",
-      "ID": "56570271",
-      "cardName": "Disk",
-      "category" : ["HERO","D-HERO"] ,
-      "cardType": "Monster",
-      "monsterType": "Effect",
-      "level": 1,
-      "race": "WARRIOR",
-      "attribute": "DARK",
-      "atkPoint" : 300,
-      "defPoint" : 300,
-      "effectKey" : "DISK"
-    },
-    "Dogma":{
-      "imageFileName": "Dogma.jpg",
-      "ID": "17132130",
-      "cardName": "Dogma",
-      "category" : ["HERO","D-HERO"] ,
-      "cardType": "Monster",
-      "monsterType": "Effect",
-      "canNS": false,
-      "level": 8,
-      "race": "WARRIOR",
-      "attribute": "DARK",
-      "atkPoint" : 3400,
-      "defPoint" : 2400,
-      "SSconditionKey" : "DOGMA"
-    },
-    "Kuraz":{
-      "imageFileName": "Kuraz.jpg",
-      "ID": "57666212",
-      "cardName": "Kuraz",
-      "category" : [] ,
-      "cardType": "Monster",
-      "monsterType": "Effect",
-      "level": 6,
-      "race": "WARRIOR",
-      "attribute": "LIGHT",
-      "atkPoint" : 2400,
-      "defPoint" : 1000,
-      "effectKey" : "KURAZ"
-      
-    },
-    "DDR":{
-      "imageFileName": "DDR.jpg",
-      "ID": "33064647",
-      "cardName": "DDR",
-      "cardType": "Spell",
-      "spellType": "Equip",
-      "effectKey" : "DDR"
-    },
-    "DestinyDraw":{
-      "imageFileName": "Ddraw.jpg",
-      "ID": "45809008",
-      "cardName": "DestinyDraw",
-      "cardType": "Spell",
-      "spellType": "Normal",
-      "effectKey" : "DESTINYDRAW"
-    },
-    "DimensionFusion":{
-      "imageFileName": "DimensionFusion.jpg",
-      "ID": "23557835",
-      "cardName": "DimensionFusion",
-      "cardType": "Spell",
-      "spellType": "Normal",
-      "effectKey" : "DIMENSIONFUSION"
-    },
-    "GoldSalcophagus":{
-      "imageFileName": "GoldSarcophagus.jpg",
-      "ID": "75500286",
-      "cardName": "GoldSarcophagus",
-      "cardType": "Spell",
-      "spellType": "Normal",
-      "effectKey" : "GOLDSARCOPHAGUS"
-    },
-    "HandDestruction":{
-      "imageFileName": "HandDestruction.jpg",
-      "ID": "72892473",
-      "cardName": "HandDestruction",
-      "cardType": "Spell",
-      "spellType": "Normal",
-      "effectKey" : "HANDDESTRUCTION"
-    },
-    "HiddenArmory":{
-      "imageFileName": "HiddenArmory.jpg",
-      "ID": "52105192",
-      "cardName": "HiddenArmory",
-      "cardType": "Spell",
-      "spellType": "Normal",
-      "effectKey" : "HIDDENARMORY"
-    },
-    "Hurricane":{
-      "imageFileName": "Hurricane.jpg",
-      "ID": "68167124",
-      "cardName": "Hurricane",
-      "cardType": "Spell",
-      "spellType": "Normal",
-      "effectKey" : "HURRICANE"
-    },
-    "MagicStoneExcavation":{
-      "imageFileName": "MagicStoneExcavation.jpg",
-      "ID": "98494543",
-      "cardName": "MagicStoneExcavation",
-      "cardType": "Spell",
-      "spellType": "Normal",
-      "effectKey" : "MAGICSTONEEXCAVATION"
-    },
-    "MonsterGate":{
-      "imageFileName": "MonsterGate.jpg",
-      "ID": "43040603",
-      "cardName": "MonsterGate",
-      "cardType": "Spell",
-      "spellType": "Normal",
-      "effectKey" : "MONSTERGATE"
-    },
-    "MonsterReborn":{
-      "imageFileName": "MonsterReborn.jpg",
-      "ID": "83764718",
-      "cardName": "MonsterReborn",
-      "cardType": "Spell",
-      "spellType": "Normal",
-      "effectKey" : "MONSTERREBORN"
-    },
-    "PhenixBlade":{
-      "imageFileName": "PhenixBlade.jpg",
-      "ID": "31423101",
-      "cardName": "PhenixBlade",
-      "cardType": "Spell",
-      "spellType": "Equip",
-      "effectKey" : "PHENIXBLADE"
-    },
-    "PrematureBrial":{
-      "imageFileName": "PrematureBrial.jpg",
-      "ID": "70828912",
-      "cardName": "PrematureBrial",
-      "cardType": "Spell",
-      "spellType": "Equip",
-      "effectKey" : "PREMATUREBRIAL"
-    },
-    "Reasoning":{
-      "imageFileName": "Reasoning.jpg",
-      "ID": "58577036",
-      "cardName": "Reasoning",
-      "cardType": "Spell",
-      "spellType": "Normal",
-      "effectKey" : "REASONING"
-    },
-    "Reinforcement":{
-      "imageFileName": "Reinforcement.jpg",
-      "ID": "32807846",
-      "cardName": "Reinforcement",
-      "cardType": "Spell",
-      "spellType": "Normal",
-      "effectKey" : "REINFORCEMENT"
-    },
-    "SpellEconomics":{
-      "imageFileName": "SpellEconomics.jpg",
-      "ID": "04259068",
-      "cardName": "SpellEconomics",
-      "cardType": "Spell",
-      "spellType": "Continuous",
-      "effectKey" : "SPELLECONOMICS"
-    },
-    "TradeIn":{
-      "imageFileName": "TradeIn.jpg",
-      "ID": "38120068",
-      "cardName": "TradeIn",
-      "cardType": "Spell",
-      "spellType": "Normal",
-      "effectKey" : "TRADEIN"
-    },
-    "MagicalExplosion":{
-      "imageFileName": "MagicalExplosion.jpg",
-      "ID": "32723153",
-      "cardName": "MagicalExplosion",
-      "cardType": "Spell",
-      "spellType": "Normal",
-      "effectKey" : "MAGICALEXPLOSION"
-    }
+  "Airman":{
+    "imageFileName": "Air.jpg",
+    "ID": "40044918",
+    "cardName": "Airman",
+    "category" : ["HERO"] ,
+    "cardType": "Monster",
+    "monsterType": "Effect",
+    "level": 4,
+    "race": "WARRIOR",
+    "attribute": "WIND",
+    "atkPoint" : 1800,
+    "defPoint" : 300,
+    "effectKey" : "AIRMAN"
+  },
+  "Alpha":{
+    "imageFileName": "Alpha.jpg",
+    "ID": "99785935",
+    "cardName": "Alpha",
+    "cardType": "Monster",
+    "monsterType": "Normal",
+    "level": 4,
+    "race": "ROCK",
+    "attribute": "EARTH",
+    "atkPoint" : 1400,
+    "defPoint" : 1700
+  },
+  "Beta":{
+    "imageFileName": "Beta.jpg",
+    "ID": "39256679",
+    "cardName": "Beta",
+    "cardType": "Monster",
+    "monsterType": "Normal",
+    "level": 4,
+    "race": "ROCK",
+    "attribute": "EARTH",
+    "atkPoint" : 1400,
+    "defPoint" : 1700
+  },
+  "Gamma":{
+    "imageFileName": "Gamma.jpg",
+    "ID": "11549357",
+    "cardName": "Gamma",
+    "cardType": "Monster",
+    "monsterType": "Normal",
+    "level": 4,
+    "race": "ROCK",
+    "attribute": "EARTH",
+    "atkPoint" : 1400,
+    "defPoint" : 1700
+  },
+  "MagicianOfChaos":{
+    "imageFileName": "magicianOfChaos.jpg",
+    "ID": "40737112",
+    "cardName": "MagicianOfChaos",
+    "cardType": "Monster",
+    "monsterType": "Effect",
+    "level": 8,
+    "race": "SPELLCASTER",
+    "attribute": "DARK",
+    "atkPoint" : 2800,
+    "defPoint" : 2600,
+    "effectKey" : "MAGICIANOFCHAOS"
+  },
+  "CyberVary":{
+    "imageFileName": "CyberVary.jpg",
+    "ID": "03657444",
+    "cardName": "CyberVary",
+    "category" : [] ,
+    "cardType": "Monster",
+    "monsterType": "Effect",
+    "level": 1,
+    "race": "MACHINE",
+    "attribute": "LIGHT",
+    "atkPoint" : 0,
+    "defPoint" : 0,
+    "effectKey" : "CYBERVARY"
+  },
+  "Disk":{
+    "imageFileName": "Disk.jpg",
+    "ID": "56570271",
+    "cardName": "Disk",
+    "category" : ["HERO","D-HERO"] ,
+    "cardType": "Monster",
+    "monsterType": "Effect",
+    "level": 1,
+    "race": "WARRIOR",
+    "attribute": "DARK",
+    "atkPoint" : 300,
+    "defPoint" : 300,
+    "effectKey" : "DISK"
+  },
+  "Dogma":{
+    "imageFileName": "Dogma.jpg",
+    "ID": "17132130",
+    "cardName": "Dogma",
+    "category" : ["HERO","D-HERO"] ,
+    "cardType": "Monster",
+    "monsterType": "Effect",
+    "canNS": false,
+    "level": 8,
+    "race": "WARRIOR",
+    "attribute": "DARK",
+    "atkPoint" : 3400,
+    "defPoint" : 2400,
+    "effectKey" : "DOGMA",
+    "SSconditionKey" : "DOGMA"
+  },
+  "Kuraz":{
+    "imageFileName": "Kuraz.jpg",
+    "ID": "57666212",
+    "cardName": "Kuraz",
+    "category" : [] ,
+    "cardType": "Monster",
+    "monsterType": "Effect",
+    "level": 6,
+    "race": "WARRIOR",
+    "attribute": "LIGHT",
+    "atkPoint" : 2400,
+    "defPoint" : 1000,
+    "effectKey" : "KURAZ"
+    
+  },
+  "DDR":{
+    "imageFileName": "DDR.jpg",
+    "ID": "33064647",
+    "cardName": "DDR",
+    "cardType": "Spell",
+    "spellType": "Equip",
+    "effectKey" : "DDR"
+  },
+  "DestinyDraw":{
+    "imageFileName": "Ddraw.jpg",
+    "ID": "45809008",
+    "cardName": "DestinyDraw",
+    "cardType": "Spell",
+    "spellType": "Normal",
+    "effectKey" : "DESTINYDRAW"
+  },
+  "DimensionFusion":{
+    "imageFileName": "DimensionFusion.jpg",
+    "ID": "23557835",
+    "cardName": "DimensionFusion",
+    "cardType": "Spell",
+    "spellType": "Normal",
+    "effectKey" : "DIMENSIONFUSION"
+  },
+  "GoldSalcophagus":{
+    "imageFileName": "GoldSarcophagus.jpg",
+    "ID": "75500286",
+    "cardName": "GoldSarcophagus",
+    "cardType": "Spell",
+    "spellType": "Normal",
+    "effectKey" : "GOLDSARCOPHAGUS"
+  },
+  "HandDestruction":{
+    "imageFileName": "HandDestruction.jpg",
+    "ID": "72892473",
+    "cardName": "HandDestruction",
+    "cardType": "Spell",
+    "spellType": "Normal",
+    "effectKey" : "HANDDESTRUCTION"
+  },
+  "HiddenArmory":{
+    "imageFileName": "HiddenArmory.jpg",
+    "ID": "52105192",
+    "cardName": "HiddenArmory",
+    "cardType": "Spell",
+    "spellType": "Normal",
+    "effectKey" : "HIDDENARMORY"
+  },
+  "Hurricane":{
+    "imageFileName": "Hurricane.jpg",
+    "ID": "68167124",
+    "cardName": "Hurricane",
+    "cardType": "Spell",
+    "spellType": "Normal",
+    "effectKey" : "HURRICANE"
+  },
+  "MagicStoneExcavation":{
+    "imageFileName": "MagicStoneExcavation.jpg",
+    "ID": "98494543",
+    "cardName": "MagicStoneExcavation",
+    "cardType": "Spell",
+    "spellType": "Normal",
+    "effectKey" : "MAGICSTONEEXCAVATION"
+  },
+  "MonsterGate":{
+    "imageFileName": "MonsterGate.jpg",
+    "ID": "43040603",
+    "cardName": "MonsterGate",
+    "cardType": "Spell",
+    "spellType": "Normal",
+    "effectKey" : "MONSTERGATE"
+  },
+  "MonsterReborn":{
+    "imageFileName": "MonsterReborn.jpg",
+    "ID": "83764718",
+    "cardName": "MonsterReborn",
+    "cardType": "Spell",
+    "spellType": "Normal",
+    "effectKey" : "MONSTERREBORN"
+  },
+  "PhenixBlade":{
+    "imageFileName": "PhenixBlade.jpg",
+    "ID": "31423101",
+    "cardName": "PhenixBlade",
+    "cardType": "Spell",
+    "spellType": "Equip",
+    "effectKey" : "PHENIXBLADE"
+  },
+  "PrematureBrial":{
+    "imageFileName": "PrematureBrial.jpg",
+    "ID": "70828912",
+    "cardName": "PrematureBrial",
+    "cardType": "Spell",
+    "spellType": "Equip",
+    "effectKey" : "PREMATUREBRIAL"
+  },
+  "Reasoning":{
+    "imageFileName": "Reasoning.jpg",
+    "ID": "58577036",
+    "cardName": "Reasoning",
+    "cardType": "Spell",
+    "spellType": "Normal",
+    "effectKey" : "REASONING"
+  },
+  "Reinforcement":{
+    "imageFileName": "Reinforcement.jpg",
+    "ID": "32807846",
+    "cardName": "Reinforcement",
+    "cardType": "Spell",
+    "spellType": "Normal",
+    "effectKey" : "REINFORCEMENT"
+  },
+  "SpellEconomics":{
+    "imageFileName": "SpellEconomics.jpg",
+    "ID": "04259068",
+    "cardName": "SpellEconomics",
+    "cardType": "Spell",
+    "spellType": "Continuous",
+    "effectKey" : "SPELLECONOMICS"
+  },
+  "TradeIn":{
+    "imageFileName": "TradeIn.jpg",
+    "ID": "38120068",
+    "cardName": "TradeIn",
+    "cardType": "Spell",
+    "spellType": "Normal",
+    "effectKey" : "TRADEIN"
+  },
+  "MagicalExplosion":{
+    "imageFileName": "MagicalExplosion.jpg",
+    "ID": "32723153",
+    "cardName": "MagicalExplosion",
+    "cardType": "Trap",
+    "trapType": "Normal",
+    "effectKey" : "MAGICALEXPLOSION"
   }
+}
