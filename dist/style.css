@@ -3,7 +3,7 @@
 #selectMenuContainer {
     visibility:hidden;
     width:1500px;
-    height:800px;
+    height:1000px;
     position: relative
 }
 
@@ -12,6 +12,106 @@
     top: 50%;
     position: absolute;
     margin: auto auto;
+}
+p {
+    word-wrap:break-word;
+}
+
+#statusContainer{
+    width:320px;
+    height:1000px;
+    float:left;
+    margin:0 auto;
+    /* background-color:rgb(202, 201, 196); */
+}
+
+#canvas_wrapper{
+    border: solid 3px #000000;
+    width:90%;
+    height:40%;
+    margin:0.5em auto;
+    padding: 0.25em;
+}
+#statuscanv{
+    position: absolute;
+    margin:0 auto;
+    background-color:rgb(248, 228, 138);
+}
+
+#status_textbox {
+    width:95%;
+    height:51%;
+    position: relative;
+    padding: 0.25em 0.25em;
+    margin: 0.5em auto;
+    top: 0;
+    /* background: #cacaca; */
+}
+#status_textbox:before, #status_textbox:after{ 
+    position: absolute;
+    top: 0;
+    content:'';
+    width: 10px;
+    height: 100%;
+    display: inline-block;
+    box-sizing: border-box;
+}
+#status_textbox:before{
+    border-left: dotted 3px #15adc1;
+    border-top: dotted 3px #15adc1;
+    border-bottom: dotted 3px #15adc1;
+    left: 0;
+}
+#status_textbox:after{
+    border-top: dotted 3px #15adc1;
+    border-right: dotted 3px #15adc1;
+    border-bottom: dotted 3px #15adc1;
+    right: 0;
+}
+
+#cardNameBox {
+    position: relative;
+    top:10px;
+    height:10%;
+    width:95%;
+    margin: auto auto auto ;
+    color: #2c2c2f;
+    background: #cde4ff;
+}
+#cardNameText {
+    text-align:center;
+    vertical-align:middle;
+    margin: 0; 
+    padding: 3%;
+}
+
+#cardTypeBox {
+    height:10%;
+    width:95%;
+    margin:0.25em auto 0.25em ;
+    color: #2c2c2f;
+    border-bottom: 1px solid #050505;
+    /* background: #53a2fc; */
+}
+#cardTypeText {
+    text-align:left;
+    vertical-align:middle;
+    margin: 0; 
+    padding: 3%;
+}
+
+#cardEffBox {
+    height:75%;
+    width:95%;
+    margin:0.25em auto;
+    color: #2c2c2f;
+    /* background: #53a2fc; */
+}
+
+#cardEffText {
+    text-align:left;
+    margin: 0; 
+    padding: 3%;
 }
 
 #content{
