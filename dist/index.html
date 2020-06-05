@@ -10,12 +10,33 @@
   </head>
   <body>
 
-    <div id="marginContainer" style="margin: 0 auto;max-width: 95%;transform: scale(0.7, 0.7);">
+    <div id="marginContainer" style="margin: 0 auto;max-width: 95%;transform: scale(0.8, 0.8);">
+      
+      <div id="statusContainer">
 
+        <div id="canvas_wrapper">
+          <canvas id="statuscanv" width="280px" height="400px" ></canvas>
+        </div>
+
+        <div id="status_textbox">
+
+          <div id="cardNameBox">
+            <p id="cardNameText">name</p>
+          </div>
+          <div id="cardTypeBox">
+            <p id="cardTypeText">type</p>
+          </div>
+          <div id="cardEffBox">
+            <p id="cardEffText">text</p>
+          </div>
+
+        </div>
+      </div>
+      
       <canvas id="canv" 
       style="background-color:rgb(221, 250, 226);
               position: absolute;"
-      width="1500px" height="800px">
+      width="1500px" height="1000px">
       </canvas>
 
       <div id="selectMenuContainer">
@@ -23,7 +44,7 @@
         <canvas id="selectMenuBack" 
           style="position: absolute; 
                   z-index: 0;"
-          width="1500px" height="800px" >
+          width="1500px" height="1000px" >
         </canvas>
 
         <div id="scrollAreaContainer">
