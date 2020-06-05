@@ -642,6 +642,28 @@ window.onload = function() {
         return CardArray
     };
 
+    const SetStatusDisprayEvent = (card: Card,targetObj:Container|Bitmap)=>{
+        targetObj.addEventListener("mouseover", handleMoverStatus);
+        function handleMoverStatus(event) {
+            statusStage.removeAllChildren();
+            const cardImg = new createjs.Bitmap(card.imageFileName);
+            statusStage.addChild(cardImg);
+            cardImg.setTransform(statusCanv.width/2,statusCanv.height/2,1,1,0,0,0,cardImgSize.x/2,cardImgSize.y/2); 
+            statusCardNameText.innerText = card.cardName;
+            const typetext = (()=>{
+                if(card instanceof MonsterCard){
+                    return ["☆"+card.level,card.monsterType,card.attribute,card.race].join(" / ");
+                }else if(card instanceof SpellCard){
+                    return card.spellType;
+                }else if(card instanceof TrapCard){
+                    return card.trapType;
+                };
+            })();
+            statusCardTypeText.innerText = typetext;
+            // statusCardEffText.innerText = card.cardName;
+        };
+    };
+
     /**
      * 表示ボタン設定
      */
@@ -653,6 +675,7 @@ window.onload = function() {
                 b.removeAllEventListeners("click");
                 b.visible=false;
             });
+            SetStatusDisprayEvent(card,card.imgContainer);
 
             card.imgContainer.addEventListener("mouseover", handleFieldMover);
             function handleFieldMover(event) {
@@ -688,6 +711,7 @@ window.onload = function() {
                 b.removeAllEventListeners("click");
                 b.visible=false;
             });
+            SetStatusDisprayEvent(card,card.imgContainer);
 
             card.imgContainer.addEventListener("mouseover", handleHandMover);
             function handleHandMover(event) {
@@ -763,6 +787,7 @@ window.onload = function() {
                 button.removeAllEventListeners("click");
                 button.visible=false;
             });
+            SetStatusDisprayEvent(card,card.imgContainer);
 
             card.imgContainer.addEventListener("mouseover", handleFieldMover);
             function handleFieldMover(event) {
@@ -810,6 +835,7 @@ window.onload = function() {
                 button.removeAllEventListeners("click");
                 button.visible=false;
             });
+            SetStatusDisprayEvent(card,card.imgContainer);
 
             card.imgContainer.addEventListener("mouseover", handleFieldMover);
             function handleFieldMover(event) {
@@ -2013,7 +2039,26 @@ window.onload = function() {
         game.DECK.map((card, index, array) => {
             puton(stage, card, game.displayOrder.deck[0][0]+index*1,game.displayOrder.deck[0][1]-index*1);
         })
-    }
+    };
+
+    const lineUp=()=>{
+        const reference = {x:85+cardImgSize.x/2,y:25+cardImgSize.y/2};
+        game.DECK.reverse().forEach((card,i,a)=>{
+            if(i<=9){
+                card.imgContainer.x = reference.x+((cardImgSize.x+10)*i);
+                card.imgContainer.y = reference.y;
+            }else if(10<=i && i<=19){
+                card.imgContainer.x = reference.x+((cardImgSize.x+10)*(i-10));
+                card.imgContainer.y = reference.y+(cardImgSize.y+10)*1;
+            }else if(20<=i && i<=29){
+                card.imgContainer.x = reference.x+((cardImgSize.x+10)*(i-20));
+                card.imgContainer.y = reference.y+(cardImgSize.y+10)*2;
+            }else if(30<=i){
+                card.imgContainer.x = reference.x+((cardImgSize.x+10)*(i-30));
+                card.imgContainer.y = reference.y+(cardImgSize.y+10)*3;
+            };
+        });
+    };
 
     /**
      * 手札を現在のデータに合わせた位置に移動するアニメーション
@@ -3512,6 +3557,13 @@ window.onload = function() {
     const mainstage = new createjs.Stage(mainCanv);
     mainstage.enableMouseOver();
 
+    const statusCanv = <HTMLCanvasElement>document.getElementById("statuscanv") ;
+    const statusStage = new createjs.Stage(statusCanv);
+    statusStage.enableMouseOver();
+    const statusCardNameText = <HTMLElement>document.getElementById("cardNameText");
+    const statusCardTypeText = <HTMLElement>document.getElementById("cardTypeText");
+    const statusCardEffText = <HTMLElement>document.getElementById("cardEffText");
+
     const divSelectMenuContainer =<HTMLElement>document.getElementById("selectMenuContainer") ;
 
     const windowBackCanv =<HTMLCanvasElement>document.getElementById("selectMenuBack") ;
@@ -3665,7 +3717,8 @@ window.onload = function() {
         // disprayMessageWindow("aaaaaaaaaaaaaaaaaaaaa")
         // vanish(game.HAND,"EFFECT");
         // shadPhase("DRAW PHASE");
-        gameStart();
+        // gameStart();
+        lineUp();
     }, null, false);
 
     const endButton = createButton("TURN END", 150, 40, "#0275d8");
@@ -3674,11 +3727,6 @@ window.onload = function() {
     mainstage.addChild(endButton);
 
     endButton.on("click", function async(e){
-        // discard(game.HAND);
-        // OpenSelectEffectWindow(new Card,"tttttA","tttttB");
-        // disprayMessageWindow("aaaaaaaaaaaaaaaaaaaaa")
-        // vanish(game.HAND,"EFFECT");
-        // shadPhase("DRAW PHASE");
         gameEnd();
     }, null, false);
 
@@ -3688,6 +3736,7 @@ window.onload = function() {
         windowBackStage.update();
         disprayStage.update();
         selectButtonStage.update();
+        statusStage.update();
         myLP.text = zerofix(game.myLifePoint);
         EnemyLP.text = zerofix(game.enemyLifePoint);
     };
@@ -3819,6 +3868,7 @@ window.onload = function() {
                 newlabelBox.y = cardImgSize.y+10;
 
                 ImgLabelContainer.addChild(cardImgContainer);
+                SetStatusDisprayEvent(card,cardImgContainer);
                 ImgLabelContainer.addChild(newlabelBox);
 
                 ImgLabelContainer.x = 10+((10+cardImgSize.x)*index);
@@ -3888,6 +3938,7 @@ window.onload = function() {
                 newlabelBox.y = cardImgSize.y+10;
     
                 ImgLabelContainer.addChild(cardImgContainer);
+                SetStatusDisprayEvent(card,cardImgContainer);
                 ImgLabelContainer.addChild(newlabelBox);
     
                 ImgLabelContainer.x = 10+((10+cardImgSize.x)*index);
@@ -3982,6 +4033,9 @@ window.onload = function() {
 
         AtkDefContainer.addChild(Atk);
         AtkDefContainer.addChild(Def);
+
+        SetStatusDisprayEvent(card,Atk);
+        SetStatusDisprayEvent(card,Def);
 
         AtkDefContainer.regX = AtkDefContainer.getBounds().width/2
         AtkDefContainer.regY = AtkDefContainer.getBounds().height/2
