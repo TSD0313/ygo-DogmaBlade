@@ -1,5 +1,7 @@
 @charset "utf-8";
 
+body { background-color:rgb(229, 228, 255); }
+
 #selectMenuContainer {
     visibility:hidden;
     width:1500px;
@@ -8,13 +10,14 @@
 }
 
 #scrollAreaContainer {
-    left: 50%;
-    top: 50%;
+    left: 65%;
+    top: 35%;
     position: absolute;
     margin: auto auto;
 }
 p {
     word-wrap:break-word;
+    font-size:large;
 }
 
 #statusContainer{
@@ -28,9 +31,9 @@ p {
 #canvas_wrapper{
     border: solid 3px #000000;
     width:90%;
-    height:40%;
+    height:42.5%;
     margin:0.5em auto;
-    padding: 0.25em;
+    padding: 0.25em ;
 }
 #statuscanv{
     position: absolute;
@@ -40,32 +43,30 @@ p {
 
 #status_textbox {
     width:95%;
-    height:51%;
+    height:53.5%;
     position: relative;
     padding: 0.25em 0.25em;
     margin: 0.5em auto;
     top: 0;
-    /* background: #cacaca; */
+    background: #ffffff;
 }
 #status_textbox:before, #status_textbox:after{ 
     position: absolute;
     top: 0;
     content:'';
-    width: 10px;
+    width: 20px;
     height: 100%;
     display: inline-block;
     box-sizing: border-box;
 }
 #status_textbox:before{
-    border-left: dotted 3px #15adc1;
-    border-top: dotted 3px #15adc1;
-    border-bottom: dotted 3px #15adc1;
+    border-left: dotted 3px #000000;
+    border-top: dotted 3px #000000;
     left: 0;
 }
 #status_textbox:after{
-    border-top: dotted 3px #15adc1;
-    border-right: dotted 3px #15adc1;
-    border-bottom: dotted 3px #15adc1;
+    border-top: dotted 3px #000000;
+    border-right: dotted 3px #000000;
     right: 0;
 }
 
@@ -76,17 +77,17 @@ p {
     width:95%;
     margin: auto auto auto ;
     color: #2c2c2f;
-    background: #cde4ff;
+    background: #e6e7e7;
 }
 #cardNameText {
     text-align:center;
     vertical-align:middle;
     margin: 0; 
-    padding: 3%;
+    padding: 5%;
 }
 
 #cardTypeBox {
-    height:10%;
+    height:15%;
     width:95%;
     margin:0.25em auto 0.25em ;
     color: #2c2c2f;
@@ -97,21 +98,21 @@ p {
     text-align:left;
     vertical-align:middle;
     margin: 0; 
-    padding: 3%;
+    padding: 5%;
 }
 
 #cardEffBox {
-    height:75%;
-    width:95%;
     margin:0.25em auto;
     color: #2c2c2f;
-    /* background: #53a2fc; */
+    overflow-y:hidden ;
 }
 
 #cardEffText {
     text-align:left;
     margin: 0; 
-    padding: 3%;
+    padding: 5%;
+    overflow-y:scroll ;
+    height: 365px;
 }
 
 #content{
