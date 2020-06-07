@@ -180,6 +180,7 @@ class Card  {
     imgContainer : Container;
     cardType : "Monster"|"Spell"|"Trap";
     face : "UP"|"DOWN" ;
+    text : string;
     effect : effect[];
     effectKey : string;
     SSconditionKey : string;
@@ -189,7 +190,7 @@ class Card  {
     constructor(){
         this.cardBackImageFileName = "cardback.jpeg";
         this.location = "DECK"
-        this.face = "DOWN"
+        this.face = "UP"
         this.effect = [];
         this.canDestroy = true ;
         this.button = (()=>{
@@ -646,21 +647,21 @@ window.onload = function() {
         targetObj.addEventListener("mouseover", handleMoverStatus);
         function handleMoverStatus(event) {
             statusStage.removeAllChildren();
-            const cardImg = new createjs.Bitmap(card.imageFileName);
+            const cardImg = new createjs.Bitmap(card.cardName+"_view.jpg");
             statusStage.addChild(cardImg);
-            cardImg.setTransform(statusCanv.width/2,statusCanv.height/2,1,1,0,0,0,cardImgSize.x/2,cardImgSize.y/2); 
+            cardImg.setTransform(statusCanv.width/2,statusCanv.height/2,1,1,0,0,0,140,206); 
             statusCardNameText.innerText = card.cardName;
             const typetext = (()=>{
                 if(card instanceof MonsterCard){
                     return ["☆"+card.level,card.monsterType,card.attribute,card.race].join(" / ");
                 }else if(card instanceof SpellCard){
-                    return card.spellType;
+                    return card.spellType+" Spell";
                 }else if(card instanceof TrapCard){
-                    return card.trapType;
+                    return card.trapType+" Trap";
                 };
             })();
             statusCardTypeText.innerText = typetext;
-            // statusCardEffText.innerText = card.cardName;
+            statusCardEffText.innerText = card.text;
         };
     };
 
@@ -971,8 +972,8 @@ window.onload = function() {
             });
         },
         toGY:(card: Card)=>{
-            const toX : number = game.displayOrder.gy[0][0]+(game.GY.length-1)*1
-            const toY : number = game.displayOrder.gy[0][1]-(game.GY.length-1)*1
+            const toX : number = game.displayOrder.gy[0][0]+(game.GY.length-1)*0.5
+            const toY : number = game.displayOrder.gy[0][1]-(game.GY.length-1)*0.5
             return new Promise((resolve, reject) => {
                 if (card.face=="DOWN"){
                     cardFlip(card);
@@ -990,7 +991,7 @@ window.onload = function() {
                 const twPromise = () => {
                     return new Promise((resolve, reject) => {
                     createjs.Tween.get(card.imgContainer)
-                        .to({x:game.displayOrder.gy[0][0]+index*1,y:game.displayOrder.gy[0][1]-index*1})
+                        .to({x:game.displayOrder.gy[0][0]+index*0.5,y:game.displayOrder.gy[0][1]-index*0.5})
                         .call(()=>{mainstage.setChildIndex(card.imgContainer,mainstage.numChildren - array.length + index)})
                         .call(()=>{resolve()});                
                     });
@@ -1000,8 +1001,8 @@ window.onload = function() {
             return Promise.all(PromiseArray);
         },
         toDD:(card: Card)=>{
-            const toX : number = game.displayOrder.dd[0][0]+(game.DD.length-1)*1
-                const toY : number = game.displayOrder.dd[0][1]-(game.DD.length-1)*1
+            const toX : number = game.displayOrder.dd[0][0]+(game.DD.length-1)*0.5
+                const toY : number = game.displayOrder.dd[0][1]-(game.DD.length-1)*0.5
                 return new Promise((resolve, reject) => {
                     if (card.face=="DOWN"){
                         cardFlip(card);
@@ -1019,7 +1020,7 @@ window.onload = function() {
                 const twPromise = () => {
                     return new Promise((resolve, reject) => {
                     createjs.Tween.get(card.imgContainer)
-                        .to({x:game.displayOrder.dd[0][0]+index*1,y:game.displayOrder.dd[0][1]-index*1})
+                        .to({x:game.displayOrder.dd[0][0]+index*0.5,y:game.displayOrder.dd[0][1]-index*0.5})
                         .call(()=>{mainstage.setChildIndex(card.imgContainer,mainstage.numChildren - array.length + index)})
                         .call(()=>{resolve()});                
                     });
@@ -1029,8 +1030,8 @@ window.onload = function() {
             return Promise.all(PromiseArray);
         },
         toDECK:(card: Card)=>{
-            const toX : number = game.displayOrder.deck[0][0]+(game.DECK.length-1)*1
-            const toY : number = game.displayOrder.deck[0][1]-(game.DECK.length-1)*1
+            const toX : number = game.displayOrder.deck[0][0]+(game.DECK.length-1)*0.5
+            const toY : number = game.displayOrder.deck[0][1]-(game.DECK.length-1)*0.5
             return new Promise((resolve, reject) => {
                 if (card.face=="UP"){
                     cardFlip(card);
@@ -1079,6 +1080,10 @@ window.onload = function() {
                     await LocationSetting(card,"ST");
                 };
                 await Promise.all([Animation.toBOARD(card, position)])
+            },
+            toDD:async(card: Card)=>{
+                await LocationSetting(card,"DD");
+                await Animation.toDD(card);
             },
         },
         BOARD:{
@@ -1251,7 +1256,15 @@ window.onload = function() {
                             game.GY.push(card);
                             game.GY.map((c, index, array) => {
                                 createjs.Tween.get(c.imgContainer)
-                                .to({x:game.displayOrder.gy[0][0]+index*1,y:game.displayOrder.gy[0][1]-index*2})
+                                .to({x:game.displayOrder.gy[0][0]+index*0.5,y:game.displayOrder.gy[0][1]-index*0.5})
+                                .call(()=>{mainstage.setChildIndex(c.imgContainer,mainstage.numChildren - array.length + index)})             
+                            });
+                        }else if(card.location=="DD"){
+                            game.DD.splice(game.DD.lastIndexOf(card), 1);
+                            game.DD.push(card);
+                            game.DD.map((c, index, array) => {
+                                createjs.Tween.get(c.imgContainer)
+                                .to({x:game.displayOrder.dd[0][0]+index*0.5,y:game.displayOrder.dd[0][1]-index*0.5})
                                 .call(()=>{mainstage.setChildIndex(c.imgContainer,mainstage.numChildren - array.length + index)})             
                             });
                         };
@@ -1577,8 +1590,8 @@ window.onload = function() {
             });
         };
 
-        // game.normalSummon = false;
-        // game.countNS += 1;
+        game.normalSummon = false;
+        game.countNS += 1;
         card.NSed=true;
         if(position=="ATK"){
             card.position=position;
@@ -1780,7 +1793,10 @@ window.onload = function() {
                     from:from,
                     to:"DECK"
                 });
-                await moveCard[from].toDECK(card);
+                if(moveCard[from].toDECK instanceof Function){
+                    await moveCard[from].toDECK(card);
+                };
+                
             };
         })();
         await ContinuousEffect(game.nowTime);
@@ -1876,9 +1892,10 @@ window.onload = function() {
                 }else if(by=="RULE"){
                     console.log("destroy "+card.cardName+" lost equip target");
                 };
-                await destroyAnimation(card);
-                await ContinuousEffect(game.nowTime);
-
+                if(["ST","MO","FIELD"].includes(card.location)){
+                    await destroyAnimation(card);
+                    await ContinuousEffect(game.nowTime);
+                };
                 if(["ST","MO","FIELD"].includes(card.location)){
                     await moveCard.BOARD.toGY(card);
                     game.nowTime.move.push({
@@ -1972,7 +1989,7 @@ window.onload = function() {
                     .wait(index*(100/array.length))
                     .to({x:orgX+100-(200*(index%2))},100)
                     .to({x:orgX-100+(200*(index%2))},200)
-                    .to({x:game.displayOrder.deck[0][0]+index*1,y:game.displayOrder.deck[0][1]-index*1},100)
+                    .to({x:game.displayOrder.deck[0][0]+index*0.5,y:game.displayOrder.deck[0][1]-index*0.5},100)
                     .call(()=>{mainstage.setChildIndex(card.imgContainer,mainstage.numChildren - array.length + index)})
                     .call(()=>{resolve()});                
                 });
@@ -2034,30 +2051,56 @@ window.onload = function() {
     /**
      * デッキを場に置く
      */
-    function deckset(stage: Stage, deck:Card[]){
-        game.DECK = deck;
-        game.DECK.map((card, index, array) => {
-            puton(stage, card, game.displayOrder.deck[0][0]+index*1,game.displayOrder.deck[0][1]-index*1);
-        })
+    // function deckset(stage: Stage, deck:Card[]){
+    //     game.DECK = deck;
+    //     game.DECK.map((card, index, array) => {
+    //         puton(stage, card, game.displayOrder.deck[0][0]+index*0.5,game.displayOrder.deck[0][1]-index*0.5);
+    //     })
+    // };
+
+    const decksetAnimation=async()=>{
+        const randomIndex = (()=>{
+            const defaultArray = [...Array(40).keys()];
+            for (let i = defaultArray.length - 1; i >= 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [defaultArray[i], defaultArray[j]] = [defaultArray[j], defaultArray[i]];
+            };
+            return defaultArray
+        })();
+        await (async () => {
+            for(let i of randomIndex) {
+                await LocationSetting(game.defaultDeck[i],"DECK")
+                new Promise((resolve, reject) => {
+                    if (game.defaultDeck[i].face=="UP"){
+                        cardFlip(game.defaultDeck[i])
+                    };
+                    createjs.Tween.get(game.defaultDeck[i].imgContainer)
+                        .call(()=>{mainstage.setChildIndex(game.defaultDeck[i].imgContainer,mainstage.numChildren-1)})
+                        .to({x:game.displayOrder.deck[0][0],y:game.displayOrder.deck[0][1],rotation:0},500,createjs.Ease.cubicOut)
+                        .call(()=>{resolve()});
+                }); 
+                await timeout(50);
+            };
+        })();  
     };
 
     const lineUp=()=>{
         const reference = {x:85+cardImgSize.x/2,y:25+cardImgSize.y/2};
-        game.DECK.reverse().forEach((card,i,a)=>{
+        game.defaultDeck.forEach((card,i,a)=>{
             if(i<=9){
-                card.imgContainer.x = reference.x+((cardImgSize.x+10)*i);
-                card.imgContainer.y = reference.y;
+                puton(mainstage,card,reference.x+((cardImgSize.x*0.75)*i),reference.y)
             }else if(10<=i && i<=19){
-                card.imgContainer.x = reference.x+((cardImgSize.x+10)*(i-10));
-                card.imgContainer.y = reference.y+(cardImgSize.y+10)*1;
+                puton(mainstage,card,reference.x+((cardImgSize.x*0.75)*(i-10)),reference.y+(cardImgSize.y+10)*1)
             }else if(20<=i && i<=29){
-                card.imgContainer.x = reference.x+((cardImgSize.x+10)*(i-20));
-                card.imgContainer.y = reference.y+(cardImgSize.y+10)*2;
+                puton(mainstage,card,reference.x+((cardImgSize.x*0.75)*(i-20)),reference.y+(cardImgSize.y+10)*2)
             }else if(30<=i){
-                card.imgContainer.x = reference.x+((cardImgSize.x+10)*(i-30));
-                card.imgContainer.y = reference.y+(cardImgSize.y+10)*3;
+                puton(mainstage,card,reference.x+((cardImgSize.x*0.75)*(i-30)),reference.y+(cardImgSize.y+10)*3)
             };
+            card.frontImg.scaleX = 1;
+            card.cardBackImg.scaleX = 0;
+            SetStatusDisprayEvent(card,card.imgContainer);
         });
+        game.DECK = [...game.defaultDeck];
     };
 
     /**
@@ -2219,7 +2262,6 @@ window.onload = function() {
                 ];
                 return boolarray.every(value => value==true)
             };
-
             card.RuleSSpromise = async()=>{
                 const tmpEffA = new effect(new Card);
                 await new Promise(async(resolve, reject) => {
@@ -2274,6 +2316,10 @@ window.onload = function() {
 
     const gameStart = async()=>{
         mainCanv.style.pointerEvents = "none";
+        await decksetAnimation();
+        await timeout(500);
+        myLP.alpha = 1;
+        EnemyLP.alpha = 1;
         await deckShuffle();
         await draw(5);
         await shadPhase("DRAW PHASE")
@@ -2571,8 +2617,8 @@ window.onload = function() {
                         };
                         SelectOkButton.addEventListener("click",clickOkButton);
                     }else{
-                        const cardlist = genCardArray({location:["GY"],cardType:["Spell"]});
-                        openCardListWindow.select(cardlist,1,1,eff,"デッキトップに置く魔法を"+1+"枚選択してください");
+                        const cardlist = genCardArray({location:["GY"]});
+                        openCardListWindow.select(cardlist,1,1,eff,"デッキトップに置くカードを"+1+"枚選択してください");
                         const clickOkButton = async (e) => {
                             divSelectMenuContainer.style.visibility = "hidden";
                             disprayStage.removeAllChildren();
@@ -2794,7 +2840,7 @@ window.onload = function() {
             eff1.whenActive = (eff :effect) => {
                 return new Promise((resolve, reject) => {
                     const cardlist = game.GY.filter(card=>card instanceof MonsterCard && card.canNS);
-                    openCardListWindow.select(cardlist,1,3,eff);
+                    openCardListWindow.select(cardlist,1,1,eff);
                     const clickOkButton = async (e) => {
                         divSelectMenuContainer.style.visibility = "hidden";
                         disprayStage.removeAllChildren();
@@ -3360,7 +3406,7 @@ window.onload = function() {
             eff1.actionPossible = (time:Time) =>{
                 const boolarray = [
                     JudgeSpellTrapActivateLoc(card),
-                    game.ST.filter(c=> c!=card).length >= 1
+                    genCardArray({location:["ST"]}).filter(c=> c!=card).length > 0
                 ];
                 return boolarray.every(value => value==true)
             };
@@ -3372,7 +3418,7 @@ window.onload = function() {
             eff1.whenResolve = (eff :effect) => {
                 return new Promise<void>(async(resolve, reject) => {
                     game.nowTime = new Time;
-                    await bounce(game.ST,"EFFECT");
+                    await bounce(genCardArray({location:["ST"]}).filter(c=> c!=card),"EFFECT");
                     game.timeArray.push({...game.nowTime});
                     resolve();
                 });
@@ -3426,7 +3472,8 @@ window.onload = function() {
                         if(eff.targetCard[0].location=="DECK"){
                             await search(eff.targetCard);
                         }else if(eff.targetCard[0].location=="GY"){
-                            await moveCard.GY.toHAND(eff.card);
+                            await moveCard.GY.toHAND(eff.targetCard[0]);
+                            
                             game.nowTime.move.push({
                                 card:eff.card,
                                 from:"GY",
@@ -3613,10 +3660,11 @@ window.onload = function() {
     myLP.textBaseline = "bottom";
     myLP.y = 800;
     mainstage.addChild(myLP);
+    myLP.alpha = 0;
     const EnemyLP = new createjs.Text(game.enemyLifePoint.toString(), "80px serif", "#cd5c5c");
-    EnemyLP.textAlign = "right";
-    EnemyLP.x = 1450;
+    EnemyLP.textAlign = "left";
     mainstage.addChild(EnemyLP);
+    EnemyLP.alpha = 0;
 
     const deckRecipe :{json:Object,num:number}[] = [
         {json:status.Dogma, num:3},
@@ -3625,20 +3673,20 @@ window.onload = function() {
         {json:status.Kuraz, num:1},
         {json:status.Disk, num:1},
         {json:status.MagicianOfChaos, num:1},
+        {json:status.MonsterReborn, num:1},
         {json:status.MonsterGate, num:3},
         {json:status.Reasoning, num:3},
         {json:status.DestinyDraw, num:3},
+        {json:status.HandDestruction, num:1},
         {json:status.HiddenArmory, num:3},
         {json:status.TradeIn, num:2},
         {json:status.PhenixBlade, num:2},
         {json:status.Reinforcement, num:2},
+        {json:status.GoldSalcophagus, num:1},
         {json:status.DDR, num:2},
         {json:status.MagicStoneExcavation, num:2},
-        {json:status.HandDestruction, num:1},
         {json:status.PrematureBrial, num:1},
-        {json:status.MonsterReborn, num:1},
         {json:status.Hurricane, num:1},
-        {json:status.GoldSalcophagus, num:1},
         {json:status.DimensionFusion, num:1},
         {json:status.SpellEconomics, num:1},
         {json:status.MagicalExplosion, num:2}
@@ -3651,10 +3699,12 @@ window.onload = function() {
                 const monsterCardObj = genCardObject.Monster(json);
                 console.log(monsterCardObj.cardName);
                 if(monsterCardObj.monsterType=="Effect"){
-                    monsterCardObj.effect = effectSetting[monsterCardObj.effectKey](monsterCardObj);
+                    if(effectSetting[monsterCardObj.effectKey] instanceof Function){
+                        monsterCardObj.effect = effectSetting[monsterCardObj.effectKey](monsterCardObj);
+                    };
                 };
                 if(!(monsterCardObj.canNS)){
-                    monsterCardObj.RuleSSpromise = SSconditionSetting[monsterCardObj.SSconditionKey](monsterCardObj);
+                    SSconditionSetting[monsterCardObj.SSconditionKey](monsterCardObj);
                 };
                 game.defaultDeck.push(monsterCardObj);
             }else if(json["cardType"]=="Spell"){
@@ -3669,44 +3719,47 @@ window.onload = function() {
         };
     });
 
-    deckset(mainstage, Array.from(game.defaultDeck));
+    const viewCardback = new createjs.Bitmap("cardback_view.jpg");
+    viewCardback .setTransform(statusCanv.width/2,statusCanv.height/2,1,1,0,0,0,140,206); 
+    statusStage.addChild(viewCardback);
+    lineUp();
     console.log(game.DECK); 
 
-    const drawButton = createButton("draw", 150, 40, "#0275d8");
-    drawButton.x = 1200;
-    drawButton.y = 550;
-    mainstage.addChild(drawButton);
+    // const drawButton = createButton("draw", 150, 40, "#0275d8");
+    // drawButton.x = 1200;
+    // drawButton.y = 550;
+    // mainstage.addChild(drawButton);
 
-    drawButton.on("click", function(e){
-        draw(1);
-    }, null, false);
+    // drawButton.on("click", function(e){
+    //     draw(1);
+    // }, null, false);
 
-    const shuffleButton = createButton("shuffle", 150, 40, "#0275d8");
-    shuffleButton.x = 1200;
-    shuffleButton.y = 600;
-    mainstage.addChild(shuffleButton);
+    // const shuffleButton = createButton("shuffle", 150, 40, "#0275d8");
+    // shuffleButton.x = 1200;
+    // shuffleButton.y = 600;
+    // mainstage.addChild(shuffleButton);
 
-    shuffleButton.on("click", function(e){
-        deckShuffle();
-    }, null, false);
+    // shuffleButton.on("click", function(e){
+    //     deckShuffle();
+    // }, null, false);
 
-    const DeckViewButton = createButton("DECK View", 150, 40, "#0275d8");
-    DeckViewButton.x = 1200;
-    DeckViewButton.y = 650;
-    mainstage.addChild(DeckViewButton);
+    // const DeckViewButton = createButton("DECK View", 150, 40, "#0275d8");
+    // DeckViewButton.x = 1200;
+    // DeckViewButton.y = 650;
+    // mainstage.addChild(DeckViewButton);
 
-    DeckViewButton.on("click", function(e){
-        openCardListWindow.view(game.DECK,"DECK");
-        console.log(game.DECK)
-        const clickOkButton = async (e) => {
-            divSelectMenuContainer.style.visibility = "hidden";
-            disprayStage.removeAllChildren();
-            SelectOkButton.removeEventListener("click", clickOkButton);
-        };
-        SelectOkButton.addEventListener("click",clickOkButton);
-    }, null, false);
+    // DeckViewButton.on("click", function(e){
+    //     openCardListWindow.view(game.DECK,"DECK");
+    //     console.log(game.DECK)
+    //     const clickOkButton = async (e) => {
+    //         divSelectMenuContainer.style.visibility = "hidden";
+    //         disprayStage.removeAllChildren();
+    //         SelectOkButton.removeEventListener("click", clickOkButton);
+    //     };
+    //     SelectOkButton.addEventListener("click",clickOkButton);
+    // }, null, false);
 
-    const testButton = createButton("test", 150, 40, "#0275d8");
+    const testButton = createButton("GAME START", 150, 40, "#0275d8");
     testButton.x = 1200;
     testButton.y = 700;
     mainstage.addChild(testButton);
@@ -3717,8 +3770,8 @@ window.onload = function() {
         // disprayMessageWindow("aaaaaaaaaaaaaaaaaaaaa")
         // vanish(game.HAND,"EFFECT");
         // shadPhase("DRAW PHASE");
-        // gameStart();
-        lineUp();
+        gameStart();
+        // lineUp();
     }, null, false);
 
     const endButton = createButton("TURN END", 150, 40, "#0275d8");
