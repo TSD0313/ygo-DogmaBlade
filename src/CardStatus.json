@@ -1,260 +1,284 @@
 {
-  "Airman":{
-    "imageFileName": "Air.jpg",
-    "ID": "40044918",
-    "cardName": "Airman",
-    "category" : ["HERO"] ,
-    "cardType": "Monster",
-    "monsterType": "Effect",
-    "level": 4,
-    "race": "WARRIOR",
-    "attribute": "WIND",
-    "atkPoint" : 1800,
-    "defPoint" : 300,
-    "effectKey" : "AIRMAN"
-  },
-  "Alpha":{
-    "imageFileName": "Alpha.jpg",
-    "ID": "99785935",
-    "cardName": "Alpha",
-    "cardType": "Monster",
-    "monsterType": "Normal",
-    "level": 4,
-    "race": "ROCK",
-    "attribute": "EARTH",
-    "atkPoint" : 1400,
-    "defPoint" : 1700
-  },
-  "Beta":{
-    "imageFileName": "Beta.jpg",
-    "ID": "39256679",
-    "cardName": "Beta",
-    "cardType": "Monster",
-    "monsterType": "Normal",
-    "level": 4,
-    "race": "ROCK",
-    "attribute": "EARTH",
-    "atkPoint" : 1400,
-    "defPoint" : 1700
-  },
-  "Gamma":{
-    "imageFileName": "Gamma.jpg",
-    "ID": "11549357",
-    "cardName": "Gamma",
-    "cardType": "Monster",
-    "monsterType": "Normal",
-    "level": 4,
-    "race": "ROCK",
-    "attribute": "EARTH",
-    "atkPoint" : 1400,
-    "defPoint" : 1700
-  },
-  "MagicianOfChaos":{
-    "imageFileName": "magicianOfChaos.jpg",
-    "ID": "40737112",
-    "cardName": "MagicianOfChaos",
-    "cardType": "Monster",
-    "monsterType": "Effect",
-    "level": 8,
-    "race": "SPELLCASTER",
-    "attribute": "DARK",
-    "atkPoint" : 2800,
-    "defPoint" : 2600,
-    "effectKey" : "MAGICIANOFCHAOS"
-  },
-  "CyberVary":{
-    "imageFileName": "CyberVary.jpg",
-    "ID": "03657444",
-    "cardName": "CyberVary",
-    "category" : [] ,
-    "cardType": "Monster",
-    "monsterType": "Effect",
-    "level": 1,
-    "race": "MACHINE",
-    "attribute": "LIGHT",
-    "atkPoint" : 0,
-    "defPoint" : 0,
-    "effectKey" : "CYBERVARY"
-  },
-  "Disk":{
-    "imageFileName": "Disk.jpg",
-    "ID": "56570271",
-    "cardName": "Disk",
-    "category" : ["HERO","D-HERO"] ,
-    "cardType": "Monster",
-    "monsterType": "Effect",
-    "level": 1,
-    "race": "WARRIOR",
-    "attribute": "DARK",
-    "atkPoint" : 300,
-    "defPoint" : 300,
-    "effectKey" : "DISK"
-  },
-  "Dogma":{
-    "imageFileName": "Dogma.jpg",
-    "ID": "17132130",
-    "cardName": "Dogma",
-    "category" : ["HERO","D-HERO"] ,
-    "cardType": "Monster",
-    "monsterType": "Effect",
-    "canNS": false,
-    "level": 8,
-    "race": "WARRIOR",
-    "attribute": "DARK",
-    "atkPoint" : 3400,
-    "defPoint" : 2400,
-    "effectKey" : "DOGMA",
-    "SSconditionKey" : "DOGMA"
-  },
-  "Kuraz":{
-    "imageFileName": "Kuraz.jpg",
-    "ID": "57666212",
-    "cardName": "Kuraz",
-    "category" : [] ,
-    "cardType": "Monster",
-    "monsterType": "Effect",
-    "level": 6,
-    "race": "WARRIOR",
-    "attribute": "LIGHT",
-    "atkPoint" : 2400,
-    "defPoint" : 1000,
-    "effectKey" : "KURAZ"
-    
-  },
-  "DDR":{
-    "imageFileName": "DDR.jpg",
-    "ID": "33064647",
-    "cardName": "DDR",
-    "cardType": "Spell",
-    "spellType": "Equip",
-    "effectKey" : "DDR"
-  },
-  "DestinyDraw":{
-    "imageFileName": "Ddraw.jpg",
-    "ID": "45809008",
-    "cardName": "DestinyDraw",
-    "cardType": "Spell",
-    "spellType": "Normal",
-    "effectKey" : "DESTINYDRAW"
-  },
-  "DimensionFusion":{
-    "imageFileName": "DimensionFusion.jpg",
-    "ID": "23557835",
-    "cardName": "DimensionFusion",
-    "cardType": "Spell",
-    "spellType": "Normal",
-    "effectKey" : "DIMENSIONFUSION"
-  },
-  "GoldSalcophagus":{
-    "imageFileName": "GoldSarcophagus.jpg",
-    "ID": "75500286",
-    "cardName": "GoldSarcophagus",
-    "cardType": "Spell",
-    "spellType": "Normal",
-    "effectKey" : "GOLDSARCOPHAGUS"
-  },
-  "HandDestruction":{
-    "imageFileName": "HandDestruction.jpg",
-    "ID": "72892473",
-    "cardName": "HandDestruction",
-    "cardType": "Spell",
-    "spellType": "Normal",
-    "effectKey" : "HANDDESTRUCTION"
-  },
-  "HiddenArmory":{
-    "imageFileName": "HiddenArmory.jpg",
-    "ID": "52105192",
-    "cardName": "HiddenArmory",
-    "cardType": "Spell",
-    "spellType": "Normal",
-    "effectKey" : "HIDDENARMORY"
-  },
-  "Hurricane":{
-    "imageFileName": "Hurricane.jpg",
-    "ID": "68167124",
-    "cardName": "Hurricane",
-    "cardType": "Spell",
-    "spellType": "Normal",
-    "effectKey" : "HURRICANE"
-  },
-  "MagicStoneExcavation":{
-    "imageFileName": "MagicStoneExcavation.jpg",
-    "ID": "98494543",
-    "cardName": "MagicStoneExcavation",
-    "cardType": "Spell",
-    "spellType": "Normal",
-    "effectKey" : "MAGICSTONEEXCAVATION"
-  },
-  "MonsterGate":{
-    "imageFileName": "MonsterGate.jpg",
-    "ID": "43040603",
-    "cardName": "MonsterGate",
-    "cardType": "Spell",
-    "spellType": "Normal",
-    "effectKey" : "MONSTERGATE"
-  },
-  "MonsterReborn":{
-    "imageFileName": "MonsterReborn.jpg",
-    "ID": "83764718",
-    "cardName": "MonsterReborn",
-    "cardType": "Spell",
-    "spellType": "Normal",
-    "effectKey" : "MONSTERREBORN"
-  },
-  "PhenixBlade":{
-    "imageFileName": "PhenixBlade.jpg",
-    "ID": "31423101",
-    "cardName": "PhenixBlade",
-    "cardType": "Spell",
-    "spellType": "Equip",
-    "effectKey" : "PHENIXBLADE"
-  },
-  "PrematureBrial":{
-    "imageFileName": "PrematureBrial.jpg",
-    "ID": "70828912",
-    "cardName": "PrematureBrial",
-    "cardType": "Spell",
-    "spellType": "Equip",
-    "effectKey" : "PREMATUREBRIAL"
-  },
-  "Reasoning":{
-    "imageFileName": "Reasoning.jpg",
-    "ID": "58577036",
-    "cardName": "Reasoning",
-    "cardType": "Spell",
-    "spellType": "Normal",
-    "effectKey" : "REASONING"
-  },
-  "Reinforcement":{
-    "imageFileName": "Reinforcement.jpg",
-    "ID": "32807846",
-    "cardName": "Reinforcement",
-    "cardType": "Spell",
-    "spellType": "Normal",
-    "effectKey" : "REINFORCEMENT"
-  },
-  "SpellEconomics":{
-    "imageFileName": "SpellEconomics.jpg",
-    "ID": "04259068",
-    "cardName": "SpellEconomics",
-    "cardType": "Spell",
-    "spellType": "Continuous",
-    "effectKey" : "SPELLECONOMICS"
-  },
-  "TradeIn":{
-    "imageFileName": "TradeIn.jpg",
-    "ID": "38120068",
-    "cardName": "TradeIn",
-    "cardType": "Spell",
-    "spellType": "Normal",
-    "effectKey" : "TRADEIN"
-  },
-  "MagicalExplosion":{
-    "imageFileName": "MagicalExplosion.jpg",
-    "ID": "32723153",
-    "cardName": "MagicalExplosion",
-    "cardType": "Trap",
-    "trapType": "Normal",
-    "effectKey" : "MAGICALEXPLOSION"
+    "Airman":{
+      "imageFileName": "Airman.jpg",
+      "ID": "40044918",
+      "cardName": "Airman",
+      "category" : ["HERO"] ,
+      "cardType": "Monster",
+      "monsterType": "Effect",
+      "level": 4,
+      "race": "WARRIOR",
+      "attribute": "WIND",
+      "atkPoint" : 1800,
+      "defPoint" : 300,
+      "effectKey" : "AIRMAN",
+      "text" : "このカードが召喚・特殊召喚に成功した時、以下の効果から１つを選択して発動できる。●このカード以外の自分フィールドの「ＨＥＲＯ」モンスターの数まで、フィールドの魔法・罠カードを選んで破壊する。●デッキから「ＨＥＲＯ」モンスター１体を手札に加える。"
+    },
+    "Alpha":{
+      "imageFileName": "Alpha.jpg",
+      "ID": "99785935",
+      "cardName": "Alpha",
+      "cardType": "Monster",
+      "monsterType": "Normal",
+      "level": 4,
+      "race": "ROCK",
+      "attribute": "EARTH",
+      "atkPoint" : 1400,
+      "defPoint" : 1700
+    },
+    "Beta":{
+      "imageFileName": "Beta.jpg",
+      "ID": "39256679",
+      "cardName": "Beta",
+      "cardType": "Monster",
+      "monsterType": "Normal",
+      "level": 4,
+      "race": "ROCK",
+      "attribute": "EARTH",
+      "atkPoint" : 1400,
+      "defPoint" : 1700
+    },
+    "Gamma":{
+      "imageFileName": "Gamma.jpg",
+      "ID": "11549357",
+      "cardName": "Gamma",
+      "cardType": "Monster",
+      "monsterType": "Normal",
+      "level": 4,
+      "race": "ROCK",
+      "attribute": "EARTH",
+      "atkPoint" : 1400,
+      "defPoint" : 1700
+    },
+    "MagicianOfChaos":{
+      "imageFileName": "MagicianOfChaos.jpg",
+      "ID": "40737112",
+      "cardName": "MagicianOfChaos",
+      "cardType": "Monster",
+      "monsterType": "Effect",
+      "level": 8,
+      "race": "SPELLCASTER",
+      "attribute": "DARK",
+      "atkPoint" : 2800,
+      "defPoint" : 2600,
+      "effectKey" : "MAGICIANOFCHAOS",
+      "text" : "このカードが召喚・特殊召喚に成功した時、自分の墓地から魔法カード１枚を選択して手札に加える事ができる。このカードが戦闘によって破壊したモンスターは墓地へは行かずゲームから除外される。このカードはフィールド上から離れた場合、ゲームから除外される。"
+    },
+    "CyberVary":{
+      "imageFileName": "CyberVary.jpg",
+      "ID": "03657444",
+      "cardName": "CyberVary",
+      "category" : [] ,
+      "cardType": "Monster",
+      "monsterType": "Effect",
+      "level": 1,
+      "race": "MACHINE",
+      "attribute": "LIGHT",
+      "atkPoint" : 0,
+      "defPoint" : 0,
+      "effectKey" : "CYBERVARY",
+      "text" : "以下の効果から１つを選択して発動できる。●このカードが相手モンスターの攻撃対象に選択された時、このカードを除外して発動できる。デッキからカードを１枚ドローし、バトルフェイズを終了する。●自分のメインフェイズ時に発動できる。このカードと自分フィールド上に表側表示で存在するモンスター１体を選択して除外し、その後デッキからカードを２枚ドローする。●自分のメインフェイズ時に、自分の墓地のカード１枚を選択して発動できる。このカードと手札１枚を除外し、その後選択したカードをデッキの一番上に戻す。"
+    },
+    "Disk":{
+      "imageFileName": "Disk.jpg",
+      "ID": "56570271",
+      "cardName": "Disk",
+      "category" : ["HERO","D-HERO"] ,
+      "cardType": "Monster",
+      "monsterType": "Effect",
+      "level": 1,
+      "race": "WARRIOR",
+      "attribute": "DARK",
+      "atkPoint" : 300,
+      "defPoint" : 300,
+      "effectKey" : "DISK",
+      "text" : "このカードが墓地からの特殊召喚に成功した場合に発動できる。自分はデッキから２枚ドローする。"
+    },
+    "Dogma":{
+      "imageFileName": "Dogma.jpg",
+      "ID": "17132130",
+      "cardName": "Dogma",
+      "category" : ["HERO","D-HERO"] ,
+      "cardType": "Monster",
+      "monsterType": "Effect",
+      "canNS": false,
+      "level": 8,
+      "race": "WARRIOR",
+      "attribute": "DARK",
+      "atkPoint" : 3400,
+      "defPoint" : 2400,
+      "effectKey" : "DOGMA",
+      "SSconditionKey" : "DOGMA",
+      "text" : "このカードは通常召喚できない。「Ｄ－ＨＥＲＯ」モンスターを含む自分フィールドのモンスター３体をリリースした場合のみ特殊召喚できる。(1)：この方法でこのカードが特殊召喚に成功した場合、次の相手スタンバイフェイズに発動する。相手のＬＰを半分にする。"
+    },
+    "Kuraz":{
+      "imageFileName": "Kuraz.jpg",
+      "ID": "57666212",
+      "cardName": "Kuraz",
+      "category" : [] ,
+      "cardType": "Monster",
+      "monsterType": "Effect",
+      "level": 6,
+      "race": "WARRIOR",
+      "attribute": "LIGHT",
+      "atkPoint" : 2400,
+      "defPoint" : 1000,
+      "effectKey" : "KURAZ",
+      "text" : "(1)：このカードが召喚・特殊召喚に成功した時、フィールドのカードを２枚まで対象として発動できる。そのカードを破壊し、破壊されたカードのコントローラーは破壊された枚数分だけデッキからドローできる。(2)：このカードは召喚・特殊召喚したターンには攻撃できない。"
+      
+    },
+    "DDR":{
+      "imageFileName": "DDR.jpg",
+      "ID": "33064647",
+      "cardName": "DDR",
+      "cardType": "Spell",
+      "spellType": "Equip",
+      "effectKey" : "DDR",
+      "text" : "(1)：手札を１枚捨て、除外されている自分のモンスター１体を対象としてこのカードを発動できる。そのモンスターを攻撃表示で特殊召喚し、このカードを装備する。このカードがフィールドから離れた時にそのモンスターは破壊される。"
+    },
+    "DestinyDraw":{
+      "imageFileName": "DestinyDraw.jpg",
+      "ID": "45809008",
+      "cardName": "DestinyDraw",
+      "cardType": "Spell",
+      "spellType": "Normal",
+      "effectKey" : "DESTINYDRAW",
+      "text" : "(1)：手札から「Ｄ－ＨＥＲＯ」カード１枚を捨てて発動できる。自分はデッキから２枚ドローする。"
+    },
+    "DimensionFusion":{
+      "imageFileName": "DimensionFusion.jpg",
+      "ID": "23557835",
+      "cardName": "DimensionFusion",
+      "cardType": "Spell",
+      "spellType": "Normal",
+      "effectKey" : "DIMENSIONFUSION",
+      "text" : "２０００ライフポイントを払う。お互いに除外されたモンスターをそれぞれのフィールド上に可能な限り特殊召喚する。"
+    },
+    "GoldSalcophagus":{
+      "imageFileName": "GoldSarcophagus.jpg",
+      "ID": "75500286",
+      "cardName": "GoldSarcophagus",
+      "cardType": "Spell",
+      "spellType": "Normal",
+      "effectKey" : "GOLDSARCOPHAGUS",
+      "text" : "(1)：デッキからカード１枚を選んで除外する。このカードの発動後２回目の自分スタンバイフェイズに、この効果で除外したカードを手札に加える。"
+    },
+    "HandDestruction":{
+      "imageFileName": "HandDestruction.jpg",
+      "ID": "72892473",
+      "cardName": "HandDestruction",
+      "cardType": "Spell",
+      "spellType": "Normal",
+      "effectKey" : "HANDDESTRUCTION",
+      "text" : "(1)：手札があるプレイヤーは、その手札を全て捨てる。その後、それぞれ自身が捨てた枚数分デッキからドローする。"
+    },
+    "HiddenArmory":{
+      "imageFileName": "HiddenArmory.jpg",
+      "ID": "52105192",
+      "cardName": "HiddenArmory",
+      "cardType": "Spell",
+      "spellType": "Normal",
+      "effectKey" : "HIDDENARMORY",
+      "text" : "このカードを発動するターン、自分は通常召喚できない。(1)：デッキの一番上のカードを墓地へ送って発動できる。自分のデッキ・墓地から装備魔法カード１枚を選んで手札に加える。"
+    },
+    "Hurricane":{
+      "imageFileName": "Hurricane.jpg",
+      "ID": "68167124",
+      "cardName": "Hurricane",
+      "cardType": "Spell",
+      "spellType": "Normal",
+      "effectKey" : "HURRICANE",
+      "text" : "フィールド上の魔法・罠カードを全て持ち主の手札に戻す。"
+    },
+    "MagicStoneExcavation":{
+      "imageFileName": "MagicStoneExcavation.jpg",
+      "ID": "98494543",
+      "cardName": "MagicStoneExcavation",
+      "cardType": "Spell",
+      "spellType": "Normal",
+      "effectKey" : "MAGICSTONEEXCAVATION",
+      "text" : "(1)：手札を２枚捨て、自分の墓地の魔法カード１枚を対象として発動できる。そのカードを手札に加える。"
+    },
+    "MonsterGate":{
+      "imageFileName": "MonsterGate.jpg",
+      "ID": "43040603",
+      "cardName": "MonsterGate",
+      "cardType": "Spell",
+      "spellType": "Normal",
+      "effectKey" : "MONSTERGATE",
+      "text" : "(1)：自分フィールドのモンスター１体をリリースして発動できる。通常召喚可能なモンスターが出るまで自分のデッキの上からカードをめくり、そのモンスターを特殊召喚する。残りのめくったカードは全て墓地へ送る。"
+    },
+    "MonsterReborn":{
+      "imageFileName": "MonsterReborn.jpg",
+      "ID": "83764718",
+      "cardName": "MonsterReborn",
+      "cardType": "Spell",
+      "spellType": "Normal",
+      "effectKey" : "MONSTERREBORN",
+      "text" : "(1)：自分または相手の墓地のモンスター１体を対象として発動できる。そのモンスターを自分フィールドに特殊召喚する。"
+    },
+    "PhenixBlade":{
+      "imageFileName": "PhenixBlade.jpg",
+      "ID": "31423101",
+      "cardName": "PhenixBlade",
+      "cardType": "Spell",
+      "spellType": "Equip",
+      "effectKey" : "PHENIXBLADE",
+      "text" : "戦士族モンスターにのみ装備可能。装備モンスターの攻撃力は３００ポイントアップする。自分のメインフェイズ時、自分の墓地に存在する戦士族モンスター２体をゲームから除外する事で、このカードを自分の墓地から手札に加える。"
+    },
+    "PrematureBrial":{
+      "imageFileName": "PrematureBrial.jpg",
+      "ID": "70828912",
+      "cardName": "PrematureBrial",
+      "cardType": "Spell",
+      "spellType": "Equip",
+      "effectKey" : "PREMATUREBRIAL",
+      "text" : "８００ライフポイントを払い、自分の墓地に存在するモンスター１体を選択して発動する。選択したモンスターを表側攻撃表示で特殊召喚し、このカードを装備する。このカードが破壊された時、装備モンスターを破壊する。"
+    },
+    "Reasoning":{
+      "imageFileName": "Reasoning.jpg",
+      "ID": "58577036",
+      "cardName": "Reasoning",
+      "cardType": "Spell",
+      "spellType": "Normal",
+      "effectKey" : "REASONING",
+      "text" : "(1)：相手は１～１２までの任意のレベルを宣言する。通常召喚可能なモンスターが出るまで自分のデッキの上からカードをめくり、そのモンスターのレベルが宣言されたレベルと同じ場合、めくったカードを全て墓地へ送る。違った場合、そのモンスターを特殊召喚し、残りのめくったカードは全て墓地へ送る。"
+    },
+    "Reinforcement":{
+      "imageFileName": "Reinforcement.jpg",
+      "ID": "32807846",
+      "cardName": "Reinforcement",
+      "cardType": "Spell",
+      "spellType": "Normal",
+      "effectKey" : "REINFORCEMENT",
+      "text" : "(1)：デッキからレベル４以下の戦士族モンスター１体を手札に加える。"
+    },
+    "SpellEconomics":{
+      "imageFileName": "SpellEconomics.jpg",
+      "ID": "04259068",
+      "cardName": "SpellEconomics",
+      "cardType": "Spell",
+      "spellType": "Continuous",
+      "effectKey" : "SPELLECONOMICS",
+      "text" : "魔法カードを発動するために払うライフポイントが必要なくなる。"
+    },
+    "TradeIn":{
+      "imageFileName": "TradeIn.jpg",
+      "ID": "38120068",
+      "cardName": "TradeIn",
+      "cardType": "Spell",
+      "spellType": "Normal",
+      "effectKey" : "TRADEIN",
+      "text" : "(1)：手札からレベル８モンスター１体を捨てて発動できる。自分はデッキから２枚ドローする。"
+    },
+    "MagicalExplosion":{
+      "imageFileName": "MagicalExplosion.jpg",
+      "ID": "32723153",
+      "cardName": "MagicalExplosion",
+      "cardType": "Trap",
+      "trapType": "Normal",
+      "effectKey" : "MAGICALEXPLOSION",
+      "text" : "自分の手札が０枚の時に発動する事ができる。自分の墓地に存在する魔法カードの枚数×２００ポイントダメージを相手ライフに与える。"
+    }
   }
-}
+  
