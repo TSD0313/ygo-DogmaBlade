@@ -423,6 +423,7 @@ window.onload = function() {
         return new Promise<Card>((resolve, reject) => {
             const cardlist = effArray.flatMap(eff => eff.card)
             openCardListWindow.select(cardlist,1,1,tmpEff,"発動する効果を選択してください",cancel);
+            
             SelectOkButton.addEventListener("click",clickOkButton);
             function clickOkButton(e) {
                 divSelectMenuContainer.style.visibility = "hidden";
@@ -1700,11 +1701,27 @@ window.onload = function() {
     };
 
     const disprayMessageWindow = async(message :string)=>{
-        mainstage.setChildIndex(messageWindowContainer,mainstage.numChildren-1)
-        messageWindowtext.text = message;
-        messageWindowtext.alpha = 0;
+        const messageWindowContainer = new createjs.Container();
+        const messageWindowtext = new createjs.Text(message, "30px serif","black");
+        messageWindowtext.textBaseline = "middle";
+        messageWindowtext.textAlign = "center";
+        const messageBack = new createjs.Shape();
+        messageBack.graphics.beginFill("white"); 
+        messageBack.graphics.drawRect(0, 0, messageWindowtext.getMeasuredWidth()+50, cardImgSize.y);
+        messageBack.alpha = 0.5;
+        messageBack.regX = (messageWindowtext.getMeasuredWidth()+50)/2;;
+        messageBack.regY = cardImgSize.y/2;
+        mainstage.addChild(messageWindowContainer);
+        messageWindowContainer.addChild(messageBack,messageWindowtext);
+        messageWindowContainer.setTransform(game.grid.front[3][0],(game.grid.front[0][1]+game.grid.back[0][1])/2);
+        messageWindowContainer.regX = 0;
+        messageWindowContainer.regY = messageWindowContainer.getBounds().height/2;
         messageWindowContainer.scaleX = 0;
         messageWindowContainer.scaleY = 0;
+
+        messageWindowtext.alpha = 0;
+        mainstage.setChildIndex(messageWindowContainer,mainstage.numChildren-1);
+
         await new Promise((resolve, reject) => {
             createjs.Tween.get(messageWindowContainer)
             .to({scaleX:0.02,scaleY:0.02})
@@ -1723,6 +1740,7 @@ window.onload = function() {
             .to({scaleX:0},250,createjs.Ease.cubicIn)
             .call(()=>{resolve()});
         });
+        mainstage.removeChild(messageWindowContainer);
         return;
     };
 
@@ -2048,16 +2066,6 @@ window.onload = function() {
         // return Promise.all(PromiseArray());
     };
 
-    /**
-     * デッキを場に置く
-     */
-    // function deckset(stage: Stage, deck:Card[]){
-    //     game.DECK = deck;
-    //     game.DECK.map((card, index, array) => {
-    //         puton(stage, card, game.displayOrder.deck[0][0]+index*0.5,game.displayOrder.deck[0][1]-index*0.5);
-    //     })
-    // };
-
     const decksetAnimation=async()=>{
         const randomIndex = (()=>{
             const defaultArray = [...Array(40).keys()];
@@ -2076,7 +2084,7 @@ window.onload = function() {
                     };
                     createjs.Tween.get(game.defaultDeck[i].imgContainer)
                         .call(()=>{mainstage.setChildIndex(game.defaultDeck[i].imgContainer,mainstage.numChildren-1)})
-                        .to({x:game.displayOrder.deck[0][0],y:game.displayOrder.deck[0][1],rotation:0},500,createjs.Ease.cubicOut)
+                        .to({x:game.displayOrder.deck[0][0],y:game.displayOrder.deck[0][1],rotation:0},500,createjs.Ease.quintOut)
                         .call(()=>{resolve()});
                 }); 
                 await timeout(50);
@@ -2300,6 +2308,7 @@ window.onload = function() {
 
     const shadPhase = async(phase:"DRAW PHASE"|"STANBY PHASE"|"MAIN PHASE"|"TURN END") => {
         const phaseText = genCenterText(phase);
+        phaseText.shadow = new createjs.Shadow("#000000", 0, 0, 10);
         phaseText.x = -200;
         phaseText.y = game.centerGrid.y;
         mainstage.addChild(phaseText);
@@ -2318,10 +2327,11 @@ window.onload = function() {
         mainCanv.style.pointerEvents = "none";
         await decksetAnimation();
         await timeout(500);
-        myLP.alpha = 1;
-        EnemyLP.alpha = 1;
         await deckShuffle();
         await draw(5);
+        myLP.alpha = 1;
+        EnemyLP.alpha = 1;
+        numOfcardsContainer.alpha = 1;
         await shadPhase("DRAW PHASE")
         await draw(1);
         await shadPhase("STANBY PHASE");
@@ -2342,14 +2352,20 @@ window.onload = function() {
                 await timeout(500);
             };
         })();
-        await (async () => {
-            for (let i = 0; i < magiexArray.length ; i++){
-                await cardFlip(magiexArray[i]);
-                await animationChainEffectActivate(magiexArray[i].effect[0]);
-                await magiexArray[i].effect[0].whenResolve(magiexArray[i].effect[0]);
-                await moveCard.BOARD.toGY(magiexArray[i]);
+        if(1<=magiexArray.length){
+            if(genCardArray({location:["HAND"]}).length==0){
+                await (async () => {
+                    for (let i = 0; i < magiexArray.length ; i++){
+                        await cardFlip(magiexArray[i]);
+                        await animationChainEffectActivate(magiexArray[i].effect[0]);
+                        await magiexArray[i].effect[0].whenResolve(magiexArray[i].effect[0]);
+                        await moveCard.BOARD.toGY(magiexArray[i]);
+                    };
+                })();
+            }else{
+                await disprayMessageWindow("手札が0枚でない為、MagicalExplosionを発動できません。")
             };
-        })();
+        };
         await timeout(1000);
         const winLose = (()=>{
            if(game.enemyLifePoint<=0){
@@ -2361,6 +2377,32 @@ window.onload = function() {
         winLose.x = game.centerGrid.x;
         winLose.y = game.centerGrid.y;
         mainstage.addChild(winLose);
+    };
+
+    const reset = async()=>{
+        mainCanv.style.pointerEvents = "none";
+        game.countNS = 0;
+        game.normalSummon = true;
+        game.myLifePoint = DEFAULT_LIFE;
+        game.enemyLifePoint = DEFAULT_LIFE;
+        const returnCardArray = genCardArray({location:["HAND","MO","ST","FIELD","GY","DD"]});
+        const randomIndex = (()=>{
+            const defaultArray = [...Array(returnCardArray.length).keys()];
+            for (let i = returnCardArray.length - 1; i >= 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [defaultArray[i], defaultArray[j]] = [defaultArray[j], defaultArray[i]];
+            };
+            return defaultArray
+        })();
+
+        await timeout(500);
+        await deckShuffle();
+        await draw(5);
+        await shadPhase("DRAW PHASE")
+        await draw(1);
+        await shadPhase("STANBY PHASE");
+        await shadPhase("MAIN PHASE");
+        mainCanv.style.pointerEvents = "auto";
     };
     
     /**
@@ -3254,8 +3296,11 @@ window.onload = function() {
             eff2.actionPossible = (time:Time) =>{
                 const timeCondition = (()=>{
                     const timeBoolArray :boolean[] = [];
-                    time.destroy.forEach(tDestroy=>{
-                        timeBoolArray.push(tDestroy.card== card);
+                    time.move.forEach(tMove=>{
+                        timeBoolArray.push([
+                            tMove.card==card,
+                            tMove.from== "BOARD"
+                            ].every(value => value));
                     });
                     return timeBoolArray.some(value => value);
                 })();
@@ -3328,7 +3373,6 @@ window.onload = function() {
             };
             eff1.whenActive = (eff :effect) => {
                 return new Promise(async(resolve, reject) => {
-                    const cardlist = game.GY.filter(card=>card instanceof SpellCard)
                     await new Promise((resolve, reject) => {
                         openCardListWindow.select(game.HAND,2,2,eff);
                         const clickOkButton = async (e) => {
@@ -3341,7 +3385,7 @@ window.onload = function() {
                         };
                         SelectOkButton.addEventListener("click",clickOkButton);
                     });
-
+                    const cardlist = game.GY.filter(card=>card instanceof SpellCard);
                     openCardListWindow.select(cardlist,1,1,eff);
                     const clickOkButton = async (e) => {
                         divSelectMenuContainer.style.visibility = "hidden";
@@ -3635,36 +3679,33 @@ window.onload = function() {
     const disprayStage = new createjs.Stage(disprayCanv);
     disprayStage.enableMouseOver();
 
-    const messageWindowContainer = new createjs.Container();
-    const messageWindowtext = new createjs.Text("-", "36px serif","black");
-    messageWindowtext.textBaseline = "middle";
-    messageWindowtext.textAlign = "center";
-    const messageBack = new createjs.Shape();
-    messageBack.graphics.beginFill("white"); 
-    messageBack.graphics.drawRect(0, 0, cardImgSize.x*4, cardImgSize.y);
-    messageBack.alpha = 0.5;
-    messageWindowContainer.addChild(messageBack,messageWindowtext);
-    messageBack.regX = cardImgSize.x*2;
-    messageBack.regY = cardImgSize.y/2;
-    messageWindowContainer.setTransform(game.grid.front[3][0],(game.grid.front[0][1]+game.grid.back[0][1])/2);
-    messageWindowContainer.regX = messageWindowContainer.getBounds().width/2;
-    messageWindowContainer.regY = messageWindowContainer.getBounds().height/2;
-    messageWindowContainer.scaleX = 0;
-    messageWindowContainer.scaleY = 0;
-    mainstage.addChild(messageWindowContainer);
-
-
     setBoard(mainstage);
 
     const myLP = new createjs.Text(game.myLifePoint.toString(), "80px serif", "#4169e1");
+    myLP.shadow = new createjs.Shadow("#58D3F7",0,0,20);
     myLP.textBaseline = "bottom";
     myLP.y = 800;
     mainstage.addChild(myLP);
     myLP.alpha = 0;
     const EnemyLP = new createjs.Text(game.enemyLifePoint.toString(), "80px serif", "#cd5c5c");
+    EnemyLP.shadow = new createjs.Shadow("#FA5858",0,0,20);
     EnemyLP.textAlign = "left";
     mainstage.addChild(EnemyLP);
     EnemyLP.alpha = 0;
+
+    const numOfcardsContainer = new createjs.Container;
+    const NumInDeck =  new createjs.Text("DECK: "+game.DECK.length.toString(), "25px serif", "#000000");
+    NumInDeck.textAlign = "left";
+    const NumInGy =  new createjs.Text("SPELLS IN GY: "+genCardArray({location:["GY"],cardType:["Spell"]}).length.toString(), "25px serif", "#000000");
+    NumInGy.textAlign = "left";
+    numOfcardsContainer.addChild(NumInDeck);
+    numOfcardsContainer.addChild(NumInGy);
+    NumInGy.y = 40;
+    mainstage.addChild(numOfcardsContainer);
+    numOfcardsContainer.setTransform(game.displayOrder.deck[0][0]+90,game.displayOrder.deck[0][1]-60);
+    numOfcardsContainer.alpha = 0;
+
+
 
     const deckRecipe :{json:Object,num:number}[] = [
         {json:status.Dogma, num:3},
@@ -3725,14 +3766,14 @@ window.onload = function() {
     lineUp();
     console.log(game.DECK); 
 
-    // const drawButton = createButton("draw", 150, 40, "#0275d8");
-    // drawButton.x = 1200;
-    // drawButton.y = 550;
-    // mainstage.addChild(drawButton);
+    const drawButton = createButton("draw", 150, 40, "#0275d8");
+    drawButton.x = 1300;
+    drawButton.y = 550;
+    mainstage.addChild(drawButton);
 
-    // drawButton.on("click", function(e){
-    //     draw(1);
-    // }, null, false);
+    drawButton.on("click", function(e){
+        draw(1);
+    }, null, false);
 
     // const shuffleButton = createButton("shuffle", 150, 40, "#0275d8");
     // shuffleButton.x = 1200;
@@ -3759,28 +3800,21 @@ window.onload = function() {
     //     SelectOkButton.addEventListener("click",clickOkButton);
     // }, null, false);
 
-    const testButton = createButton("GAME START", 150, 40, "#0275d8");
-    testButton.x = 1200;
-    testButton.y = 700;
-    mainstage.addChild(testButton);
-
-    testButton.on("click", function async(e){
-        // discard(game.HAND);
-        // OpenSelectEffectWindow(new Card,"tttttA","tttttB");
-        // disprayMessageWindow("aaaaaaaaaaaaaaaaaaaaa")
-        // vanish(game.HAND,"EFFECT");
-        // shadPhase("DRAW PHASE");
+    const startButton = createButton("DUEL START", 150, 80, "#0275d8");
+    startButton.x = 500;
+    startButton.y = 850;
+    mainstage.addChild(startButton);
+    startButton.on("click", function async(e){
         gameStart();
-        // lineUp();
     }, null, false);
 
-    const endButton = createButton("TURN END", 150, 40, "#0275d8");
-    endButton.x = 1200;
+    const endButton = createButton("TURN END", 150, 80, "#0275d8");
+    endButton.x = 1300;
     endButton.y = 750;
     mainstage.addChild(endButton);
-
     endButton.on("click", function async(e){
-        gameEnd();
+        // gameEnd();
+        reset();
     }, null, false);
 
     createjs.Ticker.addEventListener("tick", handleTick);
@@ -3792,6 +3826,8 @@ window.onload = function() {
         statusStage.update();
         myLP.text = zerofix(game.myLifePoint);
         EnemyLP.text = zerofix(game.enemyLifePoint);
+        NumInDeck.text = "DECK : "+zerofix(game.DECK.length);
+        NumInGy.text = "GY : "+zerofix(genCardArray({location:["GY"]}).length)+" ("+zerofix(genCardArray({location:["GY"],cardType:["Spell"]}).length)+" Spells)";
     };
 
     const selectMenuBack = new createjs.Shape();
@@ -3946,6 +3982,7 @@ window.onload = function() {
             divSelectMenuContainer.style.visibility = "visible";
             SelectCancelButton.visible = false;
             SelectOkButton.x = selectButtonCanv.width/2 - 75;
+            SelectOkButton.mouseEnabled = true;
             if(message == undefined){
                 messageText.innerText = "select"
             }else{
