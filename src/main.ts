@@ -305,7 +305,7 @@ const zerofix = (num: number): string=>{
 };
 
 const genCenterText = (text:string)=>{
-    const newText = new createjs.Text(text, "80px serif", "black");
+    const newText = new createjs.Text(text, "80px serif", "midnightblue");
     newText.textBaseline = "middle";
     newText.textAlign = "center";
     return newText
@@ -1800,6 +1800,7 @@ window.onload = function() {
         await (async () => {
             for(let card of cardArray){
                 card.canVanish = false ;
+                card.canDestroy = false ;
                 const from = (()=>{
                     if(["MO","ST","FIELD"].includes(card.location)){
                         return "BOARD"
@@ -1831,6 +1832,7 @@ window.onload = function() {
         await ContinuousEffect(game.nowTime);
         cardArray.forEach(card=>{
             card.canVanish = true;
+            card.canDestroy = true;
         });
     };
 
@@ -2225,7 +2227,9 @@ window.onload = function() {
                         console.log("draw");
                     };
                 })();
-                mainstage.addChild(genCenterText("YOU LOSE").setTransform(game.centerGrid.x,game.centerGrid.y));
+                const loseText = genCenterText("YOU LOSE").setTransform(game.centerGrid.x,game.centerGrid.y);
+                loseText.shadow = new createjs.Shadow("#ffffff", 0, 0, 10);
+                mainstage.addChild(loseText);
             });
         };
         return new Promise<void>(async(resolve, reject) => {
@@ -2386,7 +2390,7 @@ window.onload = function() {
 
     const shadPhase = async(phase:"DRAW PHASE"|"STANBY PHASE"|"MAIN PHASE"|"TURN END") => {
         const phaseText = genCenterText(phase);
-        phaseText.shadow = new createjs.Shadow("#000000", 0, 0, 10);
+        phaseText.shadow = new createjs.Shadow("#ffffff", 0, 0, 10);
         phaseText.x = -200;
         phaseText.y = game.centerGrid.y;
         mainstage.addChild(phaseText);
@@ -2452,12 +2456,13 @@ window.onload = function() {
                 return genCenterText("YOU LOSE");
             }; 
         })()
+        winLose.shadow = new createjs.Shadow("#ffffff", 0, 0, 10);
         winLose.x = game.centerGrid.x;
         winLose.y = game.centerGrid.y;
         mainstage.addChild(winLose);
     };
 
-    const reset = async()=>{
+    const retry = async()=>{
         mainCanv.style.pointerEvents = "none";
         game.countNS = 0;
         game.normalSummon = true;
@@ -2487,7 +2492,7 @@ window.onload = function() {
                 await timeout(50);                
             };
         })();
-        await timeout(500);
+        await timeout(250);
         await deckShuffle();
         await draw(5);
         await shadPhase("DRAW PHASE")
@@ -3893,21 +3898,46 @@ window.onload = function() {
     //     SelectOkButton.addEventListener("click",clickOkButton);
     // }, null, false);
 
-    const startButton = createButton("DUEL START", 150, 80, "#0275d8");
-    startButton.x = 500;
-    startButton.y = 850;
+    const startButton = new createjs.Container();
+    const startText = genCenterText("DUEL START");
+    startText.x = startText.getMeasuredWidth()/2;
+    startText.y = startText.getMeasuredHeight()/2;
+    const bg = new createjs.Shape();
+    bg.graphics.beginFill("white").drawRoundRect(0,0,startText.getMeasuredWidth(),startText.getMeasuredHeight(),10);
+    bg.alpha = 0.01;
+    startButton.addChild(bg);
+    startButton.addChild(startText);
     mainstage.addChild(startButton);
-    startButton.on("click", function async(e){
+    startButton.setTransform(550,850,1,1,0,0,0,startText.getMeasuredWidth()/2,startText.getMeasuredHeight()/2)
+    startButton.cursor = "pointer";
+    startButton.addEventListener("mouseover", handleMouseOverStart);
+    startButton.addEventListener("mouseout", handleMouseOutStart);
+    startButton.addEventListener("click", handleClickStart);
+    function handleMouseOverStart(event) {
+        startText.shadow = new createjs.Shadow("#ffff00", 0, 0, 20);
+    };
+    function handleMouseOutStart(event) {
+        startText.shadow = null;
+    };
+    function handleClickStart(event) {
         gameStart();
-    }, null, false);
+        createjs.Tween.get(startButton).to({alpha:0},200);
+    };
 
     const endButton = createButton("TURN END", 150, 80, "#0275d8");
     endButton.x = 1300;
-    endButton.y = 750;
+    endButton.y = 650;
     mainstage.addChild(endButton);
     endButton.on("click", function async(e){
-        // gameEnd();
-        reset();
+        gameEnd();
+    }, null, false);
+
+    const retryButton = createButton("RETRY", 150, 80, "#0275d8");
+    retryButton.x = 1300;
+    retryButton.y = 750;
+    mainstage.addChild(retryButton);
+    retryButton.on("click", function async(e){
+        retry();
     }, null, false);
 
     createjs.Ticker.addEventListener("tick", handleTick);
@@ -3920,7 +3950,7 @@ window.onload = function() {
         myLP.text = zerofix(game.myLifePoint);
         EnemyLP.text = zerofix(game.enemyLifePoint);
         NumInDeck.text = "DECK : "+zerofix(game.DECK.length);
-        NumInGy.text = "GY : "+zerofix(genCardArray({location:["GY"]}).length)+" ("+zerofix(genCardArray({location:["GY"],cardType:["Spell"]}).length)+" Spells)";
+        NumInGy.text = "GY : "+zerofix(genCardArray({location:["GY"]}).length)+" ( "+zerofix(genCardArray({location:["GY"],cardType:["Spell"]}).length)+" )";
     };
 
     const selectMenuBack = new createjs.Shape();
