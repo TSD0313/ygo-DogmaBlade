@@ -1,4 +1,3 @@
-// EaselJS系の読み込み
 import { Text, Shape, Stage, Bitmap, Container, Tween, Timeline} from 'createjs-module';
 import { createButton }  from './createButton';
 import * as status from './CardStatus.json';
@@ -104,6 +103,9 @@ class Time{
         from? : "MO"|"ST"|"FIELD"|"BOARD"|"DECK"|"HAND"|"GY"|"DD";
         to? : "MO"|"ST"|"FIELD"|"DECK"|"HAND"|"GY"|"DD";
     }[];
+    leaveBoard?:{
+        card : Card;
+    }[];
     discard?:{
         card : Card;
     }[];
@@ -128,11 +130,9 @@ class Time{
         eff : effect;
     }[];
     constructor(){
-        // for (let key of Object.keys(this)) {
-        //     this[key] = [];
-        // };
         this.summon = [];
         this.move = [];
+        this.leaveBoard = [];
         this.discard = [];
         this.destroy = [];
         this.vanish = [];
@@ -141,7 +141,6 @@ class Time{
         this.effectActived= [];
     };
 };
-
 
 interface CardCondetionProps {
     frontImg : Bitmap;  cardBackImg : Bitmap;
@@ -187,12 +186,16 @@ class Card  {
     button : {NS:button,SS:button,SET:button,ACTIVATE:button,FLIP:button,VIEW:button};
     category : string[] ;
     canDestroy : boolean ;
+    canVanish : boolean ;
+    equipMark : Bitmap[];
     constructor(){
         this.cardBackImageFileName = "cardback.jpeg";
         this.location = "DECK"
         this.face = "UP"
         this.effect = [];
         this.canDestroy = true ;
+        this.canVanish = true ;
+        this.equipMark = [];
         this.button = (()=>{
             const NSButton = new button(this, "NS", cardImgSize.x, 40, "#0275d8");
             const SSButton = new button(this, "SS", cardImgSize.x, 40, "#0275d8");
@@ -217,18 +220,19 @@ class MonsterCard extends Card {
         atkBuff:Number;
         defBuff:Number;
     }[];
+    equip : SpellCard[];
     position : "ATK"|"DEF";
     canNS : Boolean
     NSed : Boolean;
     reboarnCondition :Boolean;
     RuleSScondition : () =>Boolean;
     RuleSSpromise : () =>Promise<any>;
-    actionPossible : {key: boolean[]}; 
     constructor(){
         super();
         this.cardType = "Monster";
         this.canNS = true;
         this.buff = [];
+        this.equip = [];
         this.RuleSScondition = ()=>{return false};
     };
 };
@@ -307,9 +311,6 @@ const genCenterText = (text:string)=>{
     return newText
 };
 
-/**
- * jsonからカードオブジェクト生成
- */
 const genCardObject = {
     Monster:(json:Object)=>{
         const newCard = new MonsterCard;
@@ -388,9 +389,7 @@ window.onload = function() {
     const setBoard = (stage:Stage) => {
         const drawzone = (x,y,i) => {
             let zone = new createjs.Shape();
-            // 線の色
             zone.graphics.beginStroke("#0055bb");
-            // 枠を描く
             zone.graphics.drawRect((cardImgSize.y-cardImgSize.x)/2, 0, cardImgSize.x, cardImgSize.y);
             if((1<=i && i<=5)){
                 zone.graphics.drawRect(0, (cardImgSize.y-cardImgSize.x)/2, cardImgSize.y, cardImgSize.x);
@@ -440,7 +439,7 @@ window.onload = function() {
     };
 
     /**
-     * 永続チェック
+     * 永続ルールチェック
      */
     const ContinuousEffect = async(time:Time) =>{
         const boardUp = genCardArray({location:["MO","ST","GY"],face:["UP"]});
@@ -667,9 +666,9 @@ window.onload = function() {
     };
 
     /**
-     * 表示ボタン設定
+     * マウスイベント設定
      */
-    const buttonSetting = {
+    const mouseEventSetting = {
         board: async(card: Card)=>{
             card.imgContainer.removeAllEventListeners();
             const buConArray = Object.values(card.button).map(b => b.buttonContainer)
@@ -694,6 +693,36 @@ window.onload = function() {
             card.imgContainer.addEventListener("mouseout", handleFieldMout);
             function handleFieldMout(event) {
                 buConArray.forEach(b =>{b.visible=false;});
+            };
+
+            const equipMarkArray =()=>{
+                if(card instanceof MonsterCard){
+                    if(1<=card.equip.length){
+                        const array = card.equip.map(eq => genEquipImg(eq));
+                        array.push(genEquipImg(card));
+                        return array;
+                    }else{
+                        return [];
+                    };
+                }else{
+                    return [];
+                };
+            };
+            
+            card.imgContainer.addEventListener("mouseover", handleEquipTargetMover);
+            function handleEquipTargetMover(event) {
+                card.equipMark = [];
+                equipMarkArray().forEach(m=>{
+                    mainstage.addChild(m);
+                    card.equipMark.push(m);
+                });
+            };
+            card.imgContainer.addEventListener("mouseout", handleFieldEquipMout);
+            function handleFieldEquipMout(event) {
+                card.equipMark.forEach(m=>{
+                    mainstage.removeChild(m);
+                });
+                
             };
 
             card.button.ACTIVATE.buttonContainer.addEventListener("click",handleActivatebuttonClick);
@@ -907,9 +936,9 @@ window.onload = function() {
         card.location = to;
 
         if(to=="MO"||to=="ST"||to=="FIELD"){
-            await buttonSetting.board(card);
+            await mouseEventSetting.board(card);
         }else{
-            await buttonSetting[to](card);
+            await mouseEventSetting[to](card);
         };
     };
 
@@ -1770,6 +1799,7 @@ window.onload = function() {
     const vanish = async(cardArray:Card[],by:"EFFECT"|"COST") => {
         await (async () => {
             for(let card of cardArray){
+                card.canVanish = false ;
                 const from = (()=>{
                     if(["MO","ST","FIELD"].includes(card.location)){
                         return "BOARD"
@@ -1781,6 +1811,13 @@ window.onload = function() {
                     card:card,
                     by:by
                 });
+                await ContinuousEffect(game.nowTime);
+                if(["ST","MO","FIELD"].includes(card.location)){
+                    game.nowTime.leaveBoard.push({
+                        card:card
+                    });
+                    await ContinuousEffect(game.nowTime);
+                };
                 game.nowTime.move.push({
                     card:card,
                     from:from,
@@ -1788,9 +1825,13 @@ window.onload = function() {
                 });
                 await moveCard[from].toDD(card);
                 console.log("vanish "+card.cardName+" by "+by);
+                await ContinuousEffect(game.nowTime);
             };
         })();
         await ContinuousEffect(game.nowTime);
+        cardArray.forEach(card=>{
+            card.canVanish = true;
+        });
     };
 
     /**
@@ -1831,6 +1872,12 @@ window.onload = function() {
                     by:by
                 });
                 await ContinuousEffect(game.nowTime);
+                if(["ST","MO","FIELD"].includes(card.location)){
+                    game.nowTime.leaveBoard.push({
+                        card:card
+                    });
+                    await ContinuousEffect(game.nowTime);
+                };
 
                 if(["ST","MO","FIELD"].includes(card.location)){
                     await moveCard.BOARD.toHAND(card);
@@ -1852,11 +1899,19 @@ window.onload = function() {
     const release = async(cardArray : Card[],by:"ADVANCE"|"EFFECT"|"RULE"|"COST") => {
         await (async () => {
             for(let card of cardArray){
+                card.canDestroy = false ;
                 game.nowTime.release.push({
                     card:card,
                     by:by
                 });
                 await ContinuousEffect(game.nowTime);
+
+                if(["ST","MO","FIELD"].includes(card.location)){
+                    game.nowTime.leaveBoard.push({
+                        card:card
+                    });
+                    await ContinuousEffect(game.nowTime);
+                };
 
                 if(["ST","MO","FIELD"].includes(card.location)){
                     await moveCard.BOARD.toGY(card);
@@ -1870,6 +1925,9 @@ window.onload = function() {
             };
         })();
         await ContinuousEffect(game.nowTime);
+        cardArray.forEach(card=>{
+            card.canDestroy = true;
+        });
     };
 
     /**
@@ -1915,6 +1973,13 @@ window.onload = function() {
                     await ContinuousEffect(game.nowTime);
                 };
                 if(["ST","MO","FIELD"].includes(card.location)){
+                    game.nowTime.leaveBoard.push({
+                        card:card
+                    });
+                    await ContinuousEffect(game.nowTime);
+                };
+
+                if(["ST","MO","FIELD"].includes(card.location)){
                     await moveCard.BOARD.toGY(card);
                     game.nowTime.move.push({
                         card:card,
@@ -1931,23 +1996,28 @@ window.onload = function() {
         });
     };
 
+    const genEquipImg = (card:Card)=>{
+        const equipImg = new createjs.Bitmap("equip.png");
+        equipImg.setTransform(card.imgContainer.x, card.imgContainer.y, 0.5, 0.5);
+        equipImg.regX = 64;
+        equipImg.regY = 64;
+        equipImg.mouseEnabled = false;
+        return equipImg
+    };
+
     /**
      * 装備する
      */
     const Equip = async(card:SpellCard,eff: effect)=>{
         card.peggingTarget = eff.targetCard;
         const targetCard = card.peggingTarget[0];
-        const genEquipImg = ()=>{
-            const equipImg = new createjs.Bitmap("equip.png");
-            equipImg.setTransform(card.imgContainer.x, card.imgContainer.y, 0.5, 0.5);
-            equipImg.regX = 64;
-            equipImg.regY = 64;
-            equipImg.mouseEnabled = false;
-            return equipImg
+        if(targetCard instanceof MonsterCard){
+            targetCard.equip.push(card);
         };
+
         return new Promise<void>(async(resolve, reject) => {
             await new Promise(async(resolve, reject) => {
-                const equipImg = genEquipImg();
+                const equipImg = genEquipImg(card);
                 equipImg.alpha = 0;
                 mainstage.addChild(equipImg);
                 createjs.Tween.get(equipImg)
@@ -1959,12 +2029,11 @@ window.onload = function() {
                     .call(()=>{resolve()});
             });
 
-            const equipMarkSPELL = genEquipImg();
-            const equipMarkMON = genEquipImg();
+            const equipMarkSPELL = genEquipImg(card);
+            const equipMarkMON = genEquipImg(targetCard);
 
-            card.imgContainer.addEventListener("mouseover", handleEquipMover);
-            targetCard.imgContainer.addEventListener("mouseover", handleEquipMover);
-            function handleEquipMover(event) {
+            card.imgContainer.addEventListener("mouseover", handleEquipSpellMover);
+            function handleEquipSpellMover(event) {
                 if(card.peggingTarget.length>0){
                     equipMarkSPELL.setTransform(card.imgContainer.x, card.imgContainer.y,0.5,0.5);
                     equipMarkSPELL.regX = 64;
@@ -1977,7 +2046,6 @@ window.onload = function() {
                 }; 
             };
             card.imgContainer.addEventListener("mouseout", handleEquipMout);
-            targetCard.imgContainer.addEventListener("mouseout", handleEquipMout);
             function handleEquipMout(event) {
                 if(card.peggingTarget.length>0){
                     mainstage.removeChild(equipMarkSPELL);
@@ -2149,7 +2217,16 @@ window.onload = function() {
         // デッキ残り枚数が０だったら引けない
         if(game.DECK.length < count) {
             console.log("deck0");
-            return ;
+            return new Promise<void>(async(resolve, reject) => {
+                await (async () => {
+                    for (let i = 0; i < game.DECK.length ; i++){
+                        const targetCard = game.DECK[game.DECK.length -1];
+                        await moveCard.DECK.toHAND(targetCard);
+                        console.log("draw");
+                    };
+                })();
+                mainstage.addChild(genCenterText("YOU LOSE").setTransform(game.centerGrid.x,game.centerGrid.y));
+            });
         };
         return new Promise<void>(async(resolve, reject) => {
             await (async () => {
@@ -2201,8 +2278,8 @@ window.onload = function() {
         disEnchant.actionPossible = (time:Time) =>{
             const timeCondition = (()=>{
                 const timeBoolArray :boolean[] = [];
-                time.move.forEach(tMove=>{
-                    timeBoolArray.push(tMove.card==card && tMove.from=="BOARD");
+                time.leaveBoard.forEach(tLeave=>{
+                    timeBoolArray.push(tLeave.card==card );
                 });
                 return timeBoolArray.some(value => value);
             })();
@@ -2217,6 +2294,7 @@ window.onload = function() {
                 const equiptarget = card.peggingTarget[0];
                 if(equiptarget instanceof MonsterCard){
                     equiptarget.buff = equiptarget.buff.filter(b=>b.eff.card!==card);
+                    equiptarget.equip = equiptarget.equip.filter(e=>e!==card);
                 };
                 card.peggingTarget = [];
                 console.log("disenchant");
@@ -2235,17 +2313,17 @@ window.onload = function() {
         EDeff.actionPossible = (time:Time) =>{
             const timeCondition = (()=>{
                 const timeBoolArray :boolean[] = [];
-                time.move.forEach(tMove=>{
-                    timeBoolArray.push(card.peggingTarget.includes(tMove.card));
+                time.leaveBoard.forEach(tLeave=>{
+                    timeBoolArray.push(card.peggingTarget.includes(tLeave.card));
                 });
                 return timeBoolArray.some(value => value);
             })();
             const boolarray = [
                 card.canDestroy,
-               card.peggingTarget.length==1,
-               card.location=="ST",
-               card.face=="UP",
-               timeCondition
+                card.peggingTarget.length==1,
+                card.location=="ST",
+                card.face=="UP",
+                timeCondition
             ];
             return boolarray.every(value => value==true)
         };
@@ -2394,7 +2472,21 @@ window.onload = function() {
             };
             return defaultArray
         })();
-
+        await (async () => {
+            for (let i of randomIndex){
+                await LocationSetting(returnCardArray[i],"DECK");
+                new Promise((resolve, reject) => {
+                    if (returnCardArray[i].face=="UP"){
+                        cardFlip(returnCardArray[i])
+                    };
+                    createjs.Tween.get(returnCardArray[i].imgContainer)
+                        .call(()=>{mainstage.setChildIndex(returnCardArray[i].imgContainer,mainstage.numChildren-1)})
+                        .to({x:game.displayOrder.deck[0][0],y:game.displayOrder.deck[0][1],rotation:0},500,createjs.Ease.quintOut)
+                        .call(()=>{resolve()});
+                }); 
+                await timeout(50);                
+            };
+        })();
         await timeout(500);
         await deckShuffle();
         await draw(5);
@@ -2778,6 +2870,7 @@ window.onload = function() {
                 })();
                 const boolarray = [
                 card.face=="UP",
+                card.canVanish,
                 timeCondition
                 ];
                 return boolarray.every(value => value==true)
