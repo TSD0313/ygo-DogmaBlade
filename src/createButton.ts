@@ -1,13 +1,4 @@
-    /**
-     * ボタン作成
-     * @param {String} text ボタンラベル
-     * @param {Number} width 
-     * @param {Number} height 
-     * @param {String} keyColor 
-     * @returns {createjs.Container} 参照先
-     */
-
-    export function createButton(text, width, height, keyColor) {
+export function createButton(text, width, height, keyColor) {
         // ボタン要素をグループ化
         var button = new createjs.Container();
         button.name = text; // ボタンに参考までに名称を入れておく(必須ではない)
@@ -19,7 +10,7 @@
                 .setStrokeStyle(1.0)
                 .beginStroke(keyColor)
                 .beginFill("white")
-                .drawRoundRect(0.5, 0.5, width - 1.0, height - 1.0, 4);
+                .drawRoundRect(0.5, 0.5, width - 1.0, height - 1.0, 20);
         button.addChild(bgUp);
         bgUp.visible = true; // 表示する
 
@@ -27,7 +18,7 @@
         var bgOver = new createjs.Shape();
         bgOver.graphics
                 .beginFill(keyColor)
-                .drawRoundRect(0, 0, width, height, 4);
+                .drawRoundRect(0, 0, width, height, 20);
         
         bgOver.visible = false; // 非表示にする
         button.addChild(bgOver);
