@@ -3814,14 +3814,14 @@ window.onload = function() {
     lineUp();
     console.log(game.DECK); 
 
-    const drawButton = createButton("draw", 150, 40, "#0275d8");
-    drawButton.x = 1300;
-    drawButton.y = 550;
-    mainstage.addChild(drawButton);
+    // const drawButton = createButton("draw", 150, 40, "#0275d8");
+    // drawButton.x = 1300;
+    // drawButton.y = 550;
+    // mainstage.addChild(drawButton);
 
-    drawButton.on("click", function(e){
-        draw(1);
-    }, null, false);
+    // drawButton.on("click", function(e){
+    //     draw(1);
+    // }, null, false);
 
     // const DeckViewButton = createButton("DECK View", 150, 40, "#0275d8");
     // DeckViewButton.x = 1200;
