@@ -2,6 +2,12 @@
 
 body { background-color:rgb(229, 228, 255); }
 
+#mainBoardContainer {
+    width:1500px;
+    height:1000px;
+    position: relative;
+}
+
 #selectMenuContainer {
     visibility:hidden;
     width:1500px;
@@ -15,9 +21,17 @@ body { background-color:rgb(229, 228, 255); }
     position: absolute;
     margin: auto auto;
 }
+
 p {
     word-wrap:break-word;
     font-size:large;
+}
+
+a {
+    word-wrap:break-word;
+    font-size:large;
+    top:44.5%;
+    left: 67.5%;
 }
 
 #statusContainer{
