@@ -966,20 +966,20 @@ window.onload = function() {
                 if(position=="ATK"){
                     if(card instanceof MonsterCard){
                         return createjs.Tween.get(card.imgContainer)
-                            .call(()=>{mainstage.setChildIndex(card.imgContainer,mainstage.numChildren-1)})
+                            .call(()=>{cardContainer.setChildIndex(card.imgContainer,cardContainer.numChildren-1)})
                             .to({x:toX,y:toY,scaleX:1.5,scaleY:1.5},400,createjs.Ease.cubicOut)
                             .to({scaleX:1,scaleY:1},400,createjs.Ease.cubicIn)
                             .wait(200)
                     }else{
                         return createjs.Tween.get(card.imgContainer)
-                            .call(()=>{mainstage.setChildIndex(card.imgContainer,mainstage.numChildren-1)})
+                            .call(()=>{cardContainer.setChildIndex(card.imgContainer,cardContainer.numChildren-1)})
                             .to({x:toX,y:toY},500,createjs.Ease.cubicOut)
                     };
                 };
                 if(position=="DEF"){
                     if(card instanceof MonsterCard){
                         return createjs.Tween.get(card.imgContainer)
-                            .call(()=>{mainstage.setChildIndex(card.imgContainer,mainstage.numChildren-1)}) 
+                            .call(()=>{cardContainer.setChildIndex(card.imgContainer,cardContainer.numChildren-1)}) 
                             .to({x:toX,y:toY,rotation:-90,scaleX:1.5,scaleY:1.5},400,createjs.Ease.cubicOut)
                             .to({scaleX:1,scaleY:1},400,createjs.Ease.cubicIn)
                     };
@@ -987,13 +987,13 @@ window.onload = function() {
                 if(position=="SET"){
                     if(card instanceof MonsterCard){
                         return createjs.Tween.get(card.imgContainer)
-                                .call(()=>{mainstage.setChildIndex(card.imgContainer,mainstage.numChildren-1)})
+                                .call(()=>{cardContainer.setChildIndex(card.imgContainer,cardContainer.numChildren-1)})
                                 .call(()=>{cardFlip(card)})
                                 .to({x:toX,y:toY,rotation:-90},500,createjs.Ease.cubicOut);
                     }
                     else{
                         return createjs.Tween.get(card.imgContainer)
-                                .call(()=>{mainstage.setChildIndex(card.imgContainer,mainstage.numChildren-1)})
+                                .call(()=>{cardContainer.setChildIndex(card.imgContainer,cardContainer.numChildren-1)})
                                 .call(()=>{cardFlip(card)})
                                 .to({x:toX,y:toY},500,createjs.Ease.cubicOut);
                     };
@@ -1011,20 +1011,20 @@ window.onload = function() {
                     cardFlip(card);
                 };
                 createjs.Tween.get(card.imgContainer)
-                    .call(()=>{mainstage.setChildIndex(card.imgContainer,mainstage.numChildren-1)})
+                    .call(()=>{cardContainer.setChildIndex(card.imgContainer,cardContainer.numChildren-1)})
                     .to({x:toX,y:toY,rotation:0},500,createjs.Ease.cubicOut)
                     .call(()=>{resolve()});
             }); 
         },
         fromGY:(card: Card)=>{
-            mainstage.setChildIndex(card.imgContainer,mainstage.numChildren-1);
+            cardContainer.setChildIndex(card.imgContainer,cardContainer.numChildren-1);
             const PromiseArray :Promise<unknown>[] = [];
             game.GY.map((card, index, array) => {
                 const twPromise = () => {
                     return new Promise((resolve, reject) => {
                     createjs.Tween.get(card.imgContainer)
                         .to({x:game.displayOrder.gy[0][0]+index*0.5,y:game.displayOrder.gy[0][1]-index*0.5})
-                        .call(()=>{mainstage.setChildIndex(card.imgContainer,mainstage.numChildren - array.length + index)})
+                        .call(()=>{cardContainer.setChildIndex(card.imgContainer,cardContainer.numChildren - array.length + index)})
                         .call(()=>{resolve()});                
                     });
                 };
@@ -1040,20 +1040,20 @@ window.onload = function() {
                         cardFlip(card);
                     };
                     createjs.Tween.get(card.imgContainer)
-                        .call(()=>{mainstage.setChildIndex(card.imgContainer,mainstage.numChildren-1)})
+                        .call(()=>{cardContainer.setChildIndex(card.imgContainer,cardContainer.numChildren-1)})
                         .to({x:toX,y:toY,rotation:0},500,createjs.Ease.cubicOut)
                         .call(()=>{resolve()});
                 }); 
         },
         fromDD:(card: Card)=>{
-            mainstage.setChildIndex(card.imgContainer,mainstage.numChildren-1);
+            cardContainer.setChildIndex(card.imgContainer,cardContainer.numChildren-1);
             const PromiseArray :Promise<unknown>[] = [];
             game.DD.map((card, index, array) => {
                 const twPromise = () => {
                     return new Promise((resolve, reject) => {
                     createjs.Tween.get(card.imgContainer)
                         .to({x:game.displayOrder.dd[0][0]+index*0.5,y:game.displayOrder.dd[0][1]-index*0.5})
-                        .call(()=>{mainstage.setChildIndex(card.imgContainer,mainstage.numChildren - array.length + index)})
+                        .call(()=>{cardContainer.setChildIndex(card.imgContainer,cardContainer.numChildren - array.length + index)})
                         .call(()=>{resolve()});                
                     });
                 };
@@ -1069,7 +1069,7 @@ window.onload = function() {
                     cardFlip(card);
                 };
                 createjs.Tween.get(card.imgContainer)
-                    .call(()=>{mainstage.setChildIndex(card.imgContainer,mainstage.numChildren-1)})
+                    .call(()=>{cardContainer.setChildIndex(card.imgContainer,cardContainer.numChildren-1)})
                     .to({x:toX,y:toY,rotation:0},500,createjs.Ease.cubicOut)
                     .call(()=>{resolve()});
             }); 
@@ -1289,7 +1289,7 @@ window.onload = function() {
                             game.GY.map((c, index, array) => {
                                 createjs.Tween.get(c.imgContainer)
                                 .to({x:game.displayOrder.gy[0][0]+index*0.5,y:game.displayOrder.gy[0][1]-index*0.5})
-                                .call(()=>{mainstage.setChildIndex(c.imgContainer,mainstage.numChildren - array.length + index)})             
+                                .call(()=>{cardContainer.setChildIndex(c.imgContainer,cardContainer.numChildren - array.length + index)})             
                             });
                         }else if(card.location=="DD"){
                             game.DD.splice(game.DD.lastIndexOf(card), 1);
@@ -1297,7 +1297,7 @@ window.onload = function() {
                             game.DD.map((c, index, array) => {
                                 createjs.Tween.get(c.imgContainer)
                                 .to({x:game.displayOrder.dd[0][0]+index*0.5,y:game.displayOrder.dd[0][1]-index*0.5})
-                                .call(()=>{mainstage.setChildIndex(c.imgContainer,mainstage.numChildren - array.length + index)})             
+                                .call(()=>{cardContainer.setChildIndex(c.imgContainer,cardContainer.numChildren - array.length + index)})             
                             });
                         };
                         const aimImg = genAimImg();
@@ -1842,12 +1842,12 @@ window.onload = function() {
                 };
 
                 if(["ST","MO","FIELD"].includes(card.location)){
-                    await moveCard.BOARD.toHAND(card);
                     game.nowTime.move.push({
                         card:card,
                         from:"BOARD",
                         to:"HAND"
                     });
+                    await moveCard.BOARD.toHAND(card);
                     await ContinuousEffect(game.nowTime);
                 };
             };
@@ -2038,7 +2038,7 @@ window.onload = function() {
                     .to({x:orgX+100-(200*(index%2))},100)
                     .to({x:orgX-100+(200*(index%2))},200)
                     .to({x:game.displayOrder.deck[0][0]+index*0.5,y:game.displayOrder.deck[0][1]-index*0.5},100)
-                    .call(()=>{mainstage.setChildIndex(card.imgContainer,mainstage.numChildren - array.length + index)})
+                    .call(()=>{cardContainer.setChildIndex(card.imgContainer,cardContainer.numChildren - array.length + index)})
                     .call(()=>{resolve()});                
                 });
             };
@@ -2436,7 +2436,7 @@ window.onload = function() {
                         cardFlip(returnCardArray[i])
                     };
                     createjs.Tween.get(returnCardArray[i].imgContainer)
-                        .call(()=>{mainstage.setChildIndex(returnCardArray[i].imgContainer,mainstage.numChildren-1)})
+                        .call(()=>{cardContainer.setChildIndex(returnCardArray[i].imgContainer,cardContainer.numChildren-1)})
                         .to({x:game.displayOrder.deck[0][0],y:game.displayOrder.deck[0][1],rotation:0},500,createjs.Ease.quintOut)
                         .call(()=>{resolve()});
                 }); 
@@ -2575,7 +2575,6 @@ window.onload = function() {
                     if(2<=game.DECK.length){
                         await draw(2);
                     };
-                    await draw(2);
                     game.timeArray.push({...game.nowTime});
                     resolve();
                 });
@@ -3349,10 +3348,9 @@ window.onload = function() {
             eff2.actionPossible = (time:Time) =>{
                 const timeCondition = (()=>{
                     const timeBoolArray :boolean[] = [];
-                    time.move.forEach(tMove=>{
+                    time.leaveBoard.forEach(tLeave=>{
                         timeBoolArray.push([
-                            tMove.card==card,
-                            tMove.from== "BOARD"
+                            tLeave.card==card
                             ].every(value => value));
                     });
                     return timeBoolArray.some(value => value);
@@ -3725,8 +3723,8 @@ window.onload = function() {
     const disprayCanv =<HTMLCanvasElement>document.getElementById("displayCanv") ;
     const disprayStage = new createjs.Stage(disprayCanv);
     disprayStage.enableMouseOver();
-    const tweetDOM = <HTMLElement>document.getElementById("twitter-share-button");
-    tweetDOM.style.visibility = "hidden";
+    // const tweetDOM = <HTMLElement>document.getElementById("twitter-share-button");
+    // tweetDOM.style.visibility = "hidden";
     setBoard(mainstage);
     const cardContainer = new createjs.Container;
     mainstage.addChild(cardContainer);
@@ -3816,14 +3814,14 @@ window.onload = function() {
     lineUp();
     console.log(game.DECK); 
 
-    const drawButton = createButton("draw", 150, 40, "#0275d8");
-    drawButton.x = 1300;
-    drawButton.y = 550;
-    mainstage.addChild(drawButton);
+    // const drawButton = createButton("draw", 150, 40, "#0275d8");
+    // drawButton.x = 1300;
+    // drawButton.y = 550;
+    // mainstage.addChild(drawButton);
 
-    drawButton.on("click", function(e){
-        draw(1);
-    }, null, false);
+    // drawButton.on("click", function(e){
+    //     draw(1);
+    // }, null, false);
 
     // const DeckViewButton = createButton("DECK View", 150, 40, "#0275d8");
     // DeckViewButton.x = 1200;
@@ -3841,13 +3839,13 @@ window.onload = function() {
     //     SelectOkButton.addEventListener("click",clickOkButton);
     // }, null, false);
 
-    const testButton = createButton("test", 150, 40, "#0275d8");
-    testButton.x = 1300;
-    testButton.y = 600;
-    mainstage.addChild(testButton);
-    testButton.on("click", function(e){
-        gameEnd();
-    }, null, false);
+    // const testButton = createButton("test", 150, 40, "#0275d8");
+    // testButton.x = 1300;
+    // testButton.y = 600;
+    // mainstage.addChild(testButton);
+    // testButton.on("click", function(e){
+    //     gameEnd();
+    // }, null, false);
 
     const startButton = createTextButton("DUEL START","80px serif", "midnightblue","yellow")
     mainstage.addChild(startButton);
@@ -4267,10 +4265,10 @@ window.onload = function() {
         messageText.y=0;
         const retryButton = createButton("RETRY", 150, 40, "#0275d8");
         retryButton.x = -170
-        retryButton.y = cardImgSize.y-50;
+        retryButton.y = cardImgSize.y-70;
         const tweetButton = createButton("Tweet", 150, 40, "#0275d8");
         tweetButton.x = 20
-        tweetButton.y = cardImgSize.y-50;
+        tweetButton.y = cardImgSize.y-70;
         mainstage.enableMouseOver();
 
         retryButton.addEventListener("click",clickRetryButton);
@@ -4299,8 +4297,8 @@ window.onload = function() {
         })
         .wait(1100)
         .call(()=>{
-            tweetDOM.style.visibility = "visible";
-            [retryButton].forEach(button=>{
+            // tweetDOM.style.visibility = "visible";
+            [retryButton,tweetButton].forEach(button=>{
                 createjs.Tween.get(button)
                     .to({alpha:1},100)
             });
