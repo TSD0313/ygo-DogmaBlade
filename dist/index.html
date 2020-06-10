@@ -7,19 +7,17 @@
     <link rel="stylesheet" href="style.css" type="text/css">
     <script src="main.js"></script>
     <script src="https://code.createjs.com/1.0.0/createjs.min.js"></script>
+    <!-- <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script> -->
   </head>
   <body>
 
     <div id="marginContainer" style="margin: 0 auto;max-width: 95%;transform: scale(0.8, 0.8);">
       
       <div id="statusContainer">
-
         <div id="canvas_wrapper">
           <canvas id="statuscanv" width="280px" height="400px" ></canvas>
         </div>
-
         <div id="status_textbox">
-
           <div id="cardNameBox">
             <p id="cardNameText">name</p>
           </div>
@@ -32,39 +30,40 @@
 
         </div>
       </div>
-      
-      <canvas id="canv" 
-      style="background-color:rgb(221, 250, 226);
-              position: absolute;"
-      width="1500px" height="1000px">
-      </canvas>
 
-      <div id="selectMenuContainer">
-        
-        <canvas id="selectMenuBack" 
-          style="position: absolute; 
-                  z-index: 0;"
-          width="1500px" height="1000px" >
+      <div id="mainBoardContainer">
+        <canvas id="canv" 
+        style="background-color:rgb(221, 250, 226);
+                position: absolute;"
+        width="1500px" height="1000px">
         </canvas>
 
-        <div id="scrollAreaContainer">
-          <div id="content">
+        <a href="https://www.google.com/" id="twitter-share-button" class="twitter-share-button" 
+        style="position: absolute;" data-show-count="false">Tweet</a>
 
-            <div id="selectMessageBox">
-              <p id="selectMessageText">select</p>
-            </div>
+        <div id="selectMenuContainer">
+          <canvas id="selectMenuBack" 
+            style="position: absolute; 
+                    z-index: 0;"
+            width="1500px" height="1000px" >
+          </canvas>
 
-            <div id="scrollArea">
-              <canvas id="displayCanv"
-                style="height: 100%;">
+          <div id="scrollAreaContainer">
+            <div id="content">
+              <div id="selectMessageBox">
+                <p id="selectMessageText">select</p>
+              </div>
+              <div id="scrollArea">
+                <canvas id="displayCanv"
+                  style="height: 100%;">
+                </canvas>
+              </div>
+              <canvas id="selectButtonCanv" >
               </canvas>
             </div>
-
-            <canvas id="selectButtonCanv" >
-            </canvas>
-            
           </div>
         </div>
+
       </div>
 
     </div>
