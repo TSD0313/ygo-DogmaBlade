@@ -2690,7 +2690,7 @@ window.onload = function() {
                     if(conditionA() && conditionB()){
                         eff.mode = await OpenSelectEffectWindow(card,`このカードと他のモンスター1体を
 除外し2枚ドローする`,`このカードと手札1枚を除外し
-墓地の魔法をデッキトップに置く`);
+墓地のカードをデッキトップに置く`);
                     }else if(conditionA()){
                         eff.mode = true;
                     }else{
@@ -3814,14 +3814,14 @@ window.onload = function() {
     lineUp();
     console.log(game.DECK); 
 
-    // const drawButton = createButton("draw", 150, 40, "#0275d8");
-    // drawButton.x = 1300;
-    // drawButton.y = 550;
-    // mainstage.addChild(drawButton);
+    const drawButton = createButton("draw", 150, 40, "#0275d8");
+    drawButton.x = 1300;
+    drawButton.y = 550;
+    mainstage.addChild(drawButton);
 
-    // drawButton.on("click", function(e){
-    //     draw(1);
-    // }, null, false);
+    drawButton.on("click", function(e){
+        draw(1);
+    }, null, false);
 
     // const DeckViewButton = createButton("DECK View", 150, 40, "#0275d8");
     // DeckViewButton.x = 1200;
