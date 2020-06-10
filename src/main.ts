@@ -3859,8 +3859,8 @@ window.onload = function() {
     };
 
     const endButton = createButton("TURN END", 150, 80, "#0275d8");
-    endButton.x = 1300;
-    endButton.y = 650;
+    endButton.x = 500;
+    endButton.y = 800;
     endButton.alpha = 0;
     cardContainer.addChild(endButton);
     endButton.on("click", function async(e){
@@ -3868,8 +3868,8 @@ window.onload = function() {
     }, null, false);
 
     const resetButton = createButton("RESET", 150, 80, "#0275d8");
-    resetButton.x = 1300;
-    resetButton.y = 750;
+    resetButton.x = 700;
+    resetButton.y = 800;
     resetButton.alpha = 0;
     cardContainer.addChild(resetButton);
     resetButton.on("click", function async(e){
