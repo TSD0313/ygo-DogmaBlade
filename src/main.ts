@@ -1,5 +1,6 @@
 import { Text, Shape, Stage, Bitmap, Container, Tween, Timeline} from 'createjs-module';
 import { createButton }  from './createButton';
+import { createTextButton }  from './createTextButton';
 import * as status from './CardStatus.json';
 const DEFAULT_LIFE = 8000;
 const cardImgSize = {x:123,y:180,margin:10} 
@@ -37,6 +38,7 @@ class Game{
     chain : effect[];
     nowTime : Time;
     timeArray : Time[];
+    firstHand : string[];
     constructor(){
         this.defaultDeck = [];
         this.FIELD = [undefined];
@@ -352,14 +354,14 @@ window.onload = function() {
     /**
      * 指定のstageに指定のcardを指定座標で描画する
      * 
-     * @param stage ステージ
+     * @param container ステージ
      * @param card 
      * @param x 座標
      * @param y 座標
      */
-    function puton(stage:Stage, card: Card,x: number, y: number){
+    function puton(container:Container, card: Card,x: number, y: number){
         card.imgContainer = new createjs.Container();
-        stage.addChild(card.imgContainer);
+        container.addChild(card.imgContainer);
         card.imgContainer.cursor = "pointer";
 
         card.frontImg = new createjs.Bitmap(card.imageFileName);
@@ -471,7 +473,7 @@ window.onload = function() {
      * 誘発、クイックエフェクトをチェック
      */
     const TriggerQuickeEffect = async() =>{
-        mainCanv.style.pointerEvents = "none";
+        cardContainer.mouseEnabled = false;;
 
         const canActiveEffects =(EffArray:effect[],time:Time[])=>{
             return EffArray.filter(eff => 
@@ -626,7 +628,7 @@ window.onload = function() {
 
         }while(game.timeArray.length != 0);
 
-        mainCanv.style.pointerEvents = "auto";
+        cardContainer.mouseEnabled = true;;
     };
 
     /**
@@ -1317,7 +1319,7 @@ window.onload = function() {
      * 手札の魔法発動
      */
     const handSpellActivate = async(card: SpellCard) => {
-        mainCanv.style.pointerEvents = "none"
+        cardContainer.mouseEnabled = false;
         const Effect = card.effect.find(Eff => Eff.effType == "CardActived")
         const ActivedEffect = {...Effect,targetCard:[],costCard:[]}
         game.nowTime = new Time;
@@ -1327,7 +1329,7 @@ window.onload = function() {
         game.timeArray.push({...game.nowTime});
         game.chain.push(ActivedEffect);
         await TriggerQuickeEffect();
-        mainCanv.style.pointerEvents = "auto"
+        cardContainer.mouseEnabled = true;
         return
     };
 
@@ -1335,7 +1337,7 @@ window.onload = function() {
      * 墓地の起動効果発動
      */
     const GyEffActivate = async() => {
-        mainCanv.style.pointerEvents = "none";
+        cardContainer.mouseEnabled = false;;
         const AllGyIgnition = (()=>{
             const tmpArray :effect[] = [];
             game.GY.map((card,index,array)=>{
@@ -1360,7 +1362,7 @@ window.onload = function() {
             game.chain.push(ActivedEffect);
             await TriggerQuickeEffect();
         };
-        mainCanv.style.pointerEvents = "auto"
+        cardContainer.mouseEnabled = true;
         return
     };
 
@@ -1368,7 +1370,7 @@ window.onload = function() {
      * 場の起動効果発動
      */
     const BoardIgnitionActivate = async(card:Card) => {
-        mainCanv.style.pointerEvents = "none"
+        cardContainer.mouseEnabled = false;
         const Effect = card.effect.find(Eff => Eff.effType == "Ignition")
         const ActivedEffect = {...Effect,targetCard:[],costCard:[]}
         game.nowTime = new Time;
@@ -1381,7 +1383,7 @@ window.onload = function() {
         game.timeArray.push({...game.nowTime});
         game.chain.push(ActivedEffect);
         await TriggerQuickeEffect();
-        mainCanv.style.pointerEvents = "auto"
+        cardContainer.mouseEnabled = true;
         return
     };
 
@@ -1389,7 +1391,7 @@ window.onload = function() {
      * 場の魔法発動
      */
     const fieldSpellActivate =  async(card: SpellCard) => {
-        mainCanv.style.pointerEvents = "none"
+        cardContainer.mouseEnabled = false;
         const Effect = card.effect.find(Eff => Eff.effType == "CardActived")
         const ActivedEffect = {...Effect,targetCard:[],costCard:[]}
         game.nowTime = new Time;
@@ -1406,7 +1408,7 @@ window.onload = function() {
         game.timeArray.push({...game.nowTime});
         game.chain.push(ActivedEffect);
         await TriggerQuickeEffect();
-        mainCanv.style.pointerEvents = "auto"
+        cardContainer.mouseEnabled = true;
         return
     };
 
@@ -1415,9 +1417,11 @@ window.onload = function() {
      */
     const SpellTrapSet = {
         fromHAND:async(card: SpellCard|TrapCard) => {
+            cardContainer.mouseEnabled = false;
             await moveCard.HAND.toBOARD(card,"SET");
             // game.timeArray.push({...game.nowTime});
             await TriggerQuickeEffect();
+            cardContainer.mouseEnabled = true;
         },
     };
 
@@ -1588,7 +1592,7 @@ window.onload = function() {
      * 通常召喚する
      */
     const normalSummon = async(card: MonsterCard, position: "ATK"|"SET") => {
-        mainCanv.style.pointerEvents = "none"
+        cardContainer.mouseEnabled = false;
         const numberToRelease :number = (()=>{
             if(5<=card.level && card.level<=6){
                 return 1;
@@ -1651,7 +1655,7 @@ window.onload = function() {
 
         await ContinuousEffect(game.nowTime);
         await TriggerQuickeEffect()
-        mainCanv.style.pointerEvents = "auto"
+        cardContainer.mouseEnabled = true;
         game.timeArray.map(time=>console.log(time))
     };
     
@@ -1727,50 +1731,6 @@ window.onload = function() {
         createjs.Tween.get(game)
             .to({enemyLifePoint:game.enemyLifePoint-point},1000,createjs.Ease.cubicOut);
         return
-    };
-
-    const disprayMessageWindow = async(message :string)=>{
-        const messageWindowContainer = new createjs.Container();
-        const messageWindowtext = new createjs.Text(message, "30px serif","black");
-        messageWindowtext.textBaseline = "middle";
-        messageWindowtext.textAlign = "center";
-        const messageBack = new createjs.Shape();
-        messageBack.graphics.beginFill("white"); 
-        messageBack.graphics.drawRect(0, 0, messageWindowtext.getMeasuredWidth()+50, cardImgSize.y);
-        messageBack.alpha = 0.5;
-        messageBack.regX = (messageWindowtext.getMeasuredWidth()+50)/2;;
-        messageBack.regY = cardImgSize.y/2;
-        mainstage.addChild(messageWindowContainer);
-        messageWindowContainer.addChild(messageBack,messageWindowtext);
-        messageWindowContainer.setTransform(game.grid.front[3][0],(game.grid.front[0][1]+game.grid.back[0][1])/2);
-        messageWindowContainer.regX = 0;
-        messageWindowContainer.regY = messageWindowContainer.getBounds().height/2;
-        messageWindowContainer.scaleX = 0;
-        messageWindowContainer.scaleY = 0;
-
-        messageWindowtext.alpha = 0;
-        mainstage.setChildIndex(messageWindowContainer,mainstage.numChildren-1);
-
-        await new Promise((resolve, reject) => {
-            createjs.Tween.get(messageWindowContainer)
-            .to({scaleX:0.02,scaleY:0.02})
-            .to({scaleX:1},250,createjs.Ease.cubicIn)
-            .to({scaleY:1},250,createjs.Ease.cubicIn)
-            .call(()=>{
-                createjs.Tween.get(messageWindowtext)
-                .to({alpha:1},100)
-            })
-            .wait(1100)
-            .call(()=>{
-                createjs.Tween.get(messageWindowtext)
-                .to({alpha:0},100)
-            })
-            .to({scaleY:0.02},250,createjs.Ease.cubicIn)
-            .to({scaleX:0},250,createjs.Ease.cubicIn)
-            .call(()=>{resolve()});
-        });
-        mainstage.removeChild(messageWindowContainer);
-        return;
     };
 
     /**
@@ -2153,7 +2113,7 @@ window.onload = function() {
                         cardFlip(game.defaultDeck[i])
                     };
                     createjs.Tween.get(game.defaultDeck[i].imgContainer)
-                        .call(()=>{mainstage.setChildIndex(game.defaultDeck[i].imgContainer,mainstage.numChildren-1)})
+                        .call(()=>{cardContainer.setChildIndex(game.defaultDeck[i].imgContainer,cardContainer.numChildren-1)})
                         .to({x:game.displayOrder.deck[0][0],y:game.displayOrder.deck[0][1],rotation:0},500,createjs.Ease.quintOut)
                         .call(()=>{resolve()});
                 }); 
@@ -2166,13 +2126,13 @@ window.onload = function() {
         const reference = {x:85+cardImgSize.x/2,y:25+cardImgSize.y/2};
         game.defaultDeck.forEach((card,i,a)=>{
             if(i<=9){
-                puton(mainstage,card,reference.x+((cardImgSize.x*0.75)*i),reference.y)
+                puton(cardContainer,card,reference.x+((cardImgSize.x*0.75)*i),reference.y)
             }else if(10<=i && i<=19){
-                puton(mainstage,card,reference.x+((cardImgSize.x*0.75)*(i-10)),reference.y+(cardImgSize.y+10)*1)
+                puton(cardContainer,card,reference.x+((cardImgSize.x*0.75)*(i-10)),reference.y+(cardImgSize.y+10)*1)
             }else if(20<=i && i<=29){
-                puton(mainstage,card,reference.x+((cardImgSize.x*0.75)*(i-20)),reference.y+(cardImgSize.y+10)*2)
+                puton(cardContainer,card,reference.x+((cardImgSize.x*0.75)*(i-20)),reference.y+(cardImgSize.y+10)*2)
             }else if(30<=i){
-                puton(mainstage,card,reference.x+((cardImgSize.x*0.75)*(i-30)),reference.y+(cardImgSize.y+10)*3)
+                puton(cardContainer,card,reference.x+((cardImgSize.x*0.75)*(i-30)),reference.y+(cardImgSize.y+10)*3)
             };
             card.frontImg.scaleX = 1;
             card.cardBackImg.scaleX = 0;
@@ -2219,18 +2179,6 @@ window.onload = function() {
         // デッキ残り枚数が０だったら引けない
         if(game.DECK.length < count) {
             console.log("deck0");
-            return new Promise<void>(async(resolve, reject) => {
-                await (async () => {
-                    for (let i = 0; i < game.DECK.length ; i++){
-                        const targetCard = game.DECK[game.DECK.length -1];
-                        await moveCard.DECK.toHAND(targetCard);
-                        console.log("draw");
-                    };
-                })();
-                const loseText = genCenterText("YOU LOSE").setTransform(game.centerGrid.x,game.centerGrid.y);
-                loseText.shadow = new createjs.Shadow("#ffffff", 0, 0, 10);
-                mainstage.addChild(loseText);
-            });
         };
         return new Promise<void>(async(resolve, reject) => {
             await (async () => {
@@ -2406,23 +2354,25 @@ window.onload = function() {
     };
 
     const gameStart = async()=>{
-        mainCanv.style.pointerEvents = "none";
+        cardContainer.mouseEnabled = false;;
         await decksetAnimation();
         await timeout(500);
         await deckShuffle();
         await draw(5);
-        myLP.alpha = 1;
-        EnemyLP.alpha = 1;
-        numOfcardsContainer.alpha = 1;
+        [myLP,EnemyLP,numOfcardsContainer,resetButton,endButton].forEach(obj=>{
+            createjs.Tween.get(obj)
+                .to({alpha:1},250);
+        });
         await shadPhase("DRAW PHASE")
         await draw(1);
+        game.firstHand = [...game.HAND].map(c=>c.cardName);
         await shadPhase("STANBY PHASE");
         await shadPhase("MAIN PHASE");
-        mainCanv.style.pointerEvents = "auto";
+        cardContainer.mouseEnabled = true;;
     };
 
     const gameEnd = async()=>{
-        mainCanv.style.pointerEvents = "none";
+        cardContainer.mouseEnabled = false;;
         const dogmaArray = genCardArray({ID:["17132130"],location:["MO"],face:["UP"]});
         const magiexArray = genCardArray({ID:["32723153"],location:["ST"],face:["DOWN"]});
         await shadPhase("TURN END")
@@ -2448,7 +2398,7 @@ window.onload = function() {
                 await disprayMessageWindow("手札が0枚でない為、MagicalExplosionを発動できません。")
             };
         };
-        await timeout(1000);
+        await timeout(500);
         const winLose = (()=>{
            if(game.enemyLifePoint<=0){
                 return genCenterText("YOU WIN!");
@@ -2456,14 +2406,15 @@ window.onload = function() {
                 return genCenterText("YOU LOSE");
             }; 
         })()
-        winLose.shadow = new createjs.Shadow("#ffffff", 0, 0, 10);
+        winLose.shadow = new createjs.Shadow("#000000", 0, 0, 10);
         winLose.x = game.centerGrid.x;
         winLose.y = game.centerGrid.y;
-        mainstage.addChild(winLose);
+        winLose.font = "100px serif";
+        disprayResultWindow(winLose);
     };
 
     const retry = async()=>{
-        mainCanv.style.pointerEvents = "none";
+        cardContainer.mouseEnabled = false;;
         game.countNS = 0;
         game.normalSummon = true;
         game.myLifePoint = DEFAULT_LIFE;
@@ -2497,9 +2448,10 @@ window.onload = function() {
         await draw(5);
         await shadPhase("DRAW PHASE")
         await draw(1);
+        game.firstHand = [...game.HAND].map(c=>c.cardName);
         await shadPhase("STANBY PHASE");
         await shadPhase("MAIN PHASE");
-        mainCanv.style.pointerEvents = "auto";
+        cardContainer.mouseEnabled = true;;
     };
     
     /**
@@ -2620,6 +2572,9 @@ window.onload = function() {
             eff1.whenResolve = (eff :effect) => {
                 return new Promise<void>(async(resolve, reject) => {
                     game.nowTime = new Time;
+                    if(2<=game.DECK.length){
+                        await draw(2);
+                    };
                     await draw(2);
                     game.timeArray.push({...game.nowTime});
                     resolve();
@@ -2745,7 +2700,7 @@ window.onload = function() {
 
                     if(eff.mode){
                         const cardlist = genCardArray({location:["MO"]}).filter(c=> c!=card);
-                        openCardListWindow.select(cardlist,1,1,eff);
+                        openCardListWindow.select(cardlist,1,1,eff,"除外するモンスターを1枚選択してください");
                         const clickOkButton = async (e) => {
                             divSelectMenuContainer.style.visibility = "hidden";
                             disprayStage.removeAllChildren();
@@ -2833,7 +2788,7 @@ window.onload = function() {
             eff1.whenActive = (eff :effect) => {
                 return new Promise((resolve, reject) => {
                     const cardlist = game.GY.filter(card=>card instanceof SpellCard);
-                    openCardListWindow.select(cardlist,1,1,eff);
+                    openCardListWindow.select(cardlist,1,1,eff,"手札に加える魔法を1枚選択してください");
                     const clickOkButton = async (e) => {
                         divSelectMenuContainer.style.visibility = "hidden";
                         disprayStage.removeAllChildren();
@@ -2943,7 +2898,7 @@ window.onload = function() {
             eff1.whenActive = (eff :effect) => {
                 return new Promise((resolve, reject) => {
                     const cardlist = genCardArray({category:["D-HERO"],location:["HAND"]});
-                    openCardListWindow.select(cardlist,1,1,eff);
+                    openCardListWindow.select(cardlist,1,1,eff,"捨てるD-HEROを1枚選択してください");
                     const clickOkButton = async (e) => {
                         console.log("cost " + eff.targetCard.map(({ cardName }) => cardName))
                         divSelectMenuContainer.style.visibility = "hidden";
@@ -2980,7 +2935,7 @@ window.onload = function() {
             eff1.whenActive = (eff :effect) => {
                 return new Promise((resolve, reject) => {
                     const cardlist = game.GY.filter(card=>card instanceof MonsterCard && card.canNS);
-                    openCardListWindow.select(cardlist,1,1,eff);
+                    openCardListWindow.select(cardlist,1,1,eff,"特殊召喚するモンスターを1枚選択してください");
                     const clickOkButton = async (e) => {
                         divSelectMenuContainer.style.visibility = "hidden";
                         disprayStage.removeAllChildren();
@@ -3020,7 +2975,7 @@ window.onload = function() {
                 return new Promise(async(resolve, reject) => {
                     const cardlist = game.GY.filter(card=>card instanceof MonsterCard && card.canNS)
                     await payLife(eff.lifeCost);
-                    openCardListWindow.select(cardlist,1,1,eff);
+                    openCardListWindow.select(cardlist,1,1,eff,"特殊召喚するモンスターを1枚選択してください");
                     const clickOkButton = async (e) => {
                         divSelectMenuContainer.style.visibility = "hidden";
                         disprayStage.removeAllChildren();
@@ -3085,7 +3040,7 @@ window.onload = function() {
             eff1.whenActive = (eff :effect) => {
                 return new Promise((resolve, reject) => {
                     const cardlist = genCardArray({location:["MO"]});
-                    openCardListWindow.select(cardlist,1,1,eff);
+                    openCardListWindow.select(cardlist,1,1,eff,"リリースするモンスターを1枚選択してください");
                     const clickOkButton = async (e) => {
                         console.log("cost " + eff.targetCard.map(({ cardName }) => cardName))
                         divSelectMenuContainer.style.visibility = "hidden";
@@ -3144,7 +3099,7 @@ window.onload = function() {
             eff1.whenActive = (eff :effect) => {
                 return new Promise((resolve, reject) => {
                     const cardlist = genCardArray({face:["UP"],location:["MO"],race:["WARRIOR"]});
-                    openCardListWindow.select(cardlist,1,1,eff);
+                    openCardListWindow.select(cardlist,1,1,eff,"装備対象を選択してください");
                     const clickOkButton = async (e) => {
                         divSelectMenuContainer.style.visibility = "hidden";
                         disprayStage.removeAllChildren();
@@ -3183,7 +3138,7 @@ window.onload = function() {
             eff2.whenActive = (eff :effect) => {
                 return new Promise((resolve, reject) => {
                     const cardlist = genCardArray({race:["WARRIOR"],location:["GY"]});
-                    openCardListWindow.select(cardlist,2,2,eff);
+                    openCardListWindow.select(cardlist,2,2,eff,"除外する戦士族を2枚選択してください");
                     const clickOkButton = async (e) => {
                         console.log("cost " + eff.targetCard.map(({ cardName }) => cardName))
                         divSelectMenuContainer.style.visibility = "hidden";
@@ -3243,7 +3198,7 @@ window.onload = function() {
                     if(canNSmonster.length>0 && blankMonsterZone>0){
                         if(canNSmonster.length > blankMonsterZone ){
                             await new Promise((resolve, reject) => {
-                                openCardListWindow.select(canNSmonster,blankMonsterZone,blankMonsterZone,eff);
+                                openCardListWindow.select(canNSmonster,blankMonsterZone,blankMonsterZone,eff,"特殊召喚するモンスターを選択してください");
                                 const clickOkButton = async (e) => {
                                     divSelectMenuContainer.style.visibility = "hidden";
                                     disprayStage.removeAllChildren();
@@ -3354,7 +3309,7 @@ window.onload = function() {
                 return new Promise(async(resolve, reject) => {
                     const cardlist = game.DD.filter(card=>card instanceof MonsterCard && card.canNS)
                     await new Promise((resolve, reject) => {
-                        openCardListWindow.select(game.HAND,1,1,eff);
+                        openCardListWindow.select(game.HAND,1,1,eff,"捨てる手札を1枚選択してください");
                         const clickOkButton = async (e) => {
                             console.log("cost " + eff.targetCard.map(({ cardName }) => cardName))
                             divSelectMenuContainer.style.visibility = "hidden";
@@ -3366,7 +3321,7 @@ window.onload = function() {
                         SelectOkButton.addEventListener("click",clickOkButton);
                     });
 
-                    openCardListWindow.select(cardlist,1,1,eff);
+                    openCardListWindow.select(cardlist,1,1,eff,"特殊召喚するモンスターを1枚選択してください");
                     const clickOkButton = async (e) => {
                         divSelectMenuContainer.style.visibility = "hidden";
                         disprayStage.removeAllChildren();
@@ -3435,7 +3390,7 @@ window.onload = function() {
                 return new Promise((resolve, reject) => {
                     // const cardlist = genCardArray({level:[8],location:["HAND"]});
                     const cardlist = game.HAND.filter(c=>c instanceof MonsterCard && c.level==8);
-                    openCardListWindow.select(cardlist,1,1,eff);
+                    openCardListWindow.select(cardlist,1,1,eff,"捨てるカードを1枚選択してください");
                     const clickOkButton = async (e) => {
                         console.log("cost " + eff.targetCard.map(({ cardName }) => cardName))
                         divSelectMenuContainer.style.visibility = "hidden";
@@ -3472,7 +3427,7 @@ window.onload = function() {
             eff1.whenActive = (eff :effect) => {
                 return new Promise(async(resolve, reject) => {
                     await new Promise((resolve, reject) => {
-                        openCardListWindow.select(game.HAND,2,2,eff);
+                        openCardListWindow.select(game.HAND,2,2,eff,"捨てるカードを2枚選択してください");
                         const clickOkButton = async (e) => {
                             console.log("cost " + eff.targetCard.map(({ cardName }) => cardName))
                             divSelectMenuContainer.style.visibility = "hidden";
@@ -3484,7 +3439,7 @@ window.onload = function() {
                         SelectOkButton.addEventListener("click",clickOkButton);
                     });
                     const cardlist = game.GY.filter(card=>card instanceof SpellCard);
-                    openCardListWindow.select(cardlist,1,1,eff);
+                    openCardListWindow.select(cardlist,1,1,eff,"手札に加える魔法を1枚選択してください");
                     const clickOkButton = async (e) => {
                         divSelectMenuContainer.style.visibility = "hidden";
                         disprayStage.removeAllChildren();
@@ -3752,13 +3707,10 @@ window.onload = function() {
     const statusCardNameText = <HTMLElement>document.getElementById("cardNameText");
     const statusCardTypeText = <HTMLElement>document.getElementById("cardTypeText");
     const statusCardEffText = <HTMLElement>document.getElementById("cardEffText");
-
     const divSelectMenuContainer =<HTMLElement>document.getElementById("selectMenuContainer") ;
-
     const windowBackCanv =<HTMLCanvasElement>document.getElementById("selectMenuBack") ;
     const windowBackStage = new createjs.Stage(windowBackCanv);
     windowBackStage.enableMouseOver();  
-
     const selectButtonCanv =<HTMLCanvasElement>document.getElementById("selectButtonCanv") ;
     selectButtonCanv.style.width = String(windowSize.w)+"px";
     selectButtonCanv.width = windowSize.w;
@@ -3766,18 +3718,18 @@ window.onload = function() {
     selectButtonCanv.height = 60
     const selectButtonStage = new createjs.Stage(selectButtonCanv);
     selectButtonStage.enableMouseOver();
-
     const messageText = <HTMLElement>document.getElementById("selectMessageText")
-
     const scrollAreaContainer =<HTMLElement>document.getElementById("scrollAreaContainer") ;
     scrollAreaContainer.style.width = String(windowSize.w)+"px";
     scrollAreaContainer.style.height = String(windowSize.h)+"px";
-
     const disprayCanv =<HTMLCanvasElement>document.getElementById("displayCanv") ;
     const disprayStage = new createjs.Stage(disprayCanv);
     disprayStage.enableMouseOver();
-
+    const tweetDOM = <HTMLElement>document.getElementById("twitter-share-button");
+    tweetDOM.style.visibility = "hidden";
     setBoard(mainstage);
+    const cardContainer = new createjs.Container;
+    mainstage.addChild(cardContainer);
 
     const myLP = new createjs.Text(game.myLifePoint.toString(), "80px serif", "#4169e1");
     myLP.shadow = new createjs.Shadow("#58D3F7",0,0,20);
@@ -3873,15 +3825,6 @@ window.onload = function() {
         draw(1);
     }, null, false);
 
-    // const shuffleButton = createButton("shuffle", 150, 40, "#0275d8");
-    // shuffleButton.x = 1200;
-    // shuffleButton.y = 600;
-    // mainstage.addChild(shuffleButton);
-
-    // shuffleButton.on("click", function(e){
-    //     deckShuffle();
-    // }, null, false);
-
     // const DeckViewButton = createButton("DECK View", 150, 40, "#0275d8");
     // DeckViewButton.x = 1200;
     // DeckViewButton.y = 650;
@@ -3898,45 +3841,40 @@ window.onload = function() {
     //     SelectOkButton.addEventListener("click",clickOkButton);
     // }, null, false);
 
-    const startButton = new createjs.Container();
-    const startText = genCenterText("DUEL START");
-    startText.x = startText.getMeasuredWidth()/2;
-    startText.y = startText.getMeasuredHeight()/2;
-    const bg = new createjs.Shape();
-    bg.graphics.beginFill("white").drawRoundRect(0,0,startText.getMeasuredWidth(),startText.getMeasuredHeight(),10);
-    bg.alpha = 0.01;
-    startButton.addChild(bg);
-    startButton.addChild(startText);
+    const testButton = createButton("test", 150, 40, "#0275d8");
+    testButton.x = 1300;
+    testButton.y = 600;
+    mainstage.addChild(testButton);
+    testButton.on("click", function(e){
+        gameEnd();
+    }, null, false);
+
+    const startButton = createTextButton("DUEL START","80px serif", "midnightblue","yellow")
     mainstage.addChild(startButton);
-    startButton.setTransform(550,850,1,1,0,0,0,startText.getMeasuredWidth()/2,startText.getMeasuredHeight()/2)
-    startButton.cursor = "pointer";
-    startButton.addEventListener("mouseover", handleMouseOverStart);
-    startButton.addEventListener("mouseout", handleMouseOutStart);
+    startButton.x = 550;
+    startButton.y = 850;
+
     startButton.addEventListener("click", handleClickStart);
-    function handleMouseOverStart(event) {
-        startText.shadow = new createjs.Shadow("#ffff00", 0, 0, 20);
-    };
-    function handleMouseOutStart(event) {
-        startText.shadow = null;
-    };
     function handleClickStart(event) {
         gameStart();
-        createjs.Tween.get(startButton).to({alpha:0},200);
+        createjs.Tween.get(startButton).to({alpha:0},250);
     };
 
     const endButton = createButton("TURN END", 150, 80, "#0275d8");
     endButton.x = 1300;
     endButton.y = 650;
-    mainstage.addChild(endButton);
+    endButton.alpha = 0;
+    cardContainer.addChild(endButton);
     endButton.on("click", function async(e){
         gameEnd();
     }, null, false);
 
-    const retryButton = createButton("RETRY", 150, 80, "#0275d8");
-    retryButton.x = 1300;
-    retryButton.y = 750;
-    mainstage.addChild(retryButton);
-    retryButton.on("click", function async(e){
+    const resetButton = createButton("RESET", 150, 80, "#0275d8");
+    resetButton.x = 1300;
+    resetButton.y = 750;
+    resetButton.alpha = 0;
+    cardContainer.addChild(resetButton);
+    resetButton.on("click", function async(e){
         retry();
     }, null, false);
 
@@ -4317,5 +4255,102 @@ window.onload = function() {
             };
         });
     };
+    const disprayResultWindow = async(messageText :Text)=>{
+        const resultWindowContainer = new createjs.Container();
+        const messageBack = new createjs.Shape();
+        messageBack.graphics.beginFill("gray"); 
+        messageBack.graphics.drawRect(0, 0, messageText.getMeasuredWidth()+500, cardImgSize.y*2);
+        messageBack.alpha = 0.5;
+        messageBack.regX = (messageText.getMeasuredWidth()+500)/2;;
+        messageBack.regY = cardImgSize.y;
+        messageText.x=0;
+        messageText.y=0;
+        const retryButton = createButton("RETRY", 150, 40, "#0275d8");
+        retryButton.x = -170
+        retryButton.y = cardImgSize.y-50;
+        const tweetButton = createButton("Tweet", 150, 40, "#0275d8");
+        tweetButton.x = 20
+        tweetButton.y = cardImgSize.y-50;
+        mainstage.enableMouseOver();
+
+        retryButton.addEventListener("click",clickRetryButton);
+        function clickRetryButton(event) {
+            location.reload();
+        };
+
+        mainstage.addChild(resultWindowContainer);
+        resultWindowContainer.addChild(messageBack,messageText,retryButton,tweetButton);
+        resultWindowContainer.setTransform(game.centerGrid.x,game.centerGrid.y);
+        resultWindowContainer.regX = 0;
+        resultWindowContainer.regY = 0;
+        resultWindowContainer.scaleX = 0;
+        resultWindowContainer.scaleY = 0;
+        messageText.alpha = 0;
+        retryButton.alpha = 0;
+        tweetButton.alpha = 0;
+        
+        createjs.Tween.get(resultWindowContainer)
+        .to({scaleX:0.02,scaleY:0.02})
+        .to({scaleX:1},250,createjs.Ease.cubicIn)
+        .to({scaleY:1},250,createjs.Ease.cubicIn)
+        .call(()=>{
+            createjs.Tween.get(messageText)
+            .to({alpha:1},100)
+        })
+        .wait(1100)
+        .call(()=>{
+            tweetDOM.style.visibility = "visible";
+            [retryButton].forEach(button=>{
+                createjs.Tween.get(button)
+                    .to({alpha:1},100)
+            });
+        });
+        return;
+    };
+
+    const disprayMessageWindow = async(message :string)=>{
+        const messageWindowContainer = new createjs.Container();
+        const messageWindowtext = new createjs.Text(message, "30px serif","black");
+        messageWindowtext.textBaseline = "middle";
+        messageWindowtext.textAlign = "center";
+        const messageBack = new createjs.Shape();
+        messageBack.graphics.beginFill("white"); 
+        messageBack.graphics.drawRect(0, 0, messageWindowtext.getMeasuredWidth()+50, cardImgSize.y);
+        messageBack.alpha = 0.5;
+        messageBack.regX = (messageWindowtext.getMeasuredWidth()+50)/2;;
+        messageBack.regY = cardImgSize.y/2;
+        mainstage.addChild(messageWindowContainer);
+        messageWindowContainer.addChild(messageBack,messageWindowtext);
+        messageWindowContainer.setTransform(game.grid.front[3][0],(game.grid.front[0][1]+game.grid.back[0][1])/2);
+        messageWindowContainer.regX = 0;
+        messageWindowContainer.regY = messageWindowContainer.getBounds().height/2;
+        messageWindowContainer.scaleX = 0;
+        messageWindowContainer.scaleY = 0;
+
+        messageWindowtext.alpha = 0;
+        mainstage.setChildIndex(messageWindowContainer,mainstage.numChildren-1);
+
+        await new Promise((resolve, reject) => {
+            createjs.Tween.get(messageWindowContainer)
+            .to({scaleX:0.02,scaleY:0.02})
+            .to({scaleX:1},250,createjs.Ease.cubicIn)
+            .to({scaleY:1},250,createjs.Ease.cubicIn)
+            .call(()=>{
+                createjs.Tween.get(messageWindowtext)
+                .to({alpha:1},100)
+            })
+            .wait(1100)
+            .call(()=>{
+                createjs.Tween.get(messageWindowtext)
+                .to({alpha:0},100)
+            })
+            .to({scaleY:0.02},250,createjs.Ease.cubicIn)
+            .to({scaleX:0},250,createjs.Ease.cubicIn)
+            .call(()=>{resolve()});
+        });
+        mainstage.removeChild(messageWindowContainer);
+        return;
+    };
+
 };
 
