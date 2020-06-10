@@ -44,8 +44,8 @@ a {
 
 #canvas_wrapper{
     border: solid 3px #000000;
-    width:90%;
-    height:42.5%;
+    width:88%;
+    height:40%;
     margin:0.5em auto;
     padding: 0.25em ;
 }
@@ -57,7 +57,7 @@ a {
 
 #status_textbox {
     width:95%;
-    height:53.5%;
+    height:56%;
     position: relative;
     padding: 0.25em 0.25em;
     margin: 0.5em auto;
