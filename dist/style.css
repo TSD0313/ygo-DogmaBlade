@@ -27,12 +27,11 @@ p {
     font-size:large;
 }
 
-a {
-    word-wrap:break-word;
-    font-size:large;
-    top:44.5%;
+/* #tweetButton {
+    top:42.5%;
     left: 67.5%;
-}
+    position: absolute;
+} */
 
 #statusContainer{
     width:320px;
