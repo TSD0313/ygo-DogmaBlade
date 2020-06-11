@@ -1715,7 +1715,7 @@ window.onload = function() {
      * ダメージ
      */
     const dealDamage = async(point:number)=>{
-        const LPtext = new createjs.Text("-"+point, "80px serif","red");
+        const LPtext = new createjs.Text("-"+point.toFixed(), "80px serif","red");
         LPtext.textBaseline = "middle";
         LPtext.textAlign = "center";
         LPtext.x = game.grid.front[3][0];
@@ -1738,7 +1738,7 @@ window.onload = function() {
      */
     const discard = async(cardArray : Card[]) => {
         await (async () => {
-            for(let card of cardArray){
+            for(let card of [...cardArray].reverse()){
                 await moveCard.HAND.toGY(card);
                 game.nowTime.discard.push({
                     card:card
@@ -2146,24 +2146,32 @@ window.onload = function() {
      * 手札出し入れの際に呼ぶやつ
      */
     const animationHandAdjust = () => {  
-        const leftEndPosition = game.displayOrder.hand[0] - (game.HAND.length - 1) / 2 * (cardImgSize.x+cardImgSize.margin)
         const PromiseArray :Promise<unknown>[] = [];
         game.HAND.map((card, index, array) => {
-            const twPromise = () => {
-                if(card.face=="DOWN"){
-                    return new Promise((resolve, reject) => {
-                        createjs.Tween.get(card.imgContainer) 
-                            .call(()=>{cardFlip(card)})
-                            .to({x:leftEndPosition+((cardImgSize.x+cardImgSize.margin)*index),y:game.displayOrder.hand[1]},500,createjs.Ease.cubicInOut)
-                            .call(()=>{resolve()});
-                    });
+            const handPosition = (()=>{
+                if(index<=7){
+                    const leftEndPosition = game.displayOrder.hand[0] - ((game.HAND.length-1) - (game.HAND.length-8)*Math.sign(Math.trunc(game.HAND.length/8))) / 2*(cardImgSize.x+cardImgSize.margin);
+                    return {
+                        x:leftEndPosition + (cardImgSize.x+cardImgSize.margin)*index,
+                        y:game.displayOrder.hand[1]
+                    };
                 }else{
+                    const leftEndPosition = game.displayOrder.hand[0] - (game.HAND.length-1-8) / 2*(cardImgSize.x+cardImgSize.margin);
+                    return {
+                        x:leftEndPosition+((cardImgSize.x+cardImgSize.margin)*(index-8)),
+                        y:game.displayOrder.hand[1]+cardImgSize.y+cardImgSize.margin
+                    };
+                };
+            })();
+            const twPromise = () => {
                 return new Promise((resolve, reject) => {
                     createjs.Tween.get(card.imgContainer) 
-                        .to({x:leftEndPosition+((cardImgSize.x+cardImgSize.margin)*index),y:game.displayOrder.hand[1]},500,createjs.Ease.cubicInOut)
+                        .call(()=>{
+                            if(card.face=="DOWN"){cardFlip(card)};
+                        })
+                        .to(handPosition,500,createjs.Ease.cubicInOut)
                         .call(()=>{resolve()});
-                    });
-                };
+                });
             };
             PromiseArray.push(twPromise());
         });
@@ -2368,7 +2376,7 @@ window.onload = function() {
         game.firstHand = [...game.HAND].map(c=>c.cardName);
         await shadPhase("STANBY PHASE");
         await shadPhase("MAIN PHASE");
-        cardContainer.mouseEnabled = true;;
+        cardContainer.mouseEnabled = true;
     };
 
     const gameEnd = async()=>{
@@ -2397,8 +2405,8 @@ window.onload = function() {
             }else{
                 await disprayMessageWindow("手札が0枚でない為、MagicalExplosionを発動できません。")
             };
+            await timeout(500);
         };
-        await timeout(500);
         const winLose = (()=>{
            if(game.enemyLifePoint<=0){
                 return genCenterText("YOU WIN!");
@@ -2413,12 +2421,13 @@ window.onload = function() {
         disprayResultWindow(winLose);
     };
 
-    const retry = async()=>{
+    const reset = async()=>{
         cardContainer.mouseEnabled = false;;
         game.countNS = 0;
         game.normalSummon = true;
         game.myLifePoint = DEFAULT_LIFE;
         game.enemyLifePoint = DEFAULT_LIFE;
+        game.payLPcost = true;
         const returnCardArray = genCardArray({location:["HAND","MO","ST","FIELD","GY","DD"]});
         const randomIndex = (()=>{
             const defaultArray = [...Array(returnCardArray.length).keys()];
@@ -2963,7 +2972,7 @@ window.onload = function() {
             eff1.lifeCost = 800;
             eff1.actionPossible = (time:Time) =>{
                 const boolarray = [
-                    game.myLifePoint > eff1.lifeCost,
+                    (game.myLifePoint>eff1.lifeCost || !(game.payLPcost)),
                     JudgeSpellTrapActivateLoc(card),
                     genCardArray({location:["MO"]}).length < 5,
                     game.GY.filter(card=>card instanceof MonsterCard && card.canNS).length>0
@@ -3176,7 +3185,7 @@ window.onload = function() {
             eff1.lifeCost = 2000;
             eff1.actionPossible = (time:Time) =>{
                 const boolarray = [
-                    game.myLifePoint > eff1.lifeCost,
+                    (game.myLifePoint>eff1.lifeCost || !(game.payLPcost)),
                     JudgeSpellTrapActivateLoc(card),
                     genCardArray({location:["MO"]}).length < 5,
                     game.DD.filter(card=>card instanceof MonsterCard && card.canNS).length>0
@@ -3612,8 +3621,8 @@ window.onload = function() {
             eff2.actionPossible = (time:Time) =>{
                 const timeCondition = (()=>{
                     const timeBoolArray :boolean[] = [];
-                    time.move.forEach(tMove=>{
-                        timeBoolArray.push(tMove.card==card && tMove.from=="BOARD");
+                    time.leaveBoard.forEach(tLeave=>{
+                        timeBoolArray.push(tLeave.card==card);
                     });
                     return timeBoolArray.some(value => value);
                 })();
@@ -3723,7 +3732,7 @@ window.onload = function() {
     const disprayCanv =<HTMLCanvasElement>document.getElementById("displayCanv") ;
     const disprayStage = new createjs.Stage(disprayCanv);
     disprayStage.enableMouseOver();
-    // const tweetDOM = <HTMLElement>document.getElementById("twitter-share-button");
+    // const tweetDOM = <HTMLElement>document.getElementById("twitterButton");
     // tweetDOM.style.visibility = "hidden";
     setBoard(mainstage);
     const cardContainer = new createjs.Container;
@@ -3814,14 +3823,14 @@ window.onload = function() {
     lineUp();
     console.log(game.DECK); 
 
-    // const drawButton = createButton("draw", 150, 40, "#0275d8");
-    // drawButton.x = 1300;
-    // drawButton.y = 550;
-    // mainstage.addChild(drawButton);
+    const drawButton = createButton("draw", 150, 40, "#0275d8");
+    drawButton.x = 1300;
+    drawButton.y = 550;
+    mainstage.addChild(drawButton);
 
-    // drawButton.on("click", function(e){
-    //     draw(1);
-    // }, null, false);
+    drawButton.on("click", function(e){
+        draw(1);
+    }, null, false);
 
     // const DeckViewButton = createButton("DECK View", 150, 40, "#0275d8");
     // DeckViewButton.x = 1200;
@@ -3859,8 +3868,8 @@ window.onload = function() {
     };
 
     const endButton = createButton("TURN END", 150, 80, "#0275d8");
-    endButton.x = 500;
-    endButton.y = 800;
+    endButton.x = 1300;
+    endButton.y = 600;
     endButton.alpha = 0;
     cardContainer.addChild(endButton);
     endButton.on("click", function async(e){
@@ -3868,12 +3877,12 @@ window.onload = function() {
     }, null, false);
 
     const resetButton = createButton("RESET", 150, 80, "#0275d8");
-    resetButton.x = 700;
-    resetButton.y = 800;
+    resetButton.x = 1300;
+    resetButton.y = 700;
     resetButton.alpha = 0;
     cardContainer.addChild(resetButton);
     resetButton.on("click", function async(e){
-        retry();
+        reset();
     }, null, false);
 
     createjs.Ticker.addEventListener("tick", handleTick);
@@ -3962,6 +3971,20 @@ window.onload = function() {
                 const cardImgContainer = new createjs.Container();
                 const cardImg = new createjs.Bitmap(card.imageFileName);
                 cardImgContainer.addChild(cardImg);
+                if(card instanceof MonsterCard && 1<=card.equip.length){
+                    card.equip.forEach((equipSpell,i,array) => {
+                        const equipImg = new createjs.Bitmap(equipSpell.imageFileName);
+                        equipImg.setTransform(cardImgSize.x/3*i,cardImgSize.y*(2/3),1/3,1/3,-10,0,0,0,0);
+                        cardImgContainer.addChild(equipImg);
+                    });
+                };
+                if(card instanceof SpellCard && 1<=card.peggingTarget.length){
+                    card.peggingTarget.forEach((equipTarget,i,array) => {
+                        const targetImg = new createjs.Bitmap(equipTarget.imageFileName);
+                        targetImg.setTransform(cardImgSize.x/3*i,cardImgSize.y*(2/3),1/3,1/3,-10,0,0,0,0);
+                        cardImgContainer.addChild(targetImg);
+                    });                    
+                };
                 cardImgContainer.cursor = "pointer";
                 cardImgContainer.y = 0;
                 
@@ -4271,9 +4294,23 @@ window.onload = function() {
         tweetButton.y = cardImgSize.y-70;
         mainstage.enableMouseOver();
 
+        const tweetTextResult = (()=>{
+            if(0<=game.enemyLifePoint){
+                return "ドグマブレードチャレンジ成功！\n"
+            }else{
+                "ドグマブレードチャレンジ失敗・・・\n"
+            };
+        })();
+        const firstHand ="初手　" + game.firstHand.join('/') + "\n";
+
         retryButton.addEventListener("click",clickRetryButton);
         function clickRetryButton(event) {
             location.reload();
+        };
+        tweetButton.addEventListener("click",clickTweetButton);
+        function clickTweetButton(event) {
+            // location.href = "https://twitter.com/share?ref_src=twsrc%5Etfw"
+            window.open("https://twitter.com/share?ref_src=twsrc%5Etfw", null,"width=650, height=470, personalbar=0, toolbar=0, scrollbars=1, sizable=1")
         };
 
         mainstage.addChild(resultWindowContainer);
