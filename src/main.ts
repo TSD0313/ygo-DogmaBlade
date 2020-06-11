@@ -2409,7 +2409,7 @@ window.onload = function() {
         };
         const winLose = (()=>{
            if(game.enemyLifePoint<=0){
-                return genCenterText("YOU WIN!");
+                return genCenterText("YOU WIN !");
             }else{
                 return genCenterText("YOU LOSE");
             }; 
@@ -3482,7 +3482,7 @@ window.onload = function() {
             eff1.actionPossible = (time:Time) =>{
                 const boolarray = [
                     JudgeSpellTrapActivateLoc(card),
-                    game.DECK.length >= game.HAND.length
+                    game.DECK.length >= game.HAND.filter(c=>c!==card).length
                 ];
                 return boolarray.every(value => value==true)
             };
@@ -3795,7 +3795,6 @@ window.onload = function() {
         for(let i = 0; i < numOfCard.num ; i++){
             if(json["cardType"]=="Monster"){
                 const monsterCardObj = genCardObject.Monster(json);
-                console.log(monsterCardObj.cardName);
                 if(monsterCardObj.monsterType=="Effect"){
                     if(effectSetting[monsterCardObj.effectKey] instanceof Function){
                         monsterCardObj.effect = effectSetting[monsterCardObj.effectKey](monsterCardObj);
@@ -3823,14 +3822,14 @@ window.onload = function() {
     lineUp();
     console.log(game.DECK); 
 
-    const drawButton = createButton("draw", 150, 40, "#0275d8");
-    drawButton.x = 1300;
-    drawButton.y = 550;
-    mainstage.addChild(drawButton);
+    // const drawButton = createButton("draw", 150, 40, "#0275d8");
+    // drawButton.x = 1300;
+    // drawButton.y = 550;
+    // mainstage.addChild(drawButton);
 
-    drawButton.on("click", function(e){
-        draw(1);
-    }, null, false);
+    // drawButton.on("click", function(e){
+    //     draw(1);
+    // }, null, false);
 
     // const DeckViewButton = createButton("DECK View", 150, 40, "#0275d8");
     // DeckViewButton.x = 1200;
@@ -4279,14 +4278,14 @@ window.onload = function() {
     const disprayResultWindow = async(messageText :Text)=>{
         const resultWindowContainer = new createjs.Container();
         const messageBack = new createjs.Shape();
-        messageBack.graphics.beginFill("gray"); 
+        messageBack.graphics.beginFill("white"); 
         messageBack.graphics.drawRect(0, 0, messageText.getMeasuredWidth()+500, cardImgSize.y*2);
         messageBack.alpha = 0.5;
         messageBack.regX = (messageText.getMeasuredWidth()+500)/2;;
         messageBack.regY = cardImgSize.y;
         messageText.x=0;
         messageText.y=0;
-        const retryButton = createButton("RETRY", 150, 40, "#0275d8");
+        const retryButton = createButton("リトライ", 150, 40, "#0275d8");
         retryButton.x = -170
         retryButton.y = cardImgSize.y-70;
         const tweetButton = createButton("Tweet", 150, 40, "#0275d8");
@@ -4295,13 +4294,15 @@ window.onload = function() {
         mainstage.enableMouseOver();
 
         const tweetTextResult = (()=>{
-            if(0<=game.enemyLifePoint){
-                return "ドグマブレードチャレンジ成功！\n"
+            if(game.enemyLifePoint<=0){
+                return "ドグマブレード1kill成功！　"
             }else{
-                "ドグマブレードチャレンジ失敗・・・\n"
+                return "ドグマブレード1kill失敗・・・　"
             };
         })();
-        const firstHand ="初手　" + game.firstHand.join('/') + "\n";
+        const firstHand ="初手→" + game.firstHand.join('/') + "\n";
+        const tweetURL = "https://twitter.com/share?url=https://tsd0313.github.io/ygo-DogmaBlade/dist/&related=twitterapi%2Ctwitter&hashtags=ドグマブレードシミュレータ&text="+
+                            tweetTextResult+firstHand;
 
         retryButton.addEventListener("click",clickRetryButton);
         function clickRetryButton(event) {
@@ -4310,7 +4311,7 @@ window.onload = function() {
         tweetButton.addEventListener("click",clickTweetButton);
         function clickTweetButton(event) {
             // location.href = "https://twitter.com/share?ref_src=twsrc%5Etfw"
-            window.open("https://twitter.com/share?ref_src=twsrc%5Etfw", null,"width=650, height=470, personalbar=0, toolbar=0, scrollbars=1, sizable=1")
+            window.open(tweetURL, null,"width=650, height=300, personalbar=0, toolbar=0, scrollbars=1, sizable=1")
         };
 
         mainstage.addChild(resultWindowContainer);
@@ -4386,6 +4387,4 @@ window.onload = function() {
         mainstage.removeChild(messageWindowContainer);
         return;
     };
-
 };
-
