@@ -3,8 +3,8 @@
 body { background-color:rgb(229, 228, 255); }
 
 #mainBoardContainer {
-    width:1500px;
-    height:1000px;
+    width:100px;
+    height:100px;
     position: relative;
 }
 
