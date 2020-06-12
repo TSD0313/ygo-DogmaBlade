@@ -149,6 +149,7 @@ interface CardCondetionProps {
     imageFileName : string;  cardBackImageFileName : string;
     ID : string;
     cardName : string;
+    cardNameJP : string;
     category : string ;
     location : "MO"|"ST"|"FIELD"|"DECK"|"HAND"|"GY"|"DD";
     fromLocation : string;
@@ -176,6 +177,7 @@ class Card  {
     imageFileName : string;  cardBackImageFileName : string;
     ID : Number;
     cardName : string;
+    cardNameJP : string;
     location : "MO"|"ST"|"FIELD"|"DECK"|"HAND"|"GY"|"DD";
     fromLocation : string;
     imgContainer : Container;
@@ -473,7 +475,7 @@ window.onload = function() {
      * 誘発、クイックエフェクトをチェック
      */
     const TriggerQuickeEffect = async() =>{
-        cardContainer.mouseEnabled = false;;
+        cardContainer.mouseEnabled = false;
 
         const canActiveEffects =(EffArray:effect[],time:Time[])=>{
             return EffArray.filter(eff => 
@@ -585,7 +587,7 @@ window.onload = function() {
                     };
                 }else if(PubAny.length ==1){
                     const activeEffOrg = PubAny.pop()
-                    if(await(openYesNoWindow(activeEffOrg.card.cardName + "の効果を発動しますか？"))){
+                    if(await(openYesNoWindow(activeEffOrg.card.cardNameJP + "の効果を発動しますか？"))){
                         const result :effect = {...activeEffOrg,targetCard:[],costCard:[]};
                         game.nowTime = new Time;
                         game.nowTime.effectActived.push({
@@ -652,7 +654,7 @@ window.onload = function() {
             const cardImg = new createjs.Bitmap(card.cardName+"_view.jpg");
             statusStage.addChild(cardImg);
             cardImg.setTransform(statusCanv.width/2,statusCanv.height/2,1,1,0,0,0,140,206); 
-            statusCardNameText.innerText = card.cardName;
+            statusCardNameText.innerText = card.cardNameJP;
             const typetext = (()=>{
                 if(card instanceof MonsterCard){
                     return ["☆"+card.level,card.monsterType,card.attribute,card.race].join(" / ");
@@ -2373,7 +2375,7 @@ window.onload = function() {
         });
         await shadPhase("DRAW PHASE")
         await draw(1);
-        game.firstHand = [...game.HAND].map(c=>c.cardName);
+        game.firstHand = [...game.HAND].map(c=>c.cardNameJP);
         await shadPhase("STANBY PHASE");
         await shadPhase("MAIN PHASE");
         cardContainer.mouseEnabled = true;
@@ -2403,7 +2405,7 @@ window.onload = function() {
                     };
                 })();
             }else{
-                await disprayMessageWindow("手札が0枚でない為、MagicalExplosionを発動できません。")
+                await openMessageWindow("手札が0枚でない為、MagicalExplosionを発動できません。")
             };
             await timeout(500);
         };
@@ -2418,7 +2420,7 @@ window.onload = function() {
         winLose.x = game.centerGrid.x;
         winLose.y = game.centerGrid.y;
         winLose.font = "100px serif";
-        disprayResultWindow(winLose);
+        openResultWindow(winLose);
     };
 
     const reset = async()=>{
@@ -2457,7 +2459,7 @@ window.onload = function() {
         await draw(5);
         await shadPhase("DRAW PHASE")
         await draw(1);
-        game.firstHand = [...game.HAND].map(c=>c.cardName);
+        game.firstHand = [...game.HAND].map(c=>c.cardNameJP);
         await shadPhase("STANBY PHASE");
         await shadPhase("MAIN PHASE");
         cardContainer.mouseEnabled = true;;
@@ -3259,7 +3261,7 @@ window.onload = function() {
                     })();
                     const decktop = ()=> {return game.DECK[game.DECK.length -1]};
                     if(game.DECK.filter(card=>card instanceof MonsterCard && card.canNS).length >0){
-                        await disprayMessageWindow(decrearLevel + " が宣言されました");
+                        await openMessageWindow(decrearLevel + " が宣言されました");
                         await (async () => {
                             while(true){
                                 const topcard = game.DECK[game.DECK.length -1];
@@ -3707,6 +3709,9 @@ window.onload = function() {
     const mainCanv =<HTMLCanvasElement>document.getElementById("canv") ;
     const mainstage = new createjs.Stage(mainCanv);
     mainstage.enableMouseOver();
+    if(createjs.Touch.isSupported() == true){
+        createjs.Touch.enable(mainstage)
+      }
 
     const statusCanv = <HTMLCanvasElement>document.getElementById("statuscanv") ;
     const statusStage = new createjs.Stage(statusCanv);
@@ -3822,14 +3827,14 @@ window.onload = function() {
     lineUp();
     console.log(game.DECK); 
 
-    // const drawButton = createButton("draw", 150, 40, "#0275d8");
-    // drawButton.x = 1300;
-    // drawButton.y = 550;
-    // mainstage.addChild(drawButton);
+    const drawButton = createButton("draw", 150, 40, "#0275d8");
+    drawButton.x = 1300;
+    drawButton.y = 500;
+    mainstage.addChild(drawButton);
 
-    // drawButton.on("click", function(e){
-    //     draw(1);
-    // }, null, false);
+    drawButton.on("click", function(e){
+        draw(1);
+    }, null, false);
 
     // const DeckViewButton = createButton("DECK View", 150, 40, "#0275d8");
     // DeckViewButton.x = 1200;
@@ -3847,13 +3852,13 @@ window.onload = function() {
     //     SelectOkButton.addEventListener("click",clickOkButton);
     // }, null, false);
 
-    // const testButton = createButton("test", 150, 40, "#0275d8");
-    // testButton.x = 1300;
-    // testButton.y = 600;
-    // mainstage.addChild(testButton);
-    // testButton.on("click", function(e){
-    //     gameEnd();
-    // }, null, false);
+    const testButton = createButton("test", 150, 40, "#0275d8");
+    testButton.x = 1300;
+    testButton.y = 550;
+    mainstage.addChild(testButton);
+    testButton.on("click", function(e){
+        openHowtoWindow();
+    }, null, false);
 
     const startButton = createTextButton("DUEL START","80px serif", "midnightblue","yellow")
     mainstage.addChild(startButton);
@@ -3882,6 +3887,24 @@ window.onload = function() {
     cardContainer.addChild(resetButton);
     resetButton.on("click", function async(e){
         reset();
+    }, null, false);
+
+    const howtoButton = createButton("HOW TO", 150, 40, "#0275d8");
+    howtoButton.x = 375;
+    howtoButton.y = 925;
+    mainstage.addChild(howtoButton);
+    howtoButton.on("click", function(e){
+        openHowtoWindow();
+    }, null, false);
+
+    const tweetButton = createButton("TWEEET", 150, 40, "#0275d8");
+    tweetButton.x = 550;
+    tweetButton.y = 925;
+    mainstage.addChild(tweetButton);
+    tweetButton.on("click", function(e){
+        const url = "https://twitter.com/share?url=https://tsd0313.github.io/ygo-DogmaBlade/dist/&related=twitterapi%2Ctwitter&hashtags=DogmaBladeSimulator&text="+
+                    "ドグマブレードぶん回しに挑戦中"
+                    window.open(url, null,"width=650, height=300, personalbar=0, toolbar=0, scrollbars=1, sizable=1")
     }, null, false);
 
     createjs.Ticker.addEventListener("tick", handleTick);
@@ -4275,7 +4298,7 @@ window.onload = function() {
             };
         });
     };
-    const disprayResultWindow = async(messageText :Text)=>{
+    const openResultWindow = async(messageText :Text)=>{
         const resultWindowContainer = new createjs.Container();
         const messageBack = new createjs.Shape();
         messageBack.graphics.beginFill("white"); 
@@ -4288,34 +4311,34 @@ window.onload = function() {
         const retryButton = createButton("リトライ", 150, 40, "#0275d8");
         retryButton.x = -170
         retryButton.y = cardImgSize.y-70;
-        const tweetButton = createButton("Tweet", 150, 40, "#0275d8");
-        tweetButton.x = 20
-        tweetButton.y = cardImgSize.y-70;
+        const resultTweetButton = createButton("Tweet", 150, 40, "#0275d8");
+        resultTweetButton.x = 20
+        resultTweetButton.y = cardImgSize.y-70;
         mainstage.enableMouseOver();
 
         const tweetTextResult = (()=>{
             if(game.enemyLifePoint<=0){
-                return "ドグマブレード1kill成功！　"
+                return "ドグマブレード先攻1キル成功！　"
             }else{
-                return "ドグマブレード1kill失敗・・・　"
+                return "ドグマブレード先攻1キル失敗・・・　"
             };
         })();
         const firstHand ="初手→" + game.firstHand.join('/') + "\n";
-        const tweetURL = "https://twitter.com/share?url=https://tsd0313.github.io/ygo-DogmaBlade/dist/&related=twitterapi%2Ctwitter&hashtags=ドグマブレードシミュレータ&text="+
+        const tweetURL = "https://twitter.com/share?url=https://tsd0313.github.io/ygo-DogmaBlade/dist/&related=twitterapi%2Ctwitter&hashtags=DogmaBladeSimulator&text="+
                             tweetTextResult+firstHand;
 
         retryButton.addEventListener("click",clickRetryButton);
         function clickRetryButton(event) {
             location.reload();
         };
-        tweetButton.addEventListener("click",clickTweetButton);
+        resultTweetButton.addEventListener("click",clickTweetButton);
         function clickTweetButton(event) {
             // location.href = "https://twitter.com/share?ref_src=twsrc%5Etfw"
             window.open(tweetURL, null,"width=650, height=300, personalbar=0, toolbar=0, scrollbars=1, sizable=1")
         };
 
         mainstage.addChild(resultWindowContainer);
-        resultWindowContainer.addChild(messageBack,messageText,retryButton,tweetButton);
+        resultWindowContainer.addChild(messageBack,messageText,retryButton,resultTweetButton);
         resultWindowContainer.setTransform(game.centerGrid.x,game.centerGrid.y);
         resultWindowContainer.regX = 0;
         resultWindowContainer.regY = 0;
@@ -4323,7 +4346,7 @@ window.onload = function() {
         resultWindowContainer.scaleY = 0;
         messageText.alpha = 0;
         retryButton.alpha = 0;
-        tweetButton.alpha = 0;
+        resultTweetButton.alpha = 0;
         
         createjs.Tween.get(resultWindowContainer)
         .to({scaleX:0.02,scaleY:0.02})
@@ -4336,7 +4359,7 @@ window.onload = function() {
         .wait(1100)
         .call(()=>{
             // tweetDOM.style.visibility = "visible";
-            [retryButton,tweetButton].forEach(button=>{
+            [retryButton,resultTweetButton].forEach(button=>{
                 createjs.Tween.get(button)
                     .to({alpha:1},100)
             });
@@ -4344,7 +4367,7 @@ window.onload = function() {
         return;
     };
 
-    const disprayMessageWindow = async(message :string)=>{
+    const openMessageWindow = async(message :string)=>{
         const messageWindowContainer = new createjs.Container();
         const messageWindowtext = new createjs.Text(message, "30px serif","black");
         messageWindowtext.textBaseline = "middle";
@@ -4386,5 +4409,81 @@ window.onload = function() {
         });
         mainstage.removeChild(messageWindowContainer);
         return;
+    };
+
+    const openHowtoWindow = ()=>{
+        cardContainer.mouseEnabled = false;
+        howtoButton.mouseEnabled = false;
+
+        const messageA ="ドグマブレードをぶん回し、先攻1ターンキルを達成しましょう。";
+        const messageB ="《D-HERO ドグマガイ》《マジカル・エクスプロージョン》はターン終了後に自動で発動します。";
+        const messageC1 ="デッキガイド：ニードルギルマン氏 "
+        const messageC2 ="『xxxxxxxxxxxxxxxxx』"
+        const textA = new createjs.Text(messageA, "24px serif","black");
+        const textB = new createjs.Text(messageB, "24px serif","black");
+        const textC1 = new createjs.Text(messageC1, "24px serif","black");
+        const textC2 = new createjs.Text(messageC2, "24px serif","black");
+        textC2.color = "#1111cc";
+        textC2.cursor = "pointer";
+        const hitAreaShape = new createjs.Shape;
+        hitAreaShape.set({
+            // x        : -50,
+            // y        : -100,
+            graphics : new createjs.Graphics().beginFill("#FFF").drawEllipse(0,0,textC2.getMeasuredWidth(),textC2.getMeasuredHeight())
+        });
+        textC2.hitArea = hitAreaShape;
+        textC2.addEventListener("click",clickTextC2);
+        function clickTextC2(event) {
+            window.open("https://www.google.com/")
+        };        
+
+        const textCcontainer = new createjs.Container;
+        textCcontainer.addChild(textC1,textC2);
+        textC2.x = textC1.getMeasuredWidth();
+
+        const TextContainer = new createjs.Container();
+        [textA,textB,textCcontainer].forEach((obj,i,a)=>{
+            TextContainer.addChild(obj);
+            obj.y = (textA.getMeasuredLineHeight()+20)*i;
+        });
+        TextContainer.regX = TextContainer.getBounds().width/2;
+        TextContainer.regY = TextContainer.getBounds().height/2;
+
+        const messageBack = new createjs.Shape();
+        messageBack.graphics.beginFill("white"); 
+        messageBack.graphics.drawRect(0, 0, TextContainer.getBounds().width+50, TextContainer.getBounds().height+200);
+        messageBack.alpha = 0.5;
+        messageBack.regX = (TextContainer.getBounds().width+50)/2;
+        messageBack.regY = (TextContainer.getBounds().height+200)/2;
+
+        const OkButton = createButton("OK", 150, 40, "#0275d8");
+        OkButton.regX = OkButton.getBounds().width/2;
+        OkButton.regY = OkButton.getBounds().height/2;
+        OkButton.x = -75;
+        OkButton.y = TextContainer.getBounds().height-20;
+        OkButton.addEventListener("click",clickOkButton);
+        function clickOkButton(event) {
+            mainstage.removeChild(HowtoWindowContainer);
+            cardContainer.mouseEnabled = true;
+            howtoButton.mouseEnabled = true;
+        };        
+
+        const HowtoWindowContainer = new createjs.Container();
+        HowtoWindowContainer.addChild(messageBack,TextContainer,OkButton);
+        HowtoWindowContainer.setTransform(game.centerGrid.x,game.centerGrid.y,0,0,0,0,0,0,0);
+        mainstage.addChild(HowtoWindowContainer);
+
+        TextContainer.alpha = 0;
+        OkButton.alpha = 0;
+        createjs.Tween.get(HowtoWindowContainer)
+            .to({scaleX:0.02,scaleY:0.02})
+            .to({scaleX:1},250,createjs.Ease.cubicIn)
+            .to({scaleY:1},250,createjs.Ease.cubicIn)
+            .call(()=>{
+                [TextContainer,OkButton].forEach(obj=>{
+                    createjs.Tween.get(obj)
+                    .to({alpha:1},100)
+                });
+            });
     };
 };
