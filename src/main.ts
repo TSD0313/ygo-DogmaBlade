@@ -3709,9 +3709,9 @@ window.onload = function() {
     const mainCanv =<HTMLCanvasElement>document.getElementById("canv") ;
     const mainstage = new createjs.Stage(mainCanv);
     mainstage.enableMouseOver();
-    if(createjs.Touch.isSupported() == true){
-        createjs.Touch.enable(mainstage)
-      }
+    // if(createjs.Touch.isSupported() == true){
+    //     createjs.Touch.enable(mainstage)
+    // };
 
     const statusCanv = <HTMLCanvasElement>document.getElementById("statuscanv") ;
     const statusStage = new createjs.Stage(statusCanv);
@@ -3767,6 +3767,25 @@ window.onload = function() {
     numOfcardsContainer.setTransform(game.displayOrder.deck[0][0]+90,game.displayOrder.deck[0][1]-60);
     numOfcardsContainer.alpha = 0;
 
+    const updateText = new createjs.Text("/Update 2020.06.12 ", "24px serif","black");
+    const createdbyText = new createjs.Text("Created by ", "24px serif","black");
+    const twiAccountText = new createjs.Text("@toride0313", "24px serif","black");
+    twiAccountText.x = createdbyText.getMeasuredWidth();
+    updateText.x = createdbyText.getMeasuredWidth()+twiAccountText.getMeasuredWidth()+5;
+    twiAccountText.color = "#1111cc";
+    twiAccountText.cursor = "pointer";
+    const hitAreaShape = new createjs.Shape;
+    hitAreaShape.set({
+        graphics : new createjs.Graphics().beginFill("#FFF").drawEllipse(0,0,twiAccountText.getMeasuredWidth(),twiAccountText.getMeasuredHeight())
+    });
+    const footerContainer = new createjs.Container;
+    footerContainer.addChild(createdbyText,twiAccountText,updateText);
+    twiAccountText.addEventListener("click",clicktwiAccountText);
+    function clicktwiAccountText(event) {
+        window.open("https://twitter.com/toride0313")
+    };
+    mainstage.addChild(footerContainer);
+    footerContainer.y =  1000-updateText.getMeasuredLineHeight();
 
 
     const deckRecipe :{json:Object,num:number}[] = [
@@ -3827,15 +3846,6 @@ window.onload = function() {
     lineUp();
     console.log(game.DECK); 
 
-    const drawButton = createButton("draw", 150, 40, "#0275d8");
-    drawButton.x = 1300;
-    drawButton.y = 500;
-    mainstage.addChild(drawButton);
-
-    drawButton.on("click", function(e){
-        draw(1);
-    }, null, false);
-
     // const DeckViewButton = createButton("DECK View", 150, 40, "#0275d8");
     // DeckViewButton.x = 1200;
     // DeckViewButton.y = 650;
@@ -3852,28 +3862,54 @@ window.onload = function() {
     //     SelectOkButton.addEventListener("click",clickOkButton);
     // }, null, false);
 
-    const testButton = createButton("test", 150, 40, "#0275d8");
-    testButton.x = 1300;
-    testButton.y = 550;
-    mainstage.addChild(testButton);
-    testButton.on("click", function(e){
-        openHowtoWindow();
-    }, null, false);
+    // const drawButton = createButton("draw", 150, 40, "#0275d8");
+    // drawButton.x = 1300;
+    // drawButton.y = 500;
+    // mainstage.addChild(drawButton);
+
+    // drawButton.on("click", function(e){
+    //     draw(1);
+    // }, null, false);
+
+    // const testButton = createButton("test", 150, 40, "#0275d8");
+    // testButton.x = 1300;
+    // testButton.y = 550;
+    // mainstage.addChild(testButton);
+    // testButton.on("click", function(e){
+    //     openHowtoWindow();
+    // }, null, false);
 
     const startButton = createTextButton("DUEL START","80px serif", "midnightblue","yellow")
     mainstage.addChild(startButton);
     startButton.x = 550;
     startButton.y = 850;
-
     startButton.addEventListener("click", handleClickStart);
     function handleClickStart(event) {
         gameStart();
         createjs.Tween.get(startButton).to({alpha:0},250);
     };
 
+    const howtoButton = createButton("HOW TO PRAY", 150, 40, "#0275d8");
+    howtoButton.x = 1300;
+    howtoButton.y = 500;
+    mainstage.addChild(howtoButton);
+    howtoButton.on("click", function(e){
+        openHowtoWindow();
+    }, null, false);
+
+    const tweetButton = createButton("TWEEET", 150, 40, "#0275d8");
+    tweetButton.x = 1300;
+    tweetButton.y = 550;
+    mainstage.addChild(tweetButton);
+    tweetButton.on("click", function(e){
+        const url = "https://twitter.com/share?url=https://tsd0313.github.io/ygo-DogmaBlade/dist/&related=twitterapi%2Ctwitter&hashtags=DogmaBladeSimulator&text="+
+                    "ドグマブレードぶん回しに挑戦中"
+                    window.open(url, null,"width=650, height=300, personalbar=0, toolbar=0, scrollbars=1, sizable=1")
+    }, null, false);
+
     const endButton = createButton("TURN END", 150, 80, "#0275d8");
     endButton.x = 1300;
-    endButton.y = 600;
+    endButton.y = 610;
     endButton.alpha = 0;
     cardContainer.addChild(endButton);
     endButton.on("click", function async(e){
@@ -3888,25 +3924,6 @@ window.onload = function() {
     resetButton.on("click", function async(e){
         reset();
     }, null, false);
-
-    const howtoButton = createButton("HOW TO", 150, 40, "#0275d8");
-    howtoButton.x = 375;
-    howtoButton.y = 925;
-    mainstage.addChild(howtoButton);
-    howtoButton.on("click", function(e){
-        openHowtoWindow();
-    }, null, false);
-
-    const tweetButton = createButton("TWEEET", 150, 40, "#0275d8");
-    tweetButton.x = 550;
-    tweetButton.y = 925;
-    mainstage.addChild(tweetButton);
-    tweetButton.on("click", function(e){
-        const url = "https://twitter.com/share?url=https://tsd0313.github.io/ygo-DogmaBlade/dist/&related=twitterapi%2Ctwitter&hashtags=DogmaBladeSimulator&text="+
-                    "ドグマブレードぶん回しに挑戦中"
-                    window.open(url, null,"width=650, height=300, personalbar=0, toolbar=0, scrollbars=1, sizable=1")
-    }, null, false);
-
     createjs.Ticker.addEventListener("tick", handleTick);
     function handleTick() {
         mainstage.update();
@@ -4417,8 +4434,8 @@ window.onload = function() {
 
         const messageA ="ドグマブレードをぶん回し、先攻1ターンキルを達成しましょう。";
         const messageB ="《D-HERO ドグマガイ》《マジカル・エクスプロージョン》はターン終了後に自動で発動します。";
-        const messageC1 ="デッキガイド：ニードルギルマン氏 "
-        const messageC2 ="『xxxxxxxxxxxxxxxxx』"
+        const messageC1 ="デッキガイド： "
+        const messageC2 =" ドグマブレード｜ンマルギルドーニ｜note"
         const textA = new createjs.Text(messageA, "24px serif","black");
         const textB = new createjs.Text(messageB, "24px serif","black");
         const textC1 = new createjs.Text(messageC1, "24px serif","black");
@@ -4427,14 +4444,12 @@ window.onload = function() {
         textC2.cursor = "pointer";
         const hitAreaShape = new createjs.Shape;
         hitAreaShape.set({
-            // x        : -50,
-            // y        : -100,
             graphics : new createjs.Graphics().beginFill("#FFF").drawEllipse(0,0,textC2.getMeasuredWidth(),textC2.getMeasuredHeight())
         });
         textC2.hitArea = hitAreaShape;
         textC2.addEventListener("click",clickTextC2);
         function clickTextC2(event) {
-            window.open("https://www.google.com/")
+            window.open("https://note.com/gninallman3/n/nf330a71d5446")
         };        
 
         const textCcontainer = new createjs.Container;
@@ -4452,7 +4467,7 @@ window.onload = function() {
         const messageBack = new createjs.Shape();
         messageBack.graphics.beginFill("white"); 
         messageBack.graphics.drawRect(0, 0, TextContainer.getBounds().width+50, TextContainer.getBounds().height+200);
-        messageBack.alpha = 0.5;
+        messageBack.alpha = 0.75;
         messageBack.regX = (TextContainer.getBounds().width+50)/2;
         messageBack.regY = (TextContainer.getBounds().height+200)/2;
 
