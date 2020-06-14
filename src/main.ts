@@ -2341,7 +2341,7 @@ window.onload = function() {
                     SelectOkButton.addEventListener("click",clickOkButtonB);
                     await openCardListWindow.select(cardlistB,2,2,tmpEffB,"リリースするモンスターを"+2+"体選択してください");
                 });
-                await SpecialSummon.fromHAND([card],true);
+                await SpecialSummon.fromHAND([card],false,"ATK");
             };
         },
     };
@@ -2398,10 +2398,12 @@ window.onload = function() {
             if(genCardArray({location:["HAND"]}).length==0){
                 await (async () => {
                     for (let i = 0; i < magiexArray.length ; i++){
-                        await cardFlip(magiexArray[i]);
-                        await animationChainEffectActivate(magiexArray[i].effect[0]);
-                        await magiexArray[i].effect[0].whenResolve(magiexArray[i].effect[0]);
-                        await moveCard.BOARD.toGY(magiexArray[i]);
+                        // if(1<=game.enemyLifePoint){
+                            await cardFlip(magiexArray[i]);
+                            await animationChainEffectActivate(magiexArray[i].effect[0]);
+                            await magiexArray[i].effect[0].whenResolve(magiexArray[i].effect[0]);
+                            await moveCard.BOARD.toGY(magiexArray[i]);
+                        // };
                     };
                 })();
             }else{
@@ -2410,8 +2412,10 @@ window.onload = function() {
             await timeout(500);
         };
         const winLose = (()=>{
-           if(game.enemyLifePoint<=0){
-                return genCenterText("YOU WIN !");
+           if(game.enemyLifePoint<1){
+               const WIN = genCenterText("YOU WIN !");
+               WIN.color = "orangered"
+                return WIN;
             }else{
                 return genCenterText("YOU LOSE");
             }; 
@@ -2443,6 +2447,13 @@ window.onload = function() {
             for (let i of randomIndex){
                 await LocationSetting(returnCardArray[i],"DECK");
                 new Promise((resolve, reject) => {
+                    const card = returnCardArray[i];
+                    if(card instanceof MonsterCard && 1<=card.equip.length){
+                        card.equip = [];
+                    };
+                    if(card instanceof SpellCard && 1<=card.peggingTarget.length){
+                        card.peggingTarget = [];
+                    };
                     if (returnCardArray[i].face=="UP"){
                         cardFlip(returnCardArray[i])
                     };
@@ -2585,6 +2596,8 @@ window.onload = function() {
                     game.nowTime = new Time;
                     if(2<=game.DECK.length){
                         await draw(2);
+                    }else{
+                        await draw(game.DECK.length);
                     };
                     game.timeArray.push({...game.nowTime});
                     resolve();
@@ -2901,7 +2914,8 @@ window.onload = function() {
             eff1.actionPossible = (time:Time) =>{
                 const boolarray = [
                     JudgeSpellTrapActivateLoc(card),
-                    genCardArray({category:["D-HERO"],location:["HAND"]}).length > 0
+                    genCardArray({category:["D-HERO"],location:["HAND"]}).length > 0,
+                    2<=game.DECK.length 
                 ];
                 return boolarray.every(value => value==true)
             };
@@ -2960,7 +2974,7 @@ window.onload = function() {
                 return new Promise<void>(async(resolve, reject) => {
                     const targetarray = eff.targetCard.filter(card=>card.location=="GY");
                     game.nowTime = new Time;
-                    await SpecialSummon.fromGY(targetarray.reverse(),true);
+                    await SpecialSummon.fromGY(targetarray.reverse(),false,"ATK");
                     game.timeArray.push({...game.nowTime});
                     resolve();
                 });
@@ -3086,7 +3100,7 @@ window.onload = function() {
                             };
                         })();
                         if( decktop() instanceof MonsterCard){
-                            await SpecialSummon.fromDECK([decktop()],true);
+                            await SpecialSummon.fromDECK([decktop()],false,"ATK");
                         };
                     };
                     game.timeArray.push({...game.nowTime});
@@ -3220,7 +3234,7 @@ window.onload = function() {
                         }else{
                             eff.targetCard = canNSmonster;
                         };
-                        await SpecialSummon.fromDD(eff.targetCard,true);
+                        await SpecialSummon.fromDD(eff.targetCard,false,"ATK");
                     };
                     game.timeArray.push({...game.nowTime});
                     resolve();
@@ -3283,7 +3297,7 @@ window.onload = function() {
                         if( decktop() instanceof MonsterCard){
                             const top = decktop();
                             if(top instanceof MonsterCard && top.level != decrearLevel){
-                                await SpecialSummon.fromDECK([decktop()],true);
+                                await SpecialSummon.fromDECK([decktop()],false,"ATK");
                             }else{
                                 await moveCard.DECK.toGY(top);
                                 console.log("send " +top.cardName+ " to GY")
@@ -3390,8 +3404,8 @@ window.onload = function() {
             eff1.actionPossible = (time:Time) =>{
                 const boolarray = [
                     JudgeSpellTrapActivateLoc(card),
-                    game.HAND.filter(c=>c instanceof MonsterCard && c.level==8).length > 0
-                    // genCardArray({level:[8],location:["HAND"]}).length > 0
+                    game.HAND.filter(c=>c instanceof MonsterCard && c.level==8).length > 0,
+                    2<=game.DECK.length
                 ];
                 return boolarray.every(value => value==true)
             };
@@ -3767,8 +3781,8 @@ window.onload = function() {
     numOfcardsContainer.setTransform(game.displayOrder.deck[0][0]+90,game.displayOrder.deck[0][1]-60);
     numOfcardsContainer.alpha = 0;
 
-    const updateText = new createjs.Text("/Update 2020.06.12 ", "24px serif","black");
-    const createdbyText = new createjs.Text("Created by ", "24px serif","black");
+    const updateText = new createjs.Text(" /Update 2020.06.13_1245  Microsoft Edgeでは正常動作しません。", "24px serif","black");
+    const createdbyText = new createjs.Text("Created by  ", "24px serif","black");
     const twiAccountText = new createjs.Text("@toride0313", "24px serif","black");
     twiAccountText.x = createdbyText.getMeasuredWidth();
     updateText.x = createdbyText.getMeasuredWidth()+twiAccountText.getMeasuredWidth()+5;
@@ -3778,6 +3792,7 @@ window.onload = function() {
     hitAreaShape.set({
         graphics : new createjs.Graphics().beginFill("#FFF").drawEllipse(0,0,twiAccountText.getMeasuredWidth(),twiAccountText.getMeasuredHeight())
     });
+    twiAccountText.hitArea = hitAreaShape;
     const footerContainer = new createjs.Container;
     footerContainer.addChild(createdbyText,twiAccountText,updateText);
     twiAccountText.addEventListener("click",clicktwiAccountText);
@@ -3786,6 +3801,28 @@ window.onload = function() {
     };
     mainstage.addChild(footerContainer);
     footerContainer.y =  1000-updateText.getMeasuredLineHeight();
+
+    const bugReportButton = createButton("不具合を報告", 160, 40, "#0275d8");
+    bugReportButton.x = 1300;
+    bugReportButton.y = 950;
+    mainstage.addChild(bugReportButton);
+    bugReportButton.on("click", function(e){
+        const url = "https://twitter.com/share?related=twitterapi%2Ctwitter&hashtags=DogmaBladeSimulatorBugReport&text="+
+                    "@toride0313 動作環境：[] バグ内容及び発生状況:[] スクショがあれば載せてもらえると助かります。DMでも可。※Edgeでは正常動作しません。別のブラウザでお試しください。";
+        window.open(url)
+    }, null, false);
+
+    const followButtonImg = new createjs.Bitmap("follow.png");
+    followButtonImg .cursor = "pointer";
+    followButtonImg .x = 5;
+    followButtonImg .y = 930;
+    mainstage.addChild(followButtonImg);
+    followButtonImg.on("click", function(e){
+        const url = "https://twitter.com/intent/follow?screen_name=toride0313"
+                    window.open(url, null,"width=650, height=300, personalbar=0, toolbar=0, scrollbars=1, sizable=1")
+    }, null, false);
+
+
 
 
     const deckRecipe :{json:Object,num:number}[] = [
@@ -3885,40 +3922,43 @@ window.onload = function() {
     startButton.y = 850;
     startButton.addEventListener("click", handleClickStart);
     function handleClickStart(event) {
+        startButton.mouseEnabled = false;
         gameStart();
         createjs.Tween.get(startButton).to({alpha:0},250);
     };
 
-    const howtoButton = createButton("HOW TO PRAY", 150, 40, "#0275d8");
+    const TweetButtonImg = new createjs.Bitmap("tweet.png");
+    TweetButtonImg.cursor = "pointer";
+    TweetButtonImg.x = 1275
+    TweetButtonImg.y = 525;
+    mainstage.addChild(TweetButtonImg);
+
+    TweetButtonImg.on("click", function(e){
+        const url = "https://twitter.com/share?url=https://tsd0313.github.io/ygo-DogmaBlade/dist/&related=twitterapi%2Ctwitter&hashtags=DogmaBladeSimulator&text="+
+                    "ドグマブレードシミュレータ"
+                    window.open(url, null,"width=650, height=300, personalbar=0, toolbar=0, scrollbars=1, sizable=1")
+    }, null, false);
+
+    const howtoButton = createButton("HOW TO PLAY", 160, 40, "#0275d8");
     howtoButton.x = 1300;
-    howtoButton.y = 500;
+    howtoButton.y = 600;
     mainstage.addChild(howtoButton);
     howtoButton.on("click", function(e){
         openHowtoWindow();
     }, null, false);
 
-    const tweetButton = createButton("TWEEET", 150, 40, "#0275d8");
-    tweetButton.x = 1300;
-    tweetButton.y = 550;
-    mainstage.addChild(tweetButton);
-    tweetButton.on("click", function(e){
-        const url = "https://twitter.com/share?url=https://tsd0313.github.io/ygo-DogmaBlade/dist/&related=twitterapi%2Ctwitter&hashtags=DogmaBladeSimulator&text="+
-                    "ドグマブレードぶん回しに挑戦中"
-                    window.open(url, null,"width=650, height=300, personalbar=0, toolbar=0, scrollbars=1, sizable=1")
-    }, null, false);
-
-    const endButton = createButton("TURN END", 150, 80, "#0275d8");
+    const endButton = createButton("TURN END", 160, 80, "#0275d8");
     endButton.x = 1300;
-    endButton.y = 610;
+    endButton.y = 660;
     endButton.alpha = 0;
     cardContainer.addChild(endButton);
     endButton.on("click", function async(e){
         gameEnd();
     }, null, false);
 
-    const resetButton = createButton("RESET", 150, 80, "#0275d8");
+    const resetButton = createButton("RESET", 160, 80, "#0275d8");
     resetButton.x = 1300;
-    resetButton.y = 700;
+    resetButton.y = 750;
     resetButton.alpha = 0;
     cardContainer.addChild(resetButton);
     resetButton.on("click", function async(e){
@@ -3932,7 +3972,7 @@ window.onload = function() {
         selectButtonStage.update();
         statusStage.update();
         myLP.text = zerofix(game.myLifePoint);
-        EnemyLP.text = zerofix(game.enemyLifePoint);
+        EnemyLP.text = game.enemyLifePoint.toFixed();
         NumInDeck.text = "DECK : "+zerofix(game.DECK.length);
         NumInGy.text = "GY : "+zerofix(genCardArray({location:["GY"]}).length)+" ( "+zerofix(genCardArray({location:["GY"],cardType:["Spell"]}).length)+" )";
     };
@@ -4328,14 +4368,16 @@ window.onload = function() {
         const retryButton = createButton("リトライ", 150, 40, "#0275d8");
         retryButton.x = -170
         retryButton.y = cardImgSize.y-70;
-        const resultTweetButton = createButton("Tweet", 150, 40, "#0275d8");
-        resultTweetButton.x = 20
-        resultTweetButton.y = cardImgSize.y-70;
+
+        const tweetButton = createButton("結果をtweet", 150, 40, "#0275d8");
+        tweetButton.x = 20
+        tweetButton.y = cardImgSize.y-70;
+
         mainstage.enableMouseOver();
 
         const tweetTextResult = (()=>{
-            if(game.enemyLifePoint<=0){
-                return "ドグマブレード先攻1キル成功！　"
+            if(game.enemyLifePoint<1){
+                return "ドグマブレード先攻1キル成功！"+ (-game.enemyLifePoint+8000).toFixed()+"ダメージ！";
             }else{
                 return "ドグマブレード先攻1キル失敗・・・　"
             };
@@ -4348,14 +4390,14 @@ window.onload = function() {
         function clickRetryButton(event) {
             location.reload();
         };
-        resultTweetButton.addEventListener("click",clickTweetButton);
+        tweetButton.addEventListener("click",clickTweetButton);
         function clickTweetButton(event) {
             // location.href = "https://twitter.com/share?ref_src=twsrc%5Etfw"
             window.open(tweetURL, null,"width=650, height=300, personalbar=0, toolbar=0, scrollbars=1, sizable=1")
         };
 
         mainstage.addChild(resultWindowContainer);
-        resultWindowContainer.addChild(messageBack,messageText,retryButton,resultTweetButton);
+        resultWindowContainer.addChild(messageBack,messageText,retryButton,tweetButton);
         resultWindowContainer.setTransform(game.centerGrid.x,game.centerGrid.y);
         resultWindowContainer.regX = 0;
         resultWindowContainer.regY = 0;
@@ -4363,7 +4405,7 @@ window.onload = function() {
         resultWindowContainer.scaleY = 0;
         messageText.alpha = 0;
         retryButton.alpha = 0;
-        resultTweetButton.alpha = 0;
+        tweetButton.alpha = 0;
         
         createjs.Tween.get(resultWindowContainer)
         .to({scaleX:0.02,scaleY:0.02})
@@ -4376,7 +4418,7 @@ window.onload = function() {
         .wait(1100)
         .call(()=>{
             // tweetDOM.style.visibility = "visible";
-            [retryButton,resultTweetButton].forEach(button=>{
+            [retryButton,tweetButton].forEach(button=>{
                 createjs.Tween.get(button)
                     .to({alpha:1},100)
             });
@@ -4392,7 +4434,7 @@ window.onload = function() {
         const messageBack = new createjs.Shape();
         messageBack.graphics.beginFill("white"); 
         messageBack.graphics.drawRect(0, 0, messageWindowtext.getMeasuredWidth()+50, cardImgSize.y);
-        messageBack.alpha = 0.5;
+        messageBack.alpha = 0.9;
         messageBack.regX = (messageWindowtext.getMeasuredWidth()+50)/2;;
         messageBack.regY = cardImgSize.y/2;
         mainstage.addChild(messageWindowContainer);
@@ -4434,7 +4476,7 @@ window.onload = function() {
 
         const messageA ="ドグマブレードをぶん回し、先攻1ターンキルを達成しましょう。";
         const messageB ="《D-HERO ドグマガイ》《マジカル・エクスプロージョン》はターン終了後に自動で発動します。";
-        const messageC1 ="デッキガイド： "
+        const messageC1 ="デッキガイド："
         const messageC2 =" ドグマブレード｜ンマルギルドーニ｜note"
         const textA = new createjs.Text(messageA, "24px serif","black");
         const textB = new createjs.Text(messageB, "24px serif","black");
@@ -4467,7 +4509,7 @@ window.onload = function() {
         const messageBack = new createjs.Shape();
         messageBack.graphics.beginFill("white"); 
         messageBack.graphics.drawRect(0, 0, TextContainer.getBounds().width+50, TextContainer.getBounds().height+200);
-        messageBack.alpha = 0.75;
+        messageBack.alpha = 0.9;
         messageBack.regX = (TextContainer.getBounds().width+50)/2;
         messageBack.regY = (TextContainer.getBounds().height+200)/2;
 
