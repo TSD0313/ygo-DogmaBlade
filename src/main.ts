@@ -1,4 +1,4 @@
-import { Text, Shape, Stage, Bitmap, Container, Tween, Timeline} from 'createjs-module';
+import { Text, Stage, Bitmap, Container, Tween} from 'createjs-module';
 import { createButton }  from './createButton';
 import { createTextButton }  from './createTextButton';
 import * as status from './CardStatus.json';
@@ -14,7 +14,7 @@ class Grid {
     constructor(front: number[][],back: number[][]) {
         this.front = front;
         this.back = back;
-    }
+    };
 };
 class Game{
     defaultDeck : Card[];
@@ -154,7 +154,6 @@ interface CardCondetionProps {
     cardNameJP : string;
     category : string ;
     location : "MO"|"ST"|"FIELD"|"DECK"|"HAND"|"GY"|"DD";
-    fromLocation : string;
     imgContainer : Container;
     cardType : "Monster"|"Spell"|"Trap";
     face : "UP"|"DOWN" ;
@@ -171,8 +170,8 @@ interface CardCondetionProps {
     NSed : Boolean;
 
     spellType : "Normal"|"Quick"|"Equip"|"Field"|"Continuous";
+    trapType : "Normal"|"Continuous"|"Counter";
 };
-
 
 class Card  {
     frontImg : Bitmap;  cardBackImg : Bitmap;
@@ -181,7 +180,6 @@ class Card  {
     cardName : string;
     cardNameJP : string;
     location : "MO"|"ST"|"FIELD"|"DECK"|"HAND"|"GY"|"DD";
-    fromLocation : string;
     imgContainer : Container;
     cardType : "Monster"|"Spell"|"Trap";
     face : "UP"|"DOWN" ;
@@ -304,6 +302,9 @@ const timeout = (ms: number): Promise<void> =>{
     return new Promise<void>(resolve => setTimeout(resolve, ms));
 };
 
+/**
+ * 正の整数に変換
+ */
 const zerofix = (num: number): string=>{
     if( num <= 0 ){
         return "0";
@@ -312,6 +313,9 @@ const zerofix = (num: number): string=>{
     };
 };
 
+/**
+ * 中央揃えテキスト生成
+ */
 const genCenterText = (text:string)=>{
     const newText = new createjs.Text(text, "80px serif", "midnightblue");
     newText.textBaseline = "middle";
@@ -319,6 +323,9 @@ const genCenterText = (text:string)=>{
     return newText
 };
 
+/**
+ * カードインスタンス生成
+ */
 const genCardObject = {
     Monster:(json:Object)=>{
         const newCard = new MonsterCard;
@@ -353,6 +360,17 @@ const publicOrPrivate = (card:Card)=>{
     }else{
         return "Private"
     };
+};
+
+/**
+ * 配列をランダム化
+ */
+const shuffle = (target:Card[]) => {
+    for (let i = target.length - 1; i >= 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [target[i], target[j]] = [target[j], target[i]];
+    };
+    return target;
 };
 
 window.onload = function() {
@@ -476,7 +494,7 @@ window.onload = function() {
 
 
     /**
-     * 誘発、クイックエフェクトをチェック
+     * 誘発QEチェック
      */
     const TriggerQuickeEffect = async() =>{
         cardContainer.mouseEnabled = false;
@@ -648,6 +666,9 @@ window.onload = function() {
         return CardArray
     };
 
+    /**
+     * ステータス表示マウスイベント
+     */
     const SetStatusDisprayEvent = (card: Card,targetObj:Container|Bitmap)=>{
         targetObj.addEventListener("mouseover", handleMoverStatus);
         function handleMoverStatus(event) {
@@ -671,7 +692,7 @@ window.onload = function() {
     };
 
     /**
-     * マウスイベント設定
+     * 領域移動時のマウスイベント設定
      */
     const mouseEventSetting = {
         board: async(card: Card)=>{
@@ -1079,6 +1100,9 @@ window.onload = function() {
         },
     };
 
+    /**
+     * カードの移動
+     */
     const moveCard = {
         HAND:{
             toBOARD:async(card: Card, position: "ATK"|"DEF"|"SET")=>{
@@ -1391,7 +1415,7 @@ window.onload = function() {
     };
 
     /**
-     * 場の魔法発動
+     * セットした魔法発動
      */
     const fieldSpellActivate =  async(card: SpellCard) => {
         cardContainer.mouseEnabled = false;
@@ -1699,8 +1723,8 @@ window.onload = function() {
         const LPtext = new createjs.Text("-"+cost, "80px serif","black");
         LPtext.textBaseline = "middle";
         LPtext.textAlign = "center";
-        LPtext.x = game.grid.front[3][0];
-        LPtext.y = (game.grid.front[0][1]+game.grid.back[0][1])/2;
+        LPtext.x = game.centerGrid.x;
+        LPtext.y = game.centerGrid.y;
         mainstage.addChild(LPtext);
         await timeout(500);
         await new Promise<void>(async(resolve, reject) => {
@@ -1715,14 +1739,13 @@ window.onload = function() {
     };
 
     /**
-     * ダメージ
+     * ダメージを与える
      */
     const dealDamage = async(point:number)=>{
-        const LPtext = new createjs.Text("-"+point.toFixed(), "80px serif","red");
-        LPtext.textBaseline = "middle";
-        LPtext.textAlign = "center";
-        LPtext.x = game.grid.front[3][0];
-        LPtext.y = (game.grid.front[0][1]+game.grid.back[0][1])/2;
+        const LPtext = genCenterText("-"+point.toFixed());
+        LPtext.color = "red";
+        LPtext.x = game.centerGrid.x;
+        LPtext.y = game.centerGrid.y;
         mainstage.addChild(LPtext);
         await timeout(500);
         await new Promise<void>(async(resolve, reject) => {
@@ -1737,7 +1760,7 @@ window.onload = function() {
     };
 
     /**
-     * 捨てる
+     * 手札を捨てる
      */
     const discard = async(cardArray : Card[]) => {
         await (async () => {
@@ -1963,6 +1986,9 @@ window.onload = function() {
         });
     };
 
+    /**
+     * 装備マーク生成
+     */
     const genEquipImg = (card:Card)=>{
         const equipImg = new createjs.Bitmap("equip.png");
         equipImg.setTransform(card.imgContainer.x, card.imgContainer.y, 0.5, 0.5);
@@ -2002,13 +2028,7 @@ window.onload = function() {
             card.imgContainer.addEventListener("mouseover", handleEquipSpellMover);
             function handleEquipSpellMover(event) {
                 if(card.peggingTarget.length>0){
-                    equipMarkSPELL.setTransform(card.imgContainer.x, card.imgContainer.y,0.5,0.5);
-                    equipMarkSPELL.regX = 64;
-                    equipMarkSPELL.regY = 64;
                     mainstage.addChild(equipMarkSPELL);
-                    equipMarkMON.setTransform(targetCard.imgContainer.x, targetCard.imgContainer.y,0.5,0.5);
-                    equipMarkMON.regX = 64;
-                    equipMarkMON.regY = 64;
                     mainstage.addChild(equipMarkMON);
                 }; 
             };
@@ -2021,7 +2041,6 @@ window.onload = function() {
             };
             resolve();
         });
-
     };
 
 
@@ -2031,7 +2050,7 @@ window.onload = function() {
     function deckShuffle(){
         if(game.DECK.length <= 1) {
             return false;
-        }
+        };
         game.DECK = shuffle(game.DECK);
         const PromiseArray :Promise<unknown>[] = [];
         game.DECK.map((card, index, array) => {
@@ -2051,18 +2070,6 @@ window.onload = function() {
         });
         return Promise.all(PromiseArray); 
     };
-    
-
-    /**
-     * 配列をランダム化
-     */
-    const shuffle = (target:Card[]) => {
-        for (let i = target.length - 1; i >= 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [target[i], target[j]] = [target[j], target[i]];
-        }
-        return target;
-    }
 
     /**
      * 表裏反転
@@ -2098,9 +2105,11 @@ window.onload = function() {
             await Promise.all(PromiseArray());
             resolve();
         });
-        // return Promise.all(PromiseArray());
     };
 
+    /**
+     * gamestart時のデッキセットアニメーション
+     */
     const decksetAnimation=async()=>{
         const randomIndex = (()=>{
             const defaultArray = [...Array(40).keys()];
@@ -2127,6 +2136,9 @@ window.onload = function() {
         })();  
     };
 
+    /**
+     * スタート画面でカードを並べる
+     */
     const lineUp=()=>{
         const reference = {x:85+cardImgSize.x/2,y:25+cardImgSize.y/2};
         game.defaultDeck.forEach((card,i,a)=>{
@@ -2186,10 +2198,9 @@ window.onload = function() {
 
     /**
      * デッキから任意の枚数をドローする
-     * @param count
      */
     const draw = (count: number) => {
-        // デッキ残り枚数が０だったら引けない
+        // デッキ残り枚数以上のドローでライブラリアウト
         if(game.DECK.length < count) {
             console.log("LiblaryOut")
             game.liblaryOut = true;
@@ -2225,7 +2236,6 @@ window.onload = function() {
 
     /**
      * デッキからサーチする
-     * @param count
      */
     const search = (target: Card[]) => {
         console.log("function search")
@@ -2244,7 +2254,7 @@ window.onload = function() {
     };
 
     /**
-     * チェーン1で優先権ある時発動できる効果
+     * チェーン1で優先権ある時発動できる効果リスト
      */
     const canActiveEffects =(card:Card)=>{
         return card.effect.filter(eff => 
@@ -2253,7 +2263,7 @@ window.onload = function() {
     };
 
     /**
-     * 装備魔法が場から離れたとき装備解除する効果
+     * 装備魔法が場から離れたとき装備解除する
      */
     const equipDisEnchant = (card:SpellCard) =>{
         const disEnchant = new effect(card);
@@ -2322,6 +2332,9 @@ window.onload = function() {
         return EDeff;
     };
 
+    /**
+     * カード毎の特殊召喚条件
+     */
     const SSconditionSetting = {
         DOGMA:(card:MonsterCard)=>{
             card.RuleSScondition = ()=>{
@@ -2367,6 +2380,9 @@ window.onload = function() {
         },
     };
 
+    /**
+     * フェイズ移行時のアニメーション
+     */
     const shadPhase = async(phase:"DRAW PHASE"|"STANBY PHASE"|"MAIN PHASE"|"TURN END") => {
         const phaseText = genCenterText(phase);
         phaseText.shadow = new createjs.Shadow("#ffffff", 0, 0, 10);
@@ -2381,9 +2397,11 @@ window.onload = function() {
             .call(()=>{resolve()})
             .call(()=>{mainstage.removeChild(phaseText)});
         });
-
     };
 
+    /**
+     * デュエル開始
+     */
     const gameStart = async()=>{
         cardContainer.mouseEnabled = false;;
         await decksetAnimation();
@@ -2402,7 +2420,10 @@ window.onload = function() {
         cardContainer.mouseEnabled = true;
     };
 
-    const gameEnd = async()=>{
+    /**
+     * ターンエンド
+     */
+    const turnEnd = async()=>{
         cardContainer.mouseEnabled = false;;
         const dogmaArray = genCardArray({ID:["17132130"],location:["MO"],face:["UP"]});
         const magiexArray = genCardArray({ID:["32723153"],location:["ST"],face:["DOWN"]});
@@ -2448,6 +2469,9 @@ window.onload = function() {
         openResultWindow(winLose);
     };
 
+    /**
+     * リセット
+     */
     const reset = async()=>{
         cardContainer.mouseEnabled = false;;
         game.countNS = 0;
@@ -2499,7 +2523,7 @@ window.onload = function() {
     };
     
     /**
-     * カード毎の効果セット
+     * カード毎の効果
      */    
     interface effectSetting{
         [key: string]: Function;
@@ -3307,6 +3331,7 @@ window.onload = function() {
             eff1.actionPossible = (time:Time) =>{
                 const boolarray = [
                     JudgeSpellTrapActivateLoc(card),
+                    genCardArray({location:["MO"]}).length < 5,
                     game.DECK.filter(card=>card instanceof MonsterCard && card.canNS).length >0
                 ];
                 return boolarray.every(value => value==true)
@@ -3781,9 +3806,6 @@ window.onload = function() {
     const mainCanv =<HTMLCanvasElement>document.getElementById("canv") ;
     const mainstage = new createjs.Stage(mainCanv);
     mainstage.enableMouseOver();
-    // if(createjs.Touch.isSupported() == true){
-    //     createjs.Touch.enable(mainstage)
-    // };
 
     const statusCanv = <HTMLCanvasElement>document.getElementById("statuscanv") ;
     const statusStage = new createjs.Stage(statusCanv);
@@ -3791,6 +3813,7 @@ window.onload = function() {
     const statusCardNameText = <HTMLElement>document.getElementById("cardNameText");
     const statusCardTypeText = <HTMLElement>document.getElementById("cardTypeText");
     const statusCardEffText = <HTMLElement>document.getElementById("cardEffText");
+
     const divSelectMenuContainer =<HTMLElement>document.getElementById("selectMenuContainer") ;
     const windowBackCanv =<HTMLCanvasElement>document.getElementById("selectMenuBack") ;
     const windowBackStage = new createjs.Stage(windowBackCanv);
@@ -3809,8 +3832,6 @@ window.onload = function() {
     const disprayCanv =<HTMLCanvasElement>document.getElementById("displayCanv") ;
     const disprayStage = new createjs.Stage(disprayCanv);
     disprayStage.enableMouseOver();
-    // const tweetDOM = <HTMLElement>document.getElementById("twitterButton");
-    // tweetDOM.style.visibility = "hidden";
     setBoard(mainstage);
     const cardContainer = new createjs.Container;
     mainstage.addChild(cardContainer);
@@ -3841,7 +3862,7 @@ window.onload = function() {
 
     const createdbyText = new createjs.Text("Created by  ", "24px serif","black");
     const twiAccountText = new createjs.Text("@toride0313", "24px serif","black");
-    const updateText = new createjs.Text(" /Update 2020.06.13_1245  Microsoft Edgeでは正常動作しません。", "24px serif","black");
+    const updateText = new createjs.Text(" /Update 2020.06.15_2030  Microsoft Edgeでは正常動作しません。", "24px serif","black");
     twiAccountText.x = createdbyText.getMeasuredWidth();
     updateText.x = createdbyText.getMeasuredWidth()+twiAccountText.getMeasuredWidth()+5;
     twiAccountText.color = "#1111cc";
@@ -3879,9 +3900,6 @@ window.onload = function() {
         const url = "https://twitter.com/intent/follow?screen_name=toride0313"
                     window.open(url, null,"width=650, height=300, personalbar=0, toolbar=0, scrollbars=1, sizable=1")
     }, null, false);
-
-
-
 
     const deckRecipe :{json:Object,num:number}[] = [
         {json:status.Dogma, num:3},
@@ -3957,14 +3975,14 @@ window.onload = function() {
     //     SelectOkButton.addEventListener("click",clickOkButton);
     // }, null, false);
 
-    const drawButton = createButton("draw", 150, 40, "#0275d8");
-    drawButton.x = 1300;
-    drawButton.y = 500;
-    mainstage.addChild(drawButton);
+    // const drawButton = createButton("draw", 150, 40, "#0275d8");
+    // drawButton.x = 1300;
+    // drawButton.y = 500;
+    // mainstage.addChild(drawButton);
 
-    drawButton.on("click", function(e){
-        draw(1);
-    }, null, false);
+    // drawButton.on("click", function(e){
+    //     draw(1);
+    // }, null, false);
 
     // const testButton = createButton("test", 150, 40, "#0275d8");
     // testButton.x = 1300;
@@ -4011,7 +4029,7 @@ window.onload = function() {
     endButton.alpha = 0;
     cardContainer.addChild(endButton);
     endButton.on("click", function async(e){
-        gameEnd();
+        turnEnd();
     }, null, false);
 
     const resetButton = createButton("RESET", 160, 80, "#0275d8");
@@ -4051,7 +4069,6 @@ window.onload = function() {
     SelectCancelButton.y = 10;
     SelectCancelButton.visible = false
     selectButtonStage.addChild(SelectCancelButton);
-
 
     const openCardListWindow = {
         select: (cardArray  :Card[], moreThan :Number, lessThan :Number, activeEff :effect,message? :string,cansel? :boolean) => {
@@ -4282,11 +4299,11 @@ window.onload = function() {
         NoButton.x = NoButton.getBounds().width*8;
         YesNoContainer.addChild(NoButton);
 
-        YesNoContainer.regX = YesNoContainer.getBounds().width/2
-        YesNoContainer.regY = YesNoContainer.getBounds().height/2
-        YesNoContainer.x = windowSize.w/2 -60
-        YesNoContainer.y = windowSize.h/2
-        disprayStage.addChild(YesNoContainer)
+        YesNoContainer.regX = YesNoContainer.getBounds().width/2;
+        YesNoContainer.regY = YesNoContainer.getBounds().height/2;
+        YesNoContainer.x = windowSize.w/2 -60;
+        YesNoContainer.y = windowSize.h/2;
+        disprayStage.addChild(YesNoContainer);
         
         disprayCanv.style.width = String(windowSize.w)+"px";
         disprayCanv.width = windowSize.w;
@@ -4413,6 +4430,7 @@ window.onload = function() {
             };
         });
     };
+
     const openResultWindow = async(messageText :Text)=>{
         const resultWindowContainer = new createjs.Container();
         const messageBack = new createjs.Shape();
@@ -4423,10 +4441,10 @@ window.onload = function() {
         messageBack.regY = cardImgSize.y;
         messageText.x=0;
         messageText.y=0;
+
         const retryButton = createButton("リトライ", 150, 40, "#0275d8");
         retryButton.x = -170
         retryButton.y = cardImgSize.y-70;
-
         const tweetButton = createButton("結果をtweet", 150, 40, "#0275d8");
         tweetButton.x = 20
         tweetButton.y = cardImgSize.y-70;
@@ -4475,7 +4493,6 @@ window.onload = function() {
         })
         .wait(1100)
         .call(()=>{
-            // tweetDOM.style.visibility = "visible";
             [retryButton,tweetButton].forEach(button=>{
                 createjs.Tween.get(button)
                     .to({alpha:1},100)
@@ -4497,7 +4514,7 @@ window.onload = function() {
         messageBack.regY = cardImgSize.y/2;
         mainstage.addChild(messageWindowContainer);
         messageWindowContainer.addChild(messageBack,messageWindowtext);
-        messageWindowContainer.setTransform(game.grid.front[3][0],(game.grid.front[0][1]+game.grid.back[0][1])/2);
+        messageWindowContainer.setTransform(game.centerGrid.x,game.centerGrid.y);
         messageWindowContainer.regX = 0;
         messageWindowContainer.regY = messageWindowContainer.getBounds().height/2;
         messageWindowContainer.scaleX = 0;
