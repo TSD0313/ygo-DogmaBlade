@@ -3906,10 +3906,10 @@ window.onload = function() {
     qiitaImg .x = -32.5;
     qiitaImg .y = 840;
     mainstage.addChild(qiitaImg);
-    qiitaImg.on("click", function(e){
-        const url = "https://qiita.com/toride0313/items/7bbf1a4be3525e3f0aaf"
-                    window.open(url, null)
-    }, null, false);
+    qiitaImg.addEventListener("click",clickQiita);
+    function clickQiita(event) {
+        window.open("https://qiita.com/toride0313/items/7bbf1a4be3525e3f0aaf")
+    };
 
 
 
