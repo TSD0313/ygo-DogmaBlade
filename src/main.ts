@@ -3901,6 +3901,18 @@ window.onload = function() {
                     window.open(url, null,"width=650, height=300, personalbar=0, toolbar=0, scrollbars=1, sizable=1")
     }, null, false);
 
+    const qiitaImg = new createjs.Bitmap("qiita.png");
+    qiitaImg .cursor = "pointer";
+    qiitaImg .x = -32.5;
+    qiitaImg .y = 840;
+    mainstage.addChild(qiitaImg);
+    qiitaImg.on("click", function(e){
+        const url = "https://qiita.com/toride0313/items/7bbf1a4be3525e3f0aaf"
+                    window.open(url, null)
+    }, null, false);
+
+
+
     const deckRecipe :{json:Object,num:number}[] = [
         {json:status.Dogma, num:3},
         {json:status.CyberVary, num:2},
