@@ -273,6 +273,7 @@ class effect {
     targetCard : Card[];
     chainBrock : Text;
     lifeCost : number;
+    copyCondition : () => boolean;
     actionPossible :(time:Time) => boolean;
     whenActive : (eff?: effect) => Promise<any>;
     whenResolve : (eff?: effect) => Promise<any>;
@@ -445,20 +446,12 @@ window.onload = function() {
     const selectActivateCard = (effArray:effect[],cancel?:boolean) => {
         const tmpCard = new Card
         const tmpEff = new effect(tmpCard)
-        return new Promise<Card>((resolve, reject) => {
+        return new Promise<Card>(async(resolve, reject) => {
             const cardlist = effArray.flatMap(eff => eff.card)
-            openCardListWindow.select(cardlist,1,1,tmpEff,"発動する効果を選択してください",cancel);
-            
-            SelectOkButton.addEventListener("click",clickOkButton);
-            function clickOkButton(e) {
-                divSelectMenuContainer.style.visibility = "hidden";
-                disprayStage.removeAllChildren();
+            tmpEff.targetCard = await openCardListWindow.select(cardlist,1,1,tmpEff,"発動する効果を選択してください",cancel);
+            if(1<=tmpEff.targetCard.length){
                 resolve(tmpEff.targetCard.pop());
-            };
-            SelectCancelButton.addEventListener("click",clickCancelButton);
-            function clickCancelButton(e) {
-                divSelectMenuContainer.style.visibility = "hidden";
-                disprayStage.removeAllChildren();
+            }else{
                 resolve();
             };
         });
@@ -871,19 +864,11 @@ window.onload = function() {
             card.button.ACTIVATE.buttonContainer.addEventListener("click",handleActivatebuttonClick);
             function handleActivatebuttonClick(event) {
                 GyEffActivate();
-                // buConArray.forEach(b =>{b.removeAllEventListeners("click");});
             };
-
+            const handlViewbuttonClick = async(event) => {
+                await openCardListWindow.view(game.GY,"GY");
+            };
             card.button.VIEW.buttonContainer.addEventListener("click",handlViewbuttonClick);
-            function handlViewbuttonClick(event) {
-                openCardListWindow.view(game.GY,"GY");
-                const clickOkButton = async (e) => {
-                    divSelectMenuContainer.style.visibility = "hidden";
-                    disprayStage.removeAllChildren();
-                    SelectOkButton.removeEventListener("click", clickOkButton);
-                };
-                SelectOkButton.addEventListener("click",clickOkButton);
-            };
         },
         DD:async(card:Card)=>{
             card.imgContainer.removeAllEventListeners();
@@ -922,16 +907,10 @@ window.onload = function() {
                 // buConArray.forEach(b =>{b.removeAllEventListeners("click");});
             };
 
-            card.button.VIEW.buttonContainer.addEventListener("click",handlViewbuttonClick);
-            function handlViewbuttonClick(event) {
-                openCardListWindow.view(game.DD,"DD");
-                const clickOkButton = async (e) => {
-                    divSelectMenuContainer.style.visibility = "hidden";
-                    disprayStage.removeAllChildren();
-                    SelectOkButton.removeEventListener("click", clickOkButton);
-                };
-                SelectOkButton.addEventListener("click",clickOkButton);
+            const handlViewbuttonClick = async(event) => {
+                await openCardListWindow.view(game.DD,"DD");
             };
+            card.button.VIEW.buttonContainer.addEventListener("click",handlViewbuttonClick);
         },
         DECK:async(card:Card)=>{
             card.imgContainer.removeAllEventListeners();
@@ -1635,19 +1614,13 @@ window.onload = function() {
             const tmpCard = new Card;
             const tmpEff = new effect(tmpCard);
 
-            await new Promise((resolve, reject) => {
-                openCardListWindow.select(cardlist,numberToRelease,numberToRelease,tmpEff,"リリースするモンスターを"+numberToRelease+"体選択してください");
-                const clickOkButton = async (e) => {
-                    console.log("Release " + tmpEff.targetCard.map(({ cardName }) => cardName))
-                    divSelectMenuContainer.style.visibility = "hidden";
-                    disprayStage.removeAllChildren();
-                    SelectOkButton.removeEventListener("click", clickOkButton);
-                    game.nowTime = new Time;
-                    await release(tmpEff.targetCard,"ADVANCE")
-                    game.timeArray.push({...game.nowTime});
-                    resolve();
-                };
-                SelectOkButton.addEventListener("click",clickOkButton);
+            await new Promise(async(resolve, reject) => {
+                tmpEff.targetCard = await openCardListWindow.select(cardlist,numberToRelease,numberToRelease,tmpEff,"リリースするモンスターを"+numberToRelease+"体選択してください");
+                console.log("Release " + tmpEff.targetCard.map(({ cardName }) => cardName));
+                game.nowTime = new Time;
+                await release(tmpEff.targetCard,"ADVANCE")
+                game.timeArray.push({...game.nowTime});
+                resolve();
             });
         };
 
@@ -1720,7 +1693,7 @@ window.onload = function() {
         if(!game.payLPcost){
             return
         };
-        const LPtext = new createjs.Text("-"+cost, "80px serif","black");
+        const LPtext = new createjs.Text("-"+cost.toFixed(), "80px serif","black");
         LPtext.textBaseline = "middle";
         LPtext.textAlign = "center";
         LPtext.x = game.centerGrid.x;
@@ -2346,35 +2319,18 @@ window.onload = function() {
             };
             card.RuleSSpromise = async()=>{
                 const tmpEffA = new effect(new Card);
-                await new Promise(async(resolve, reject) => {
-                    const cardlistA = genCardArray({location:["MO"],category:["D-HERO"]});
-                    const clickOkButtonA = async (e) => {
-                        divSelectMenuContainer.style.visibility = "hidden";
-                        disprayStage.removeAllChildren();
-                        SelectOkButton.removeEventListener("click", clickOkButtonA);
-                        resolve();
-                    };
-                    SelectOkButton.addEventListener("click",clickOkButtonA);
-                    await openCardListWindow.select(cardlistA,1,1,tmpEffA,"リリースするD-HEROを"+1+"体選択してください");
-                });
+                const cardlistA = genCardArray({location:["MO"],category:["D-HERO"]});
+                tmpEffA.targetCard = await openCardListWindow.select(cardlistA,1,1,tmpEffA,"リリースするD-HEROを"+1+"体選択してください");
                 
                 const tmpEffB = new effect(new Card);
-                await new Promise(async(resolve, reject) => {
-                    const cardlistB = genCardArray({location:["MO"]}).filter(card=>!( tmpEffA.targetCard.includes(card) ));
-                    const clickOkButtonB = async (e) => {
-                        const releaseArray = tmpEffB.targetCard.concat(tmpEffA.targetCard);
-                        console.log("Release " + releaseArray.map(({ cardName }) => cardName))
-                        divSelectMenuContainer.style.visibility = "hidden";
-                        disprayStage.removeAllChildren();
-                        SelectOkButton.removeEventListener("click", clickOkButtonB);
-                        game.nowTime = new Time;
-                        await release(releaseArray,"COST")
-                        game.timeArray.push({...game.nowTime});
-                        resolve();
-                    };
-                    SelectOkButton.addEventListener("click",clickOkButtonB);
-                    await openCardListWindow.select(cardlistB,2,2,tmpEffB,"リリースするモンスターを"+2+"体選択してください");
-                });
+                const cardlistB = genCardArray({location:["MO"]}).filter(card=>!( tmpEffA.targetCard.includes(card) ));
+                tmpEffB.targetCard = await openCardListWindow.select(cardlistB,2,2,tmpEffB,"リリースするモンスターを"+2+"体選択してください");
+
+                const releaseArray = tmpEffB.targetCard.concat(tmpEffA.targetCard);
+                console.log("Release " + releaseArray.map(({ cardName }) => cardName))
+                game.nowTime = new Time;
+                await release(releaseArray,"COST")
+                game.timeArray.push({...game.nowTime});
                 await SpecialSummon.fromHAND([card],false,"ATK");
             };
         },
@@ -2615,33 +2571,15 @@ window.onload = function() {
                     game.nowTime = new Time;
                     if(eff.mode){
                         if(conditionA()){
-                            await new Promise((resolve, reject) => {
-                                const cardlist = genCardArray({category:["HERO"],location:["DECK"]});
-                                openCardListWindow.select(cardlist,1,1,eff,"手札に加えるHEROを選択してください");
-                                SelectOkButton.addEventListener("click",clickOkButton);
-                                function clickOkButton(e) {
-                                    divSelectMenuContainer.style.visibility = "hidden";
-                                    disprayStage.removeAllChildren();
-                                    SelectOkButton.removeEventListener("click", clickOkButton);
-                                    resolve();
-                                };
-                            });
+                            const cardlist = genCardArray({category:["HERO"],location:["DECK"]});
+                            eff.targetCard = await openCardListWindow.select(cardlist,1,1,eff,"手札に加えるHEROを選択してください");
                             await search(eff.targetCard);
                         };
                     }else{
                         if(conditionB()){
-                            await new Promise((resolve, reject) => {
-                                const countMax = genCardArray({category:["HERO"],location:["MO"],face:["UP"]}).filter(c=>c!==card).length;
-                                const cardlist = genCardArray({location:["ST"]});
-                                openCardListWindow.select(cardlist,1,countMax,eff,"破壊するカードを選択してください");
-                                SelectOkButton.addEventListener("click",clickOkButton);
-                                function clickOkButton(e) {
-                                    divSelectMenuContainer.style.visibility = "hidden";
-                                    disprayStage.removeAllChildren();
-                                    SelectOkButton.removeEventListener("click", clickOkButton);
-                                    resolve();
-                                };
-                            });
+                            const countMax = genCardArray({category:["HERO"],location:["MO"],face:["UP"]}).filter(c=>c!==card).length;
+                            const cardlist = genCardArray({location:["ST"]});
+                            eff.targetCard = await openCardListWindow.select(cardlist,1,countMax,eff,"破壊するカードを選択してください");
                             await destroy(eff.targetCard,"EFFECT");
                         };
                     };
@@ -2745,17 +2683,11 @@ window.onload = function() {
                 return boolarray.every(value => value)
             };
             eff1.whenActive = (eff :effect) => {
-                return new Promise((resolve, reject) => {
+                return new Promise(async(resolve, reject) => {
                     const cardlist = genCardArray({location:["MO","ST","FIELD"]});
-                    openCardListWindow.select(cardlist,1,2,eff,"破壊するカードを選択してください");
-                    SelectOkButton.addEventListener("click",clickOkButton);
-                    async function clickOkButton(e) {
-                        divSelectMenuContainer.style.visibility = "hidden";
-                        disprayStage.removeAllChildren();
-                        SelectOkButton.removeEventListener("click", clickOkButton);
-                        await animationEffectTarget(eff.targetCard)
-                        resolve();
-                    };
+                    eff.targetCard = await openCardListWindow.select(cardlist,1,2,eff,"破壊するカードを選択してください");
+                    await animationEffectTarget(eff.targetCard);
+                    resolve();
                 });
             };
             eff1.whenResolve = (eff :effect) => {
@@ -2807,27 +2739,13 @@ window.onload = function() {
 
                     if(eff.mode){
                         const cardlist = genCardArray({location:["MO"]}).filter(c=> c!=card);
-                        openCardListWindow.select(cardlist,1,1,eff,"除外するモンスターを1枚選択してください");
-                        const clickOkButton = async (e) => {
-                            divSelectMenuContainer.style.visibility = "hidden";
-                            disprayStage.removeAllChildren();
-                            SelectOkButton.removeEventListener("click", clickOkButton);
-                            eff.targetCard.push(card);
-                            await animationEffectTarget(eff.targetCard);
-                            resolve();
-                        };
-                        SelectOkButton.addEventListener("click",clickOkButton);
+                        eff.targetCard = await openCardListWindow.select(cardlist,1,1,eff,"除外するモンスターを1枚選択してください");
+                        await animationEffectTarget(eff.targetCard);
                     }else{
                         const cardlist = genCardArray({location:["GY"]});
-                        openCardListWindow.select(cardlist,1,1,eff,"デッキトップに置くカードを"+1+"枚選択してください");
-                        const clickOkButton = async (e) => {
-                            divSelectMenuContainer.style.visibility = "hidden";
-                            disprayStage.removeAllChildren();
-                            SelectOkButton.removeEventListener("click", clickOkButton);
-                            resolve();
-                        };
-                        SelectOkButton.addEventListener("click",clickOkButton);
+                        eff.targetCard = await openCardListWindow.select(cardlist,1,1,eff,"デッキトップに置くカードを"+1+"枚選択してください");
                     };
+                    resolve();
                 });
             };
             eff1.whenResolve = (eff :effect) => {
@@ -2842,17 +2760,8 @@ window.onload = function() {
                         resolve();
                     }else{
                         const tmpEff = new effect(new Card);
-                        await new Promise((resolve, reject) => {
-                            openCardListWindow.select(game.HAND,1,1,tmpEff,"除外する手札を1枚選択してください");
-                            SelectOkButton.addEventListener("click",clickOkButton);
-                            function clickOkButton(e) {
-                                tmpEff.targetCard.push(card);
-                                divSelectMenuContainer.style.visibility = "hidden";
-                                disprayStage.removeAllChildren();
-                                SelectOkButton.removeEventListener("click", clickOkButton);
-                                resolve();
-                            };
-                        });
+                        tmpEff.targetCard = await openCardListWindow.select(game.HAND,1,1,tmpEff,"除外する手札を1枚選択してください");
+                        tmpEff.targetCard.push(card);
                         await vanish(tmpEff.targetCard,"EFFECT");
                         game.timeArray.push({...game.nowTime});
                         game.nowTime = new Time;
@@ -2893,17 +2802,11 @@ window.onload = function() {
                 return boolarray.every(value => value)
             };
             eff1.whenActive = (eff :effect) => {
-                return new Promise((resolve, reject) => {
+                return new Promise(async(resolve, reject) => {
                     const cardlist = game.GY.filter(card=>card instanceof SpellCard);
-                    openCardListWindow.select(cardlist,1,1,eff,"手札に加える魔法を1枚選択してください");
-                    const clickOkButton = async (e) => {
-                        divSelectMenuContainer.style.visibility = "hidden";
-                        disprayStage.removeAllChildren();
-                        SelectOkButton.removeEventListener("click", clickOkButton);
-                        await animationEffectTarget(eff.targetCard);
-                        resolve();
-                    };
-                    SelectOkButton.addEventListener("click",clickOkButton);
+                    eff.targetCard = await openCardListWindow.select(cardlist,1,1,eff,"手札に加える魔法を1枚選択してください");
+                    await animationEffectTarget(eff.targetCard);
+                    resolve()
                 });
             };
             eff1.whenResolve = (eff :effect) => {
@@ -2948,6 +2851,35 @@ window.onload = function() {
             };
             return [eff1,eff2];
         },
+        JUNKCOLLECTOR:(card:Card)=>{
+            const eff1 = new effect(card);
+            eff1.effType = "Ignition";
+            eff1.range = ["MO"];
+            eff1.actionPossible = (time:Time) =>{
+                const boolarray = [
+                    eff1.range.includes(card.location),
+                    card.face == "UP",
+                    1 <= genCardArray({location:["GY"],cardType:["Trap"]}).filter(trap=>trap.effect[0].copyCondition).length
+                ];
+                return boolarray.every(value => value==true)
+            };
+            eff1.whenActive = (eff :effect) => {
+                return new Promise(async(resolve, reject) => {
+                    const cardlist = genCardArray({location:["GY"],cardType:["Trap"]}).filter(trap=>trap.effect[0].copyCondition);
+                    eff.targetCard = await openCardListWindow.select(cardlist,1,1,eff,"コピーする罠を1枚選択してください");
+                    eff.targetCard.push(card);
+                    await vanish(eff.targetCard,"COST");
+                    resolve();
+                });
+            };
+            eff1.whenResolve = async(eff :effect) => {
+                return new Promise<void>(async(resolve, reject) => {
+                    await eff.targetCard[0].effect[0].whenResolve(eff);
+                    resolve();
+                });
+            };
+            return [eff1]; 
+        },
         REINFORCEMENT:(card:SpellCard)=>{
             const eff1 = new effect(card);
             eff1.effType = "CardActived";
@@ -2971,16 +2903,7 @@ window.onload = function() {
                     const cardlist = genCardArray({race:["WARRIOR"],location:["DECK"]})
                                         .filter(card => card instanceof MonsterCard && card.level <= 4);
                     if(cardlist.length > 0){
-                        await new Promise((resolve, reject) => {
-                            openCardListWindow.select(cardlist,1,1,eff,"手札に加えるカードを選択してください");
-                            SelectOkButton.addEventListener("click",clickOkButton);
-                            function clickOkButton(e) {
-                                divSelectMenuContainer.style.visibility = "hidden";
-                                disprayStage.removeAllChildren();
-                                SelectOkButton.removeEventListener("click", clickOkButton);
-                                resolve();
-                            };
-                        });
+                        eff.targetCard = await openCardListWindow.select(cardlist,1,1,eff,"手札に加えるカードを選択してください");
                         await search(eff.targetCard);
                     };
                     game.timeArray.push({...game.nowTime});
@@ -3002,18 +2925,11 @@ window.onload = function() {
                 return boolarray.every(value => value==true)
             };
             eff1.whenActive = (eff :effect) => {
-                return new Promise((resolve, reject) => {
+                return new Promise(async(resolve, reject) => {
                     const cardlist = genCardArray({category:["D-HERO"],location:["HAND"]});
-                    openCardListWindow.select(cardlist,1,1,eff,"捨てるD-HEROを1枚選択してください");
-                    const clickOkButton = async (e) => {
-                        console.log("cost " + eff.targetCard.map(({ cardName }) => cardName))
-                        divSelectMenuContainer.style.visibility = "hidden";
-                        disprayStage.removeAllChildren();
-                        await discard(eff.targetCard);
-                        SelectOkButton.removeEventListener("click", clickOkButton);
-                        resolve();
-                    };
-                    SelectOkButton.addEventListener("click",clickOkButton);
+                    eff.targetCard = await openCardListWindow.select(cardlist,1,1,eff,"捨てるD-HEROを1枚選択してください");
+                    await discard(eff.targetCard);
+                    resolve();
                 });
             };
             eff1.whenResolve = (eff :effect) => {
@@ -3039,17 +2955,11 @@ window.onload = function() {
                 return boolarray.every(value => value==true)
             };
             eff1.whenActive = (eff :effect) => {
-                return new Promise((resolve, reject) => {
+                return new Promise(async(resolve, reject) => {
                     const cardlist = game.GY.filter(card=>card instanceof MonsterCard && card.canNS);
-                    openCardListWindow.select(cardlist,1,1,eff,"特殊召喚するモンスターを1枚選択してください");
-                    const clickOkButton = async (e) => {
-                        divSelectMenuContainer.style.visibility = "hidden";
-                        disprayStage.removeAllChildren();
-                        SelectOkButton.removeEventListener("click", clickOkButton);
-                        await animationEffectTarget(eff.targetCard);
-                        resolve();
-                    };
-                    SelectOkButton.addEventListener("click",clickOkButton);
+                    eff.targetCard = await openCardListWindow.select(cardlist,1,1,eff,"特殊召喚するモンスターを1枚選択してください");
+                    await animationEffectTarget(eff.targetCard);
+                    resolve();
                 });
             };
             eff1.whenResolve = (eff :effect) => {
@@ -3081,15 +2991,9 @@ window.onload = function() {
                 return new Promise(async(resolve, reject) => {
                     const cardlist = game.GY.filter(card=>card instanceof MonsterCard && card.canNS)
                     await payLife(eff.lifeCost);
-                    openCardListWindow.select(cardlist,1,1,eff,"特殊召喚するモンスターを1枚選択してください");
-                    const clickOkButton = async (e) => {
-                        divSelectMenuContainer.style.visibility = "hidden";
-                        disprayStage.removeAllChildren();
-                        SelectOkButton.removeEventListener("click", clickOkButton);
-                        await animationEffectTarget(eff.targetCard);
-                        resolve();
-                    };
-                    SelectOkButton.addEventListener("click",clickOkButton);
+                    eff.targetCard = await openCardListWindow.select(cardlist,1,1,eff,"特殊召喚するモンスターを1枚選択してください");
+                    await animationEffectTarget(eff.targetCard);
+                    resolve();
                 });
             };
             eff1.whenResolve = (eff :effect) => {
@@ -3144,18 +3048,11 @@ window.onload = function() {
                 return boolarray.every(value => value==true)
             };
             eff1.whenActive = (eff :effect) => {
-                return new Promise((resolve, reject) => {
+                return new Promise(async(resolve, reject) => {
                     const cardlist = genCardArray({location:["MO"]});
-                    openCardListWindow.select(cardlist,1,1,eff,"リリースするモンスターを1枚選択してください");
-                    const clickOkButton = async (e) => {
-                        console.log("cost " + eff.targetCard.map(({ cardName }) => cardName))
-                        divSelectMenuContainer.style.visibility = "hidden";
-                        disprayStage.removeAllChildren();
-                        await release(eff.targetCard,"COST");
-                        SelectOkButton.removeEventListener("click", clickOkButton);
-                        resolve();
-                    };
-                    SelectOkButton.addEventListener("click",clickOkButton);
+                    eff.targetCard = await openCardListWindow.select(cardlist,1,1,eff,"リリースするモンスターを1枚選択してください");
+                    await release(eff.targetCard,"COST");
+                    resolve();
                 });
             };
             eff1.whenResolve = (eff :effect) => {
@@ -3203,17 +3100,11 @@ window.onload = function() {
                 return boolarray.every(value => value==true)
             };
             eff1.whenActive = (eff :effect) => {
-                return new Promise((resolve, reject) => {
+                return new Promise(async(resolve, reject) => {
                     const cardlist = genCardArray({face:["UP"],location:["MO"],race:["WARRIOR"]});
-                    openCardListWindow.select(cardlist,1,1,eff,"装備対象を選択してください");
-                    const clickOkButton = async (e) => {
-                        divSelectMenuContainer.style.visibility = "hidden";
-                        disprayStage.removeAllChildren();
-                        SelectOkButton.removeEventListener("click", clickOkButton);
-                        await animationEffectTarget(eff.targetCard);
-                        resolve();
-                    };
-                    SelectOkButton.addEventListener("click",clickOkButton);
+                    eff.targetCard = await openCardListWindow.select(cardlist,1,1,eff,"装備対象を選択してください");
+                    await animationEffectTarget(eff.targetCard);
+                    resolve();
                 });
             };
             eff1.whenResolve = (eff :effect) => {
@@ -3242,18 +3133,10 @@ window.onload = function() {
                 return boolarray.every(value => value==true)
             };
             eff2.whenActive = (eff :effect) => {
-                return new Promise((resolve, reject) => {
+                return new Promise(async(resolve, reject) => {
                     const cardlist = genCardArray({race:["WARRIOR"],location:["GY"]});
-                    openCardListWindow.select(cardlist,2,2,eff,"除外する戦士族を2枚選択してください");
-                    const clickOkButton = async (e) => {
-                        console.log("cost " + eff.targetCard.map(({ cardName }) => cardName))
-                        divSelectMenuContainer.style.visibility = "hidden";
-                        disprayStage.removeAllChildren();
-                        await vanish(eff.targetCard,"COST");
-                        SelectOkButton.removeEventListener("click", clickOkButton);
-                        resolve();
-                    };
-                    SelectOkButton.addEventListener("click",clickOkButton);
+                    eff.targetCard = await openCardListWindow.select(cardlist,2,2,eff,"除外する戦士族を2枚選択してください");
+                    await vanish(eff.targetCard,"COST");
                 });
             };
             eff2.whenResolve = (eff :effect) => {
@@ -3303,16 +3186,7 @@ window.onload = function() {
                     const canNSmonster = game.DD.filter(card=>card instanceof MonsterCard && card.canNS);
                     if(canNSmonster.length>0 && blankMonsterZone>0){
                         if(canNSmonster.length > blankMonsterZone ){
-                            await new Promise((resolve, reject) => {
-                                openCardListWindow.select(canNSmonster,blankMonsterZone,blankMonsterZone,eff,"特殊召喚するモンスターを選択してください");
-                                const clickOkButton = async (e) => {
-                                    divSelectMenuContainer.style.visibility = "hidden";
-                                    disprayStage.removeAllChildren();
-                                    SelectOkButton.removeEventListener("click", clickOkButton);
-                                    resolve();
-                                };
-                                SelectOkButton.addEventListener("click",clickOkButton);
-                            });
+                            eff.targetCard = await openCardListWindow.select(canNSmonster,blankMonsterZone,blankMonsterZone,eff,"特殊召喚するモンスターを選択してください");
                         }else{
                             eff.targetCard = canNSmonster;
                         };
@@ -3415,28 +3289,11 @@ window.onload = function() {
             eff1.whenActive = (eff :effect) => {
                 return new Promise(async(resolve, reject) => {
                     const cardlist = game.DD.filter(card=>card instanceof MonsterCard && card.canNS)
-                    await new Promise((resolve, reject) => {
-                        openCardListWindow.select(game.HAND,1,1,eff,"捨てる手札を1枚選択してください");
-                        const clickOkButton = async (e) => {
-                            console.log("cost " + eff.targetCard.map(({ cardName }) => cardName))
-                            divSelectMenuContainer.style.visibility = "hidden";
-                            disprayStage.removeAllChildren();
-                            await discard(eff.targetCard);
-                            SelectOkButton.removeEventListener("click", clickOkButton);
-                            resolve();
-                        };
-                        SelectOkButton.addEventListener("click",clickOkButton);
-                    });
-
-                    openCardListWindow.select(cardlist,1,1,eff,"特殊召喚するモンスターを1枚選択してください");
-                    const clickOkButton = async (e) => {
-                        divSelectMenuContainer.style.visibility = "hidden";
-                        disprayStage.removeAllChildren();
-                        SelectOkButton.removeEventListener("click", clickOkButton);
-                        await animationEffectTarget(eff.targetCard);
-                        resolve();
-                    };
-                    SelectOkButton.addEventListener("click",clickOkButton);
+                    eff.targetCard = await openCardListWindow.select(game.HAND,1,1,eff,"捨てる手札を1枚選択してください");
+                    await discard(eff.targetCard);
+                    eff.targetCard = await openCardListWindow.select(cardlist,1,1,eff,"特殊召喚するモンスターを1枚選択してください");
+                    await animationEffectTarget(eff.targetCard);
+                    resolve();
                 });
             };
             eff1.whenResolve = (eff :effect) => {
@@ -3493,19 +3350,11 @@ window.onload = function() {
                 return boolarray.every(value => value==true)
             };
             eff1.whenActive = (eff :effect) => {
-                return new Promise((resolve, reject) => {
-                    // const cardlist = genCardArray({level:[8],location:["HAND"]});
+                return new Promise(async(resolve, reject) => {
                     const cardlist = game.HAND.filter(c=>c instanceof MonsterCard && c.level==8);
-                    openCardListWindow.select(cardlist,1,1,eff,"捨てるカードを1枚選択してください");
-                    const clickOkButton = async (e) => {
-                        console.log("cost " + eff.targetCard.map(({ cardName }) => cardName))
-                        divSelectMenuContainer.style.visibility = "hidden";
-                        disprayStage.removeAllChildren();
-                        await discard(eff.targetCard);
-                        SelectOkButton.removeEventListener("click", clickOkButton);
-                        resolve();
-                    };
-                    SelectOkButton.addEventListener("click",clickOkButton);
+                    eff.targetCard = await openCardListWindow.select(cardlist,1,1,eff,"捨てるカードを1枚選択してください");
+                    await discard(eff.targetCard);
+                    resolve();
                 });
             };
             eff1.whenResolve = (eff :effect) => {
@@ -3532,28 +3381,12 @@ window.onload = function() {
             };
             eff1.whenActive = (eff :effect) => {
                 return new Promise(async(resolve, reject) => {
-                    await new Promise((resolve, reject) => {
-                        openCardListWindow.select(game.HAND,2,2,eff,"捨てるカードを2枚選択してください");
-                        const clickOkButton = async (e) => {
-                            console.log("cost " + eff.targetCard.map(({ cardName }) => cardName))
-                            divSelectMenuContainer.style.visibility = "hidden";
-                            disprayStage.removeAllChildren();
-                            await discard(eff.targetCard);
-                            SelectOkButton.removeEventListener("click", clickOkButton);
-                            resolve();
-                        };
-                        SelectOkButton.addEventListener("click",clickOkButton);
-                    });
+                    eff.targetCard = await openCardListWindow.select(game.HAND,2,2,eff,"捨てるカードを2枚選択してください");
+                    await discard(eff.targetCard);
                     const cardlist = game.GY.filter(card=>card instanceof SpellCard);
-                    openCardListWindow.select(cardlist,1,1,eff,"手札に加える魔法を1枚選択してください");
-                    const clickOkButton = async (e) => {
-                        divSelectMenuContainer.style.visibility = "hidden";
-                        disprayStage.removeAllChildren();
-                        SelectOkButton.removeEventListener("click", clickOkButton);
-                        await animationEffectTarget(eff.targetCard);
-                        resolve();
-                    };
-                    SelectOkButton.addEventListener("click",clickOkButton);
+                    eff.targetCard = await openCardListWindow.select(cardlist,1,1,eff,"手札に加える魔法を1枚選択してください");
+                    await animationEffectTarget(eff.targetCard);
+                    resolve();
                 });
             };
             eff1.whenResolve = (eff :effect) => {
@@ -3660,30 +3493,19 @@ window.onload = function() {
                 return new Promise<void>(async(resolve, reject) => {
                     game.nowTime = new Time;
                     const cardlist = genCardArray({cardType:["Spell"],location:["DECK","GY"]})
-                        .filter(card => card instanceof SpellCard && card.spellType == "Equip");
+                                        .filter(card => card instanceof SpellCard && card.spellType == "Equip");
                     if(cardlist.length > 0){
-                        await new Promise((resolve, reject) => {
-                            openCardListWindow.select(cardlist,1,1,eff,"手札に加えるカードを選択してください");
-                            SelectOkButton.addEventListener("click",clickOkButton);
-                            function clickOkButton(e) {
-                                divSelectMenuContainer.style.visibility = "hidden";
-                                disprayStage.removeAllChildren();
-                                SelectOkButton.removeEventListener("click", clickOkButton);
-                                resolve();
-                            };
-                        });
+                        eff.targetCard = await openCardListWindow.select(cardlist,1,1,eff,"手札に加えるカードを選択してください");
                         if(eff.targetCard[0].location=="DECK"){
                             await search(eff.targetCard);
                         }else if(eff.targetCard[0].location=="GY"){
                             await moveCard.GY.toHAND(eff.targetCard[0]);
-                            
                             game.nowTime.move.push({
                                 card:eff.card,
                                 from:"GY",
                                 to:"HAND"
                             });
                         };
-                        
                         game.normalSummon = false;
                     };
                     game.timeArray.push({...game.nowTime});
@@ -3756,16 +3578,7 @@ window.onload = function() {
                 return new Promise<void>(async(resolve, reject) => {
                     game.nowTime = new Time;
                     if(game.DECK.length >= 1){
-                        await new Promise((resolve, reject) => {
-                            openCardListWindow.select(game.DECK,1,1,eff,"除外するカードを選択してください");
-                            SelectOkButton.addEventListener("click",clickOkButton);
-                            function clickOkButton(e) {
-                                divSelectMenuContainer.style.visibility = "hidden";
-                                disprayStage.removeAllChildren();
-                                SelectOkButton.removeEventListener("click", clickOkButton);
-                                resolve();
-                            };
-                        });
+                        eff.targetCard = await openCardListWindow.select(game.DECK,1,1,eff,"除外するカードを選択してください");
                         await vanish(eff.targetCard,"EFFECT");
                         await deckShuffle();
                     };
@@ -3778,7 +3591,10 @@ window.onload = function() {
         MAGICALEXPLOSION:(card:TrapCard)=>{
             const eff1 = new effect(card);
             eff1.effType = "CardActived";
-            eff1.range = ["HAND","ST"]
+            eff1.range = ["ST"];
+            eff1.copyCondition = ()=>{
+                return 1 <= genCardArray({location:["GY"],cardType:["Spell"]}).length;
+            };
             eff1.actionPossible = (time:Time) =>{
                 const boolarray = [false];
                 return boolarray.every(value => value==true)
@@ -3798,6 +3614,45 @@ window.onload = function() {
                 });
             };
             return [eff1];   
+        },
+        RETURNFROMTHEDD:(card:TrapCard)=>{
+            const eff1 = new effect(card);
+            eff1.effType = "CardActived";
+            eff1.range = ["ST"];
+            eff1.copyCondition = ()=>{
+                return (
+                    1 <= genCardArray({location:["DD"],cardType:["Monster"]}).length &&
+                    genCardArray({location:["MO"]}).length < 5
+                );
+            };
+            eff1.actionPossible = (time:Time) =>{
+                const boolarray = [false];
+                return boolarray.every(value => value==true)
+            };
+            eff1.whenActive = (eff :effect) => {
+                return new Promise(async(resolve, reject) => {
+                    await payLife(game.myLifePoint/2);
+                    resolve();
+                });
+            };
+            eff1.whenResolve = (eff :effect) => {
+                return new Promise<void>(async(resolve, reject) => {
+                    game.nowTime = new Time;
+                    const blankMonsterZone = 5-genCardArray({location:["MO"]}).length;
+                    const canNSmonster = game.DD.filter(card=>card instanceof MonsterCard && card.canNS);
+                    if(canNSmonster.length>0 && blankMonsterZone>0){
+                        if(canNSmonster.length > blankMonsterZone ){
+                            eff.targetCard = await openCardListWindow.select(canNSmonster,blankMonsterZone,blankMonsterZone,eff,"特殊召喚するモンスターを選択してください");
+                        }else{
+                            eff.targetCard = canNSmonster;
+                        };
+                        await SpecialSummon.fromDD(eff.targetCard,false,"ATK");
+                    };
+                    game.timeArray.push({...game.nowTime});
+                    resolve();
+                });
+            };
+            return [eff1];
         }
     };
 
@@ -3977,14 +3832,8 @@ window.onload = function() {
     // mainstage.addChild(DeckViewButton);
 
     // DeckViewButton.on("click", function(e){
-    //     openCardListWindow.view(game.DECK,"DECK");
     //     console.log(game.DECK)
-    //     const clickOkButton = async (e) => {
-    //         divSelectMenuContainer.style.visibility = "hidden";
-    //         disprayStage.removeAllChildren();
-    //         SelectOkButton.removeEventListener("click", clickOkButton);
-    //     };
-    //     SelectOkButton.addEventListener("click",clickOkButton);
+    //     await openCardListWindow.view(game.DECK,"DECK");
     // }, null, false);
 
     // const drawButton = createButton("draw", 150, 40, "#0275d8");
@@ -4083,7 +3932,7 @@ window.onload = function() {
     selectButtonStage.addChild(SelectCancelButton);
 
     const openCardListWindow = {
-        select: (cardArray  :Card[], moreThan :Number, lessThan :Number, activeEff :effect,message? :string,cansel? :boolean) => {
+        select: (cardArray  :Card[], moreThan :Number, lessThan :Number, activeEff :effect,message? :string,cansel? :boolean):Promise<Card[]> => {
             const disprayCards = [...cardArray].reverse();
             divSelectMenuContainer.style.visibility = "visible";
             SelectCancelButton.visible = false;
@@ -4100,7 +3949,7 @@ window.onload = function() {
             }else{
                 SelectOkButton.x = selectButtonCanv.width/2 - 75;
             };
-
+            let selectedCardArray : Card[] = [];
             activeEff.targetCard = [];
             selectedCardImgArray = [];
             SelectOkButton.mouseEnabled = false ;
@@ -4184,20 +4033,20 @@ window.onload = function() {
                 cardImgContainer.addEventListener("click", handleSelectClick);
                 function handleSelectClick(event) {
                     if(selected.visible==false){
-                        if(activeEff.targetCard.length==lessThan){
+                        if(selectedCardArray.length==lessThan){
                             selectedCardImgArray[0].selected.visible = false;
-                            activeEff.targetCard.shift();
+                            selectedCardArray.shift();
                             selectedCardImgArray.shift();
                         };
                         selected.visible = true;
-                        activeEff.targetCard.push(card);
+                        selectedCardArray.push(card);
                         selectedCardImgArray.push(selectedCardImg);
                     }else{
                         selected.visible = false; 
-                        activeEff.targetCard = activeEff.targetCard.filter(i => i !== card);
+                        selectedCardArray = selectedCardArray.filter(i => i !== card);
                         selectedCardImgArray = selectedCardImgArray.filter(i => i !== selectedCardImg);
                     };
-                    SelectOkButton.mouseEnabled = countCheck(activeEff.targetCard.length);
+                    SelectOkButton.mouseEnabled = countCheck(selectedCardArray.length);
                     selectedMouseOver.visible = false;
                 };
 
@@ -4222,7 +4071,27 @@ window.onload = function() {
                 };
                 PromiseArray.push(twPromise());
             });
-            return Promise.all(PromiseArray);
+            return new Promise(async(resolve, reject) => {
+                await Promise.all(PromiseArray);
+                await new Promise((resolve, reject) => {
+                    const clickOkButton = async (e) => {
+                        divSelectMenuContainer.style.visibility = "hidden";
+                        disprayStage.removeAllChildren();
+                        SelectOkButton.removeEventListener("click", clickOkButton);
+                        resolve();
+                    };
+                    SelectOkButton.addEventListener("click",clickOkButton);
+
+                    const clickCancelButton = async (e) => {
+                        selectedCardArray.length = 0;
+                        divSelectMenuContainer.style.visibility = "hidden";
+                        disprayStage.removeAllChildren();
+                        resolve();
+                    };
+                    SelectCancelButton.addEventListener("click",clickCancelButton);
+                });
+                resolve(selectedCardArray);
+            });
         },
 
         view:(cardArray :Card[], message? :string) => {
@@ -4293,7 +4162,16 @@ window.onload = function() {
                 };
                 PromiseArray.push(twPromise());
             });
-            return Promise.all(PromiseArray);
+            return new Promise(async(resolve, reject) => {
+                await Promise.all(PromiseArray);
+                const clickOkButton = async (e) => {
+                    divSelectMenuContainer.style.visibility = "hidden";
+                    disprayStage.removeAllChildren();
+                    SelectOkButton.removeEventListener("click", clickOkButton);
+                    resolve();
+                };
+                SelectOkButton.addEventListener("click",clickOkButton);
+            });
         }
     };
 
