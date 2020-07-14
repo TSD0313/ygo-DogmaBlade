@@ -3137,6 +3137,7 @@ window.onload = function() {
                     const cardlist = genCardArray({race:["WARRIOR"],location:["GY"]});
                     eff.targetCard = await openCardListWindow.select(cardlist,2,2,eff,"除外する戦士族を2枚選択してください");
                     await vanish(eff.targetCard,"COST");
+                    resolve();
                 });
             };
             eff2.whenResolve = (eff :effect) => {
