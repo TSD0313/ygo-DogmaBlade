@@ -3877,26 +3877,34 @@ window.onload = function() {
                     window.open(url, null,"width=650, height=300, personalbar=0, toolbar=0, scrollbars=1, sizable=1")
     }, null, false);
 
+    const DogmaButton = createButton(" ▶ JUNK BLADE ", 200, 60, "#DDA0DD");
+    DogmaButton.x = 1275;
+    DogmaButton.y = 20;
+    mainstage.addChild(DogmaButton);
+    DogmaButton.on("click", function(e){
+        window.open("https://tsd0313.github.io/ygo-JunkBlade/dist/")
+    }, null, false);
+
     const howtoButton = createButton("HOW TO PLAY", 160, 40, "#0275d8");
     howtoButton.x = 1300;
-    howtoButton.y = 600;
+    howtoButton.y = 900;
     mainstage.addChild(howtoButton);
     howtoButton.on("click", function(e){
         openHowtoWindow();
     }, null, false);
 
-    const endButton = createButton("TURN END", 160, 80, "#0275d8");
+    const endButton = createButton("TURN END", 160, 60, "#0275d8");
     endButton.x = 1300;
-    endButton.y = 660;
+    endButton.y = 540;
     endButton.alpha = 0;
     cardContainer.addChild(endButton);
     endButton.on("click", function async(e){
         turnEnd();
     }, null, false);
 
-    const resetButton = createButton("RESET", 160, 80, "#0275d8");
+    const resetButton = createButton("RESET", 160, 60, "#0275d8");
     resetButton.x = 1300;
-    resetButton.y = 750;
+    resetButton.y = 630;
     resetButton.alpha = 0;
     cardContainer.addChild(resetButton);
     resetButton.on("click", function async(e){
