@@ -3877,11 +3877,11 @@ window.onload = function() {
                     window.open(url, null,"width=650, height=300, personalbar=0, toolbar=0, scrollbars=1, sizable=1")
     }, null, false);
 
-    const DogmaButton = createButton(" ▶ JUNK BLADE ", 200, 60, "#DDA0DD");
-    DogmaButton.x = 1275;
-    DogmaButton.y = 20;
-    mainstage.addChild(DogmaButton);
-    DogmaButton.on("click", function(e){
+    const LinkButton = createButton(" ▶ JUNK BLADE ", 200, 60, "#DDA0DD");
+    LinkButton.x = 1275;
+    LinkButton.y = 20;
+    mainstage.addChild(LinkButton);
+    LinkButton.on("click", function(e){
         window.open("https://tsd0313.github.io/ygo-JunkBlade/dist/")
     }, null, false);
 
