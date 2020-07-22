@@ -2104,7 +2104,7 @@ window.onload = function() {
                         .to({x:game.displayOrder.deck[0][0],y:game.displayOrder.deck[0][1],rotation:0},500,createjs.Ease.quintOut)
                         .call(()=>{resolve()});
                 }); 
-                await timeout(50);
+                await timeout(25);
             };
         })();  
     };
@@ -2196,13 +2196,12 @@ window.onload = function() {
             });
         };
         return new Promise<void>(async(resolve, reject) => {
-            await (async () => {
-                for (let i = 0; i < count ; i++){
-                    const targetCard = game.DECK[game.DECK.length -1];
-                    await moveCard.DECK.toHAND(targetCard);
-                    console.log("draw");
-                };
-            })();
+            for (let i = 0; i < count ; i++){
+                const targetCard = game.DECK[game.DECK.length -1];
+                moveCard.DECK.toHAND(targetCard);
+                console.log("draw");
+            };
+            await timeout(500);
             resolve();
         });
     };
@@ -2464,7 +2463,7 @@ window.onload = function() {
                         .to({x:game.displayOrder.deck[0][0],y:game.displayOrder.deck[0][1],rotation:0},500,createjs.Ease.quintOut)
                         .call(()=>{resolve()});
                 }); 
-                await timeout(50);                
+                await timeout(25);                
             };
         })();
         await timeout(250);
