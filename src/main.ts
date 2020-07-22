@@ -2739,6 +2739,7 @@ window.onload = function() {
                     if(eff.mode){
                         const cardlist = genCardArray({location:["MO"]}).filter(c=> c!=card);
                         eff.targetCard = await openCardListWindow.select(cardlist,1,1,eff,"除外するモンスターを1枚選択してください");
+                        eff.targetCard.push(card);
                         await animationEffectTarget(eff.targetCard);
                     }else{
                         const cardlist = genCardArray({location:["GY"]});
