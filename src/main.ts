@@ -3717,7 +3717,7 @@ window.onload = function() {
 
     const createdbyText = new createjs.Text("Created by  ", "24px serif","black");
     const twiAccountText = new createjs.Text("@toride0313", "24px serif","black");
-    const updateText = new createjs.Text(" /Update 2020.06.15_2030  Microsoft Edgeでは正常動作しません。", "24px serif","black");
+    const updateText = new createjs.Text(" /Update 2020.07.22  Microsoft Edgeでは正常動作しません。", "24px serif","black");
     twiAccountText.x = createdbyText.getMeasuredWidth();
     updateText.x = createdbyText.getMeasuredWidth()+twiAccountText.getMeasuredWidth()+5;
     twiAccountText.color = "#1111cc";
@@ -4190,10 +4190,10 @@ window.onload = function() {
 
         const YesNoContainer = new createjs.Container();
 
-        const YesButton = createButton("YES", 150, 40, "#0275d8");
+        const YesButton = createButton("YES", 150, 80, "#0275d8");
         YesNoContainer.addChild(YesButton);
 
-        const NoButton = createButton("NO", 150, 40, "#0275d8");
+        const NoButton = createButton("NO", 150, 80, "#0275d8");
         NoButton.x = NoButton.getBounds().width*8;
         YesNoContainer.addChild(NoButton);
 
