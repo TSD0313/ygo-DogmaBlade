@@ -3718,7 +3718,7 @@ window.onload = function() {
 
     const createdbyText = new createjs.Text("Created by  ", "24px serif","black");
     const twiAccountText = new createjs.Text("@toride0313", "24px serif","black");
-    const updateText = new createjs.Text(" /Update 2020.07.22  Microsoft Edgeでは正常動作しません。", "24px serif","black");
+    const updateText = new createjs.Text(" /Update 2020.07.28 キャンセル時フリーズするバグを修正。 Edgeでは正常動作しません。", "24px serif","black");
     twiAccountText.x = createdbyText.getMeasuredWidth();
     updateText.x = createdbyText.getMeasuredWidth()+twiAccountText.getMeasuredWidth()+5;
     twiAccountText.color = "#1111cc";
