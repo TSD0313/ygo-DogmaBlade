@@ -3842,8 +3842,10 @@ window.onload = function() {
     // drawButton.y = 500;
     // mainstage.addChild(drawButton);
 
-    // drawButton.on("click", function(e){
-    //     draw(1);
+    // drawButton.on("click", async function(e){
+    //     // draw(1);
+    //     await vanish(genCardArray({cardType:["Monster"]}).filter(c=>c.cardName!="Dogma"),"EFFECT");
+    //     await search(genCardArray({cardNameJP:["次元融合"]}))
     // }, null, false);
 
     // const testButton = createButton("test", 150, 40, "#0275d8");
@@ -3941,7 +3943,7 @@ window.onload = function() {
     selectButtonStage.addChild(SelectCancelButton);
 
     const openCardListWindow = {
-        select: (cardArray  :Card[], moreThan :Number, lessThan :Number, activeEff :effect,message? :string,cansel? :boolean):Promise<Card[]> => {
+        select: (cardArray  :Card[], moreThan :Number, lessThan :Number, activeEff :effect,message? :string,cancel? :boolean):Promise<Card[]> => {
             const disprayCards = [...cardArray].reverse();
             divSelectMenuContainer.style.visibility = "visible";
             SelectCancelButton.visible = false;
@@ -3951,7 +3953,7 @@ window.onload = function() {
                 messageText.innerText = message
             };
 
-            if(cansel){
+            if(cancel){
                 SelectCancelButton.visible = true;
                 SelectOkButton.x = selectButtonCanv.width/2 - 200;
                 SelectCancelButton.x = selectButtonCanv.width/2 + 50;
@@ -4083,21 +4085,27 @@ window.onload = function() {
             return new Promise(async(resolve, reject) => {
                 await Promise.all(PromiseArray);
                 await new Promise((resolve, reject) => {
-                    const clickOkButton = async (e) => {
+                    const clickOkButton = (e) => {
                         divSelectMenuContainer.style.visibility = "hidden";
                         disprayStage.removeAllChildren();
-                        SelectOkButton.removeEventListener("click", clickOkButton);
+                        SelectOkButton.removeAllEventListeners("click");
+                        SelectCancelButton.removeAllEventListeners("click");
                         resolve();
                     };
                     SelectOkButton.addEventListener("click",clickOkButton);
 
-                    const clickCancelButton = async (e) => {
-                        selectedCardArray.length = 0;
-                        divSelectMenuContainer.style.visibility = "hidden";
-                        disprayStage.removeAllChildren();
-                        resolve();
+                    if(cancel){
+                        const clickCancelButton = (e) => {
+                            console.log("cancelButton")
+                            selectedCardArray.length = 0;
+                            divSelectMenuContainer.style.visibility = "hidden";
+                            disprayStage.removeAllChildren();
+                            SelectOkButton.removeAllEventListeners("click");
+                            SelectCancelButton.removeAllEventListeners("click");
+                            resolve();
+                        };
+                        SelectCancelButton.addEventListener("click",clickCancelButton);
                     };
-                    SelectCancelButton.addEventListener("click",clickCancelButton);
                 });
                 resolve(selectedCardArray);
             });
