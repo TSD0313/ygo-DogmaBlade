@@ -13,10 +13,10 @@
   "devDependencies": {
     "@types/createjs": "0.0.29",
     "createjs": "^1.0.1",
-    "ts-loader": "^6.2.1",
+    "ts-loader": "^9.4.2",
     "typescript": "^3.7.4",
-    "webpack": "^4.41.4",
-    "webpack-cli": "^3.3.10"
+    "webpack": "^5.75.0",
+    "webpack-cli": "^5.0.1"
   },
   "dependencies": {
     "@createjs/easeljs": "^2.0.0-beta.4",
@@ -24,10 +24,10 @@
     "@types/createjs": "0.0.29",
     "createjs": "^1.0.1",
     "createjs-module": "^0.8.3",
-    "ts-loader": "^6.2.1",
+    "ts-loader": "^9.4.2",
     "typescript": "^3.7.2",
-    "webpack": "^4.41.2",
-    "webpack-cli": "^3.3.10",
+    "webpack": "^5.75.0",
+    "webpack-cli": "^5.0.1",
     "webpack-dev-server": "^3.9.0"
   }
 }
